@@ -7,9 +7,6 @@ plugins {
 
 val generatedSrcDir: Provider<Directory> = layout.buildDirectory.dir("generated/projectInfo")
 val generatedXrayCoreJniLibsDir: Provider<Directory> = layout.buildDirectory.dir("generated/xrayCoreJniLibs")
-val androidLibXrayLiteAar = files("libs/AndroidLibXrayLite.aar").apply {
-    builtBy(rootProject.tasks.named("downloadAndroidLibXrayLiteAar"))
-}
 
 android {
     namespace = "app"
@@ -84,7 +81,6 @@ android {
 
 tasks.named("preBuild") {
     dependsOn(rootProject.tasks.named("updateResourceFileAssets"))
-    dependsOn(rootProject.tasks.named("downloadAndroidLibXrayLiteAar"))
 }
 
 dependencies {
@@ -96,7 +92,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.coil)
     implementation(libs.coil.compose)
-    implementation(androidLibXrayLiteAar)
+    implementation("com.github.2dust:libv2ray:${ProjectConfig.ANDROID_LIB_XRAY_LITE_VERSION}@aar")
     implementation(project(":setuidgid"))
     implementation(libs.ktor.http)
     implementation(libs.kotlinx.datetime)

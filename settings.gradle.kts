@@ -27,6 +27,19 @@ dependencyResolutionManagement {
         }
         mavenCentral()
         maven("https://jitpack.io")
+        ivy {
+            name = "AndroidLibXrayLiteGitHubRelease"
+            url = uri("https://github.com/2dust/AndroidLibXrayLite/releases/download")
+            patternLayout {
+                artifact("[revision]/[artifact].[ext]")
+            }
+            metadataSources {
+                artifact()
+            }
+            content {
+                includeModule("com.github.2dust", "libv2ray")
+            }
+        }
     }
 }
 
