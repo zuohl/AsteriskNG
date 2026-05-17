@@ -61,15 +61,6 @@ abstract class GenerateAboutLibrariesJsonTask : DefaultTask() {
         )
         val bundledRuntimeLibraries = listOf(
             library(
-                "github:2dust/AndroidLibXrayLite",
-                ProjectConfig.ANDROID_LIB_XRAY_LITE_VERSION,
-                "AndroidLibXrayLite",
-                "A lightweight Android AAR wrapper for xray-core.",
-                "https://github.com/2dust/AndroidLibXrayLite",
-                "https://github.com/2dust/AndroidLibXrayLite",
-                listOf("LGPL-3.0"),
-            ),
-            library(
                 "github:XTLS/Xray-core",
                 ProjectConfig.XRAY_CORE_VERSION,
                 "xray-core",

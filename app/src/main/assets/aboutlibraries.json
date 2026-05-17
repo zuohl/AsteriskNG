@@ -40,6 +40,19 @@
             ]
         },
         {
+            "uniqueId": "com.github.2dust:libv2ray",
+            "artifactVersion": "v26.5.9",
+            "name": "libv2ray",
+            "description": "com.github.2dust:libv2ray",
+            "website": "https://mvnrepository.com/artifact/com.github.2dust/libv2ray",
+            "scm": {
+                "url": "https://mvnrepository.com/artifact/com.github.2dust/libv2ray"
+            },
+            "licenses": [
+                "Unknown"
+            ]
+        },
+        {
             "uniqueId": "com.github.topjohnwu.libsu:core",
             "artifactVersion": "6.0.0",
             "name": "libsu",
@@ -63,19 +76,6 @@
             },
             "licenses": [
                 "Apache-2.0"
-            ]
-        },
-        {
-            "uniqueId": "github:2dust/AndroidLibXrayLite",
-            "artifactVersion": "v26.5.9",
-            "name": "AndroidLibXrayLite",
-            "description": "A lightweight Android AAR wrapper for xray-core.",
-            "website": "https://github.com/2dust/AndroidLibXrayLite",
-            "scm": {
-                "url": "https://github.com/2dust/AndroidLibXrayLite"
-            },
-            "licenses": [
-                "LGPL-3.0"
             ]
         },
         {
