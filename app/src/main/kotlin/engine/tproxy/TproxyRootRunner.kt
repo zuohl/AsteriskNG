@@ -53,32 +53,12 @@ internal class TproxyRootRunner(
         runRootCommand(config.installBootScriptCommand(), "Failed to install TPROXY boot script")
     }
 
-    suspend fun deleteCoreLogFiles(coreLogPaths: XrayCoreLogPaths) = withContext(Dispatchers.IO) {
-        val command = coreLogPaths.logFilePaths().deleteCoreLogFilesCommand()
+    suspend fun prepareCoreLogFiles(coreLogPaths: XrayCoreLogPaths) = withContext(Dispatchers.IO) {
+        val command = coreLogPaths.prepareWritableCoreLogFilesCommand()
         if (command.isBlank()) {
             return@withContext
         }
-        val result = rootAccess.exec(command)
-        if (result.errno != 0) {
-            AndroidAppLogger.warn(
-                LogTag,
-                "Failed to delete xray log files as root:\n${result.stderr.ifBlank { result.stdout }}"
-            )
-        }
-    }
-
-    suspend fun truncateCoreLogFiles(logPaths: List<String>) = withContext(Dispatchers.IO) {
-        val command = logPaths.truncateCoreLogFilesCommand()
-        if (command.isBlank()) {
-            return@withContext
-        }
-        val result = rootAccess.exec(command)
-        if (result.errno != 0) {
-            AndroidAppLogger.warn(
-                LogTag,
-                "Failed to truncate xray log files as root:\n${result.stderr.ifBlank { result.stdout }}"
-            )
-        }
+        runRootCommand(command, "Failed to prepare xray log files")
     }
 
     suspend fun uninstallBootScript() = withContext(Dispatchers.IO) {
@@ -189,28 +169,26 @@ internal class TproxyRootRunner(
         }
     }
 
-    private fun List<String>.deleteCoreLogFilesCommand(): String {
+    private fun XrayCoreLogPaths.prepareWritableCoreLogFilesCommand(): String {
+        val logPaths = logFilePaths().filter(String::isNotBlank)
         return buildString {
-            filter(String::isNotBlank).forEach { logPath ->
-                appendScript(
-                    """
-                    rm -f ${logPath.shellQuote()} 2>/dev/null || true
-                    """,
-                )
-            }
-        }
-    }
-
-    private fun List<String>.truncateCoreLogFilesCommand(): String {
-        return buildString {
-            filter(String::isNotBlank).forEach { logPath ->
-                File(logPath).parent?.let { parentPath ->
+            logPaths
+                .mapNotNull { logPath -> File(logPath).parent }
+                .distinct()
+                .forEach { parentPath ->
                     appendScript(
                         """
-                        : > ${logPath.shellQuote()}
+                        mkdir -p ${parentPath.shellQuote()} || exit 1
                         """,
                     )
                 }
+            logPaths.forEach { logPath ->
+                appendScript(
+                    """
+                    touch ${logPath.shellQuote()} || exit 1
+                    chmod 666 ${logPath.shellQuote()} || exit 1
+                    """,
+                )
             }
         }
     }
@@ -231,6 +209,7 @@ internal class TproxyRootRunner(
 
                 """,
             )
+            append(coreLogPaths.prepareWritableCoreLogFilesCommand())
             append(startDetachedCommand())
             appendScript(
                 $$"""

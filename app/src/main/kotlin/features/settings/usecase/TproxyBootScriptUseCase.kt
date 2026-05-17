@@ -8,7 +8,6 @@ import app.AppState
 import engine.proxy.ProxyEngineStartRequest
 import engine.tproxy.TproxyConfigFactory
 import engine.tproxy.TproxyRootRunner
-import engine.xray.prepareXrayCoreLogPaths
 import system.AndroidRootShellGateway
 
 internal class TproxyBootScriptUseCase(
@@ -48,18 +47,6 @@ internal class TproxyBootScriptUseCase(
         }
         return runCatching {
             rootRunner.uninstallBootScript()
-        }.fold(
-            onSuccess = { TproxyBootScriptResult.Success },
-            onFailure = TproxyBootScriptResult::Failed,
-        )
-    }
-
-    suspend fun deleteCoreLogFiles(): TproxyBootScriptResult {
-        if (!rootAccess.hasRootAccess()) {
-            return TproxyBootScriptResult.RootUnavailable
-        }
-        return runCatching {
-            rootRunner.deleteCoreLogFiles(appContext.prepareXrayCoreLogPaths())
         }.fold(
             onSuccess = { TproxyBootScriptResult.Success },
             onFailure = TproxyBootScriptResult::Failed,

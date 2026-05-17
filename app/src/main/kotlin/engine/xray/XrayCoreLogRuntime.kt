@@ -27,16 +27,12 @@ internal fun XrayCoreLogPaths.startCoreLogTailers(enableAccessLog: Boolean): Lis
 }
 
 internal fun XrayCoreLogPaths.clearCoreLogs(logTag: String) {
-    clearCoreLogRepositories()
+    AndroidCoreLogRepository.clear()
+    AndroidAccessLogRepository.clear()
     clearCoreLogFilesAsApp(
         logPaths = logFilePaths(),
         logTag = logTag,
     )
-}
-
-internal fun clearCoreLogRepositories() {
-    AndroidCoreLogRepository.clear()
-    AndroidAccessLogRepository.clear()
 }
 
 internal fun XrayCoreLogPaths.logFilePaths(): List<String> {

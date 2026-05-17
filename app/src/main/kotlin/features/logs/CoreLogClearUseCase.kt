@@ -1,37 +1,28 @@
 package features.logs
 
 import android.content.Context
-import app.modes.RunModeTproxy
-import engine.tproxy.TproxyRootRunner
 import engine.xray.XrayCoreLogPaths
 import engine.xray.clearCoreLogFilesAsApp
 import engine.xray.prepareXrayCoreLogPaths
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import system.AndroidRootShellGateway
 
 internal class CoreLogClearUseCase(
     context: Context,
-    rootAccess: AndroidRootShellGateway,
 ) {
     private val appContext = context.applicationContext
-    private val rootRunner = TproxyRootRunner(rootAccess)
 
-    suspend fun clear(logFile: XrayLogFile, runMode: Int) {
+    suspend fun clear(logFile: XrayLogFile) {
         val logPath = appContext.prepareXrayCoreLogPaths().pathOf(logFile)
         if (logPath.isBlank()) {
             return
         }
 
-        if (runMode == RunModeTproxy) {
-            rootRunner.truncateCoreLogFiles(listOf(logPath))
-        } else {
-            withContext(Dispatchers.IO) {
-                clearCoreLogFilesAsApp(
-                    logPaths = listOf(logPath),
-                    logTag = LogTag,
-                )
-            }
+        withContext(Dispatchers.IO) {
+            clearCoreLogFilesAsApp(
+                logPaths = listOf(logPath),
+                logTag = LogTag,
+            )
         }
     }
 

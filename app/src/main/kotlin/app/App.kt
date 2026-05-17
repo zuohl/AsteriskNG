@@ -100,10 +100,9 @@ fun App(
     }
     val stateStore = remember(appContext) { AndroidAppStateStore.get(appContext) }
     val tipNotifier = remember(appContext) { AndroidToastTipNotifier(appContext) }
-    val coreLogClearUseCase = remember(appContext, rootAccess) {
+    val coreLogClearUseCase = remember(appContext) {
         CoreLogClearUseCase(
             context = appContext,
-            rootAccess = rootAccess,
         )
     }
     val services = remember(
