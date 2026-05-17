@@ -50,6 +50,21 @@ internal class SwitchRunModeUseCase(
             return SwitchRunModeResult.RootUnavailable(proxyRunning = stoppedRunning)
         }
 
+        if (normalizedTargetMode == RunModeVpnService) {
+            when (val result = tproxyBootScriptUseCase.clearCoreLogFiles()) {
+                TproxyBootScriptResult.Success,
+                TproxyBootScriptResult.MissingServer -> Unit
+
+                TproxyBootScriptResult.RootUnavailable -> {
+                    return SwitchRunModeResult.RootUnavailable(proxyRunning = stoppedRunning)
+                }
+
+                is TproxyBootScriptResult.Failed -> {
+                    return SwitchRunModeResult.StopFailed(result.error)
+                }
+            }
+        }
+
         return SwitchRunModeResult.Success(
             runMode = normalizedTargetMode,
             proxyRunning = stoppedRunning,

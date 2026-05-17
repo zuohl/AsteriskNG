@@ -6,7 +6,7 @@ import app.R
 import features.logs.AndroidAppLogger
 import features.logs.CoreLogFileTailer
 import engine.proxy.mode.AndroidModeProxyEngine
-import engine.xray.clearCoreLogs
+import engine.xray.clearCoreLogRepositories
 import engine.xray.startCoreLogTailers
 import system.AndroidRootShellGateway
 import java.io.File
@@ -31,7 +31,8 @@ internal class TproxyEngine(
         if (!File(config.xrayCorePath).canExecute()) {
             File(config.xrayCorePath).setExecutable(true, false)
         }
-        config.coreLogPaths.clearCoreLogs(LogTag)
+        clearCoreLogRepositories()
+        rootRunner.clearCoreLogFiles(config.coreLogPaths)
         logFileTailers = config.coreLogPaths.startCoreLogTailers(config.enableAccessLog)
         runCatching {
             rootRunner.start(config)
