@@ -4,12 +4,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.R
 import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
@@ -60,47 +60,45 @@ internal fun LocalProxySettingsBottomSheet(
         onDismissRequest = onDismissRequest,
         defaultWindowInsetsPadding = false,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-        ) {
-            SettingsTextField(
-                value = port,
-                onValueChange = onPortChange,
-                label = stringResource(R.string.settings_local_proxy_port),
-                errorText = portError,
-            )
-            SwitchPreference(
-                title = stringResource(R.string.settings_local_proxy_dynamic_port),
-                summary = stringResource(R.string.settings_local_proxy_dynamic_port_summary),
-                checked = enableDynamicPort,
-                onCheckedChange = onEnableDynamicPortChange,
-            )
-            SwitchPreference(
-                title = stringResource(R.string.settings_local_proxy_listen_all_interfaces),
-                summary = stringResource(R.string.settings_local_proxy_listen_all_interfaces_summary),
-                checked = listenAllInterfaces,
-                onCheckedChange = onListenAllInterfacesChange,
-            )
-            TextField(
-                value = username,
-                onValueChange = onUsernameChange,
-                label = stringResource(R.string.settings_local_proxy_username),
-                singleLine = true,
+        key(show) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-            )
-            TextField(
-                value = password,
-                onValueChange = onPasswordChange,
-                label = stringResource(R.string.settings_local_proxy_password),
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-            )
+                    .padding(bottom = 24.dp),
+            ) {
+                SettingsTextField(
+                    value = port,
+                    onValueChange = onPortChange,
+                    label = stringResource(R.string.settings_local_proxy_port),
+                    errorText = portError,
+                    keyboardOptions = fiveDigitKeyboardOptions(),
+                    sanitizeInput = ::sanitizeFiveDigitInput,
+                )
+                SwitchPreference(
+                    title = stringResource(R.string.settings_local_proxy_dynamic_port),
+                    summary = stringResource(R.string.settings_local_proxy_dynamic_port_summary),
+                    checked = enableDynamicPort,
+                    onCheckedChange = onEnableDynamicPortChange,
+                )
+                SwitchPreference(
+                    title = stringResource(R.string.settings_local_proxy_listen_all_interfaces),
+                    summary = stringResource(R.string.settings_local_proxy_listen_all_interfaces_summary),
+                    checked = listenAllInterfaces,
+                    onCheckedChange = onListenAllInterfacesChange,
+                )
+                SettingsTextField(
+                    value = username,
+                    onValueChange = onUsernameChange,
+                    label = stringResource(R.string.settings_local_proxy_username),
+                    errorText = null,
+                )
+                SettingsTextField(
+                    value = password,
+                    onValueChange = onPasswordChange,
+                    label = stringResource(R.string.settings_local_proxy_password),
+                    errorText = null,
+                )
+            }
         }
     }
 }

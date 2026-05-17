@@ -4,13 +4,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import app.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import engine.network.isCidrAddress
 import engine.network.isIpAddress
 import engine.vpn.VpnDefaults
-import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import ui.text.formatTemplate
@@ -86,35 +87,39 @@ internal fun VpnSettingsBottomSheet(
         onDismissRequest = onDismissRequest,
         defaultWindowInsetsPadding = false,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-        ) {
-            SettingsTextField(
-                value = mtu,
-                onValueChange = onMtuChange,
-                label = stringResource(R.string.settings_vpn_mtu),
-                errorText = mtuError,
-            )
-            SettingsTextField(
-                value = defaultDns,
-                onValueChange = onDefaultDnsChange,
-                label = stringResource(R.string.settings_vpn_default_dns),
-                errorText = defaultDnsError,
-            )
-            SettingsTextField(
-                value = ipv4Cidr,
-                onValueChange = onIpv4CidrChange,
-                label = stringResource(R.string.settings_vpn_ipv4_cidr),
-                errorText = ipv4CidrError,
-            )
-            SettingsTextField(
-                value = ipv6Cidr,
-                onValueChange = onIpv6CidrChange,
-                label = stringResource(R.string.settings_vpn_ipv6_cidr),
-                errorText = ipv6CidrError,
-            )
+        key(show) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+            ) {
+                SettingsTextField(
+                    value = mtu,
+                    onValueChange = onMtuChange,
+                    label = stringResource(R.string.settings_vpn_mtu),
+                    errorText = mtuError,
+                    keyboardOptions = fiveDigitKeyboardOptions(),
+                    sanitizeInput = ::sanitizeFiveDigitInput,
+                )
+                SettingsTextField(
+                    value = defaultDns,
+                    onValueChange = onDefaultDnsChange,
+                    label = stringResource(R.string.settings_vpn_default_dns),
+                    errorText = defaultDnsError,
+                )
+                SettingsTextField(
+                    value = ipv4Cidr,
+                    onValueChange = onIpv4CidrChange,
+                    label = stringResource(R.string.settings_vpn_ipv4_cidr),
+                    errorText = ipv4CidrError,
+                )
+                SettingsTextField(
+                    value = ipv6Cidr,
+                    onValueChange = onIpv6CidrChange,
+                    label = stringResource(R.string.settings_vpn_ipv6_cidr),
+                    errorText = ipv6CidrError,
+                )
+            }
         }
     }
 }

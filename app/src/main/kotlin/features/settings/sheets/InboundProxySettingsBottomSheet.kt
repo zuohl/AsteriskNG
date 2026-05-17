@@ -5,24 +5,16 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.input.InputTransformation
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.R
 import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
@@ -135,24 +127,12 @@ private fun ProxyPortTextField(
     label: String,
     modifier: Modifier = Modifier,
 ) {
-    val focusManager = LocalFocusManager.current
-    TextField(
+    SheetTextField(
+        value = value,
+        onValueChange = onValueChange,
         label = label,
-        state = rememberTextFieldState(initialText = value),
-        lineLimits = TextFieldLineLimits.SingleLine,
-        inputTransformation = InputTransformation {
-            val text = asCharSequence()
-            if (text.length > 5 || text.any { char -> !char.isDigit() }) {
-                revertAllChanges()
-                return@InputTransformation
-            }
-            onValueChange(text.toString())
-        },
         modifier = modifier,
-        onKeyboardAction = { focusManager.clearFocus() },
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Number,
-            imeAction = ImeAction.Done,
-        ),
+        keyboardOptions = fiveDigitKeyboardOptions(),
+        sanitizeInput = ::sanitizeFiveDigitInput,
     )
 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import engine.xray.DefaultMuxConcurrency
@@ -20,7 +21,6 @@ import app.R
 import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -99,52 +99,54 @@ internal fun MuxSettingsBottomSheet(
         onDismissRequest = onDismissRequest,
         defaultWindowInsetsPadding = false,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-        ) {
-            MuxStatusText(stringResource(R.string.settings_mux_description))
-            SwitchPreference(
-                title = stringResource(R.string.settings_mux_enabled),
-                summary = stringResource(R.string.settings_mux_enabled_summary),
-                checked = enabled,
-                onCheckedChange = onEnabledChange,
-            )
-            AnimatedVisibility(
-                visible = enabled,
-                enter = fadeIn() + expandVertically(),
-                exit = shrinkVertically() + fadeOut(),
+        key(show) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
             ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    MuxNumberField(
-                        value = concurrency,
-                        onValueChange = onConcurrencyChange,
-                        label = stringResource(R.string.settings_mux_concurrency),
-                        helpText = stringResource(R.string.settings_mux_concurrency_summary),
-                        errorText = if (concurrencyError) {
-                            stringResource(R.string.settings_mux_concurrency_error)
-                        } else {
-                            null
-                        },
-                    )
-                    MuxNumberField(
-                        value = xudpConcurrency,
-                        onValueChange = onXudpConcurrencyChange,
-                        label = stringResource(R.string.settings_mux_xudp_concurrency),
-                        helpText = stringResource(R.string.settings_mux_xudp_concurrency_summary),
-                        errorText = if (xudpConcurrencyError) {
-                            stringResource(R.string.settings_mux_xudp_concurrency_error)
-                        } else {
-                            null
-                        },
-                    )
-                    OverlayDropdownPreference(
-                        title = stringResource(R.string.settings_mux_udp443),
-                        items = muxUdp443Options(),
-                        selectedIndex = sanitizeMuxUdp443Index(xudpProxyUdp443),
-                        onSelectedIndexChange = onXudpProxyUdp443Change,
-                    )
+                MuxStatusText(stringResource(R.string.settings_mux_description))
+                SwitchPreference(
+                    title = stringResource(R.string.settings_mux_enabled),
+                    summary = stringResource(R.string.settings_mux_enabled_summary),
+                    checked = enabled,
+                    onCheckedChange = onEnabledChange,
+                )
+                AnimatedVisibility(
+                    visible = enabled,
+                    enter = fadeIn() + expandVertically(),
+                    exit = shrinkVertically() + fadeOut(),
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        MuxNumberField(
+                            value = concurrency,
+                            onValueChange = onConcurrencyChange,
+                            label = stringResource(R.string.settings_mux_concurrency),
+                            helpText = stringResource(R.string.settings_mux_concurrency_summary),
+                            errorText = if (concurrencyError) {
+                                stringResource(R.string.settings_mux_concurrency_error)
+                            } else {
+                                null
+                            },
+                        )
+                        MuxNumberField(
+                            value = xudpConcurrency,
+                            onValueChange = onXudpConcurrencyChange,
+                            label = stringResource(R.string.settings_mux_xudp_concurrency),
+                            helpText = stringResource(R.string.settings_mux_xudp_concurrency_summary),
+                            errorText = if (xudpConcurrencyError) {
+                                stringResource(R.string.settings_mux_xudp_concurrency_error)
+                            } else {
+                                null
+                            },
+                        )
+                        OverlayDropdownPreference(
+                            title = stringResource(R.string.settings_mux_udp443),
+                            items = muxUdp443Options(),
+                            selectedIndex = sanitizeMuxUdp443Index(xudpProxyUdp443),
+                            onSelectedIndexChange = onXudpProxyUdp443Change,
+                        )
+                    }
                 }
             }
         }
@@ -159,14 +161,14 @@ private fun MuxNumberField(
     helpText: String,
     errorText: String?,
 ) {
-    TextField(
+    SheetTextField(
         value = value,
-        onValueChange = { onValueChange(sanitizeMuxIntegerInput(it)) },
+        onValueChange = onValueChange,
         label = label,
-        singleLine = true,
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 4.dp),
+        sanitizeInput = ::sanitizeMuxIntegerInput,
     )
     MuxStatusText(helpText)
     errorText?.let { MuxStatusText(text = it, error = true) }

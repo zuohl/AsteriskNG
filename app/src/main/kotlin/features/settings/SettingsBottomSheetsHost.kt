@@ -13,8 +13,6 @@ import features.settings.sheets.ProxySettingsBottomSheet
 import features.settings.sheets.VpnSettingsBottomSheet
 import features.settings.sheets.orderedBy
 import features.settings.sheets.sanitizeExternalInterfaces
-import features.settings.sheets.sanitizeFragmentRangeInput
-import features.settings.sheets.sanitizeMuxIntegerInput
 import features.settings.sheets.sanitizeMuxUdp443Index
 import features.settings.sheets.sanitizePrivateAddressCidrs
 import app.modes.RunModeTproxy
@@ -76,7 +74,7 @@ internal fun SettingsBottomSheetsHost(
         password = sheetState.localProxySettingsDraft.password,
         onPortChange = {
             sheetState.localProxySettingsDraft = sheetState.localProxySettingsDraft.copy(
-                port = it.filter(Char::isDigit).take(5),
+                port = it,
             )
         },
         onEnableDynamicPortChange = {
@@ -112,7 +110,7 @@ internal fun SettingsBottomSheetsHost(
         ipv4Cidr = sheetState.vpnSettingsDraft.ipv4Cidr,
         ipv6Cidr = sheetState.vpnSettingsDraft.ipv6Cidr,
         onMtuChange = {
-            sheetState.vpnSettingsDraft = sheetState.vpnSettingsDraft.copy(mtu = it.filter(Char::isDigit).take(5))
+            sheetState.vpnSettingsDraft = sheetState.vpnSettingsDraft.copy(mtu = it)
         },
         onDefaultDnsChange = { sheetState.vpnSettingsDraft = sheetState.vpnSettingsDraft.copy(defaultDns = it) },
         onIpv4CidrChange = { sheetState.vpnSettingsDraft = sheetState.vpnSettingsDraft.copy(ipv4Cidr = it) },
@@ -172,10 +170,10 @@ internal fun SettingsBottomSheetsHost(
         xudpProxyUdp443 = sheetState.muxSettingsDraft.xudpProxyUdp443,
         onEnabledChange = { sheetState.muxSettingsDraft = sheetState.muxSettingsDraft.copy(enabled = it) },
         onConcurrencyChange = {
-            sheetState.muxSettingsDraft = sheetState.muxSettingsDraft.copy(concurrency = sanitizeMuxIntegerInput(it))
+            sheetState.muxSettingsDraft = sheetState.muxSettingsDraft.copy(concurrency = it)
         },
         onXudpConcurrencyChange = {
-            sheetState.muxSettingsDraft = sheetState.muxSettingsDraft.copy(xudpConcurrency = sanitizeMuxIntegerInput(it))
+            sheetState.muxSettingsDraft = sheetState.muxSettingsDraft.copy(xudpConcurrency = it)
         },
         onXudpProxyUdp443Change = {
             sheetState.muxSettingsDraft = sheetState.muxSettingsDraft.copy(xudpProxyUdp443 = sanitizeMuxUdp443Index(it))
@@ -205,12 +203,12 @@ internal fun SettingsBottomSheetsHost(
         onPacketsChange = { sheetState.fragmentSettingsDraft = sheetState.fragmentSettingsDraft.copy(packets = it) },
         onLengthChange = {
             sheetState.fragmentSettingsDraft = sheetState.fragmentSettingsDraft.copy(
-                length = sanitizeFragmentRangeInput(it),
+                length = it,
             )
         },
         onIntervalChange = {
             sheetState.fragmentSettingsDraft = sheetState.fragmentSettingsDraft.copy(
-                interval = sanitizeFragmentRangeInput(it),
+                interval = it,
             )
         },
         onDismissRequest = { sheetState.showFragmentSettings = false },

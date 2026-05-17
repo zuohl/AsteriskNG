@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import engine.xray.DefaultFragmentInterval
@@ -20,7 +21,6 @@ import app.R
 import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -95,51 +95,53 @@ internal fun FragmentSettingsBottomSheet(
         onDismissRequest = onDismissRequest,
         defaultWindowInsetsPadding = false,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-        ) {
-            FragmentStatusText(stringResource(R.string.settings_fragment_description))
-            SwitchPreference(
-                title = stringResource(R.string.settings_fragment_enabled),
-                checked = enabled,
-                onCheckedChange = onEnabledChange,
-            )
-            AnimatedVisibility(
-                visible = enabled,
-                enter = fadeIn() + expandVertically(),
-                exit = shrinkVertically() + fadeOut(),
+        key(show) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
             ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    OverlayDropdownPreference(
-                        title = stringResource(R.string.settings_fragment_packets),
-                        items = FragmentPacketsValues,
-                        selectedIndex = fragmentPacketsIndex(packets),
-                        onSelectedIndexChange = { index ->
-                            onPacketsChange(FragmentPacketsValues[index.coerceIn(FragmentPacketsValues.indices)])
-                        },
-                    )
-                    FragmentTextField(
-                        value = length,
-                        onValueChange = onLengthChange,
-                        label = stringResource(R.string.settings_fragment_length),
-                        errorText = if (lengthError) {
-                            stringResource(R.string.settings_fragment_length_error)
-                        } else {
-                            null
-                        },
-                    )
-                    FragmentTextField(
-                        value = interval,
-                        onValueChange = onIntervalChange,
-                        label = stringResource(R.string.settings_fragment_interval),
-                        errorText = if (intervalError) {
-                            stringResource(R.string.settings_fragment_interval_error)
-                        } else {
-                            null
-                        },
-                    )
+                FragmentStatusText(stringResource(R.string.settings_fragment_description))
+                SwitchPreference(
+                    title = stringResource(R.string.settings_fragment_enabled),
+                    checked = enabled,
+                    onCheckedChange = onEnabledChange,
+                )
+                AnimatedVisibility(
+                    visible = enabled,
+                    enter = fadeIn() + expandVertically(),
+                    exit = shrinkVertically() + fadeOut(),
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        OverlayDropdownPreference(
+                            title = stringResource(R.string.settings_fragment_packets),
+                            items = FragmentPacketsValues,
+                            selectedIndex = fragmentPacketsIndex(packets),
+                            onSelectedIndexChange = { index ->
+                                onPacketsChange(FragmentPacketsValues[index.coerceIn(FragmentPacketsValues.indices)])
+                            },
+                        )
+                        FragmentTextField(
+                            value = length,
+                            onValueChange = onLengthChange,
+                            label = stringResource(R.string.settings_fragment_length),
+                            errorText = if (lengthError) {
+                                stringResource(R.string.settings_fragment_length_error)
+                            } else {
+                                null
+                            },
+                        )
+                        FragmentTextField(
+                            value = interval,
+                            onValueChange = onIntervalChange,
+                            label = stringResource(R.string.settings_fragment_interval),
+                            errorText = if (intervalError) {
+                                stringResource(R.string.settings_fragment_interval_error)
+                            } else {
+                                null
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -158,12 +160,12 @@ private fun FragmentTextField(
             .fillMaxWidth()
             .padding(bottom = 12.dp),
     ) {
-        TextField(
+        SheetTextField(
             value = value,
             onValueChange = onValueChange,
             label = label,
-            singleLine = true,
             modifier = Modifier.fillMaxWidth(),
+            sanitizeInput = ::sanitizeFragmentRangeInput,
         )
         errorText?.let { FragmentStatusText(text = it, error = true) }
     }

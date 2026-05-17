@@ -12,7 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -51,6 +56,11 @@ internal fun StringListEditor(
     validateInput: (String) -> String? = { null },
 ) {
     var input by remember(editorKey, title) { mutableStateOf("") }
+    val inputState = rememberTextFieldState()
+    LaunchedEffect(editorKey, title) {
+        input = ""
+        inputState.clearText()
+    }
     val sanitizedValues = values.sanitizeStringListItems()
     val trimmedInput = input.trim()
     val inputError = when {
@@ -63,6 +73,7 @@ internal fun StringListEditor(
         if (canAddInput) {
             onValuesChange((sanitizedValues + trimmedInput).sanitizeStringListItems())
             input = ""
+            inputState.clearText()
         }
     }
 
@@ -91,12 +102,14 @@ internal fun StringListEditor(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextField(
-                    value = input,
-                    onValueChange = { input = it },
+                    state = inputState,
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    inputTransformation = InputTransformation {
+                        input = asCharSequence().toString()
+                    },
                     insideMargin = DpSize(width = 10.dp, height = 8.dp),
                     cornerRadius = 12.dp,
                     label = inputLabel,
-                    singleLine = true,
                     textStyle = MiuixTheme.textStyles.main.copy(fontSize = 14.sp),
                     modifier = Modifier.weight(1f),
                 )
