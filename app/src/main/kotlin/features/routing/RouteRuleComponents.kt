@@ -1,5 +1,8 @@
 package features.routing
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,22 +18,34 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import app.R
 import engine.network.isIpOrCidrAddress
 import engine.network.isPortList
 import features.routing.model.RouteRule
 import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
@@ -75,69 +90,154 @@ internal fun RouteRuleCard(
     rule: RouteRule,
     outboundLabel: String,
     onToggle: (Boolean) -> Unit,
+    isDragging: Boolean,
+    dragActive: Boolean,
+    visualOffset: Float,
+    draggable: Boolean,
+    onDragStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val animatedDragOffset by animateFloatAsState(
+        targetValue = visualOffset,
+        animationSpec = if (dragActive) {
+            snap()
+        } else {
+            folmeSpring(damping = 0.9f, response = 0.38f)
+        },
+        label = "routeRuleDragOffset",
+    )
+    val animatedScale by animateFloatAsState(
+        targetValue = if (isDragging) 1.025f else 1f,
+        animationSpec = folmeSpring(damping = 0.9f, response = 0.38f),
+        label = "routeRuleDragScale",
+    )
+    val animatedShadowAlpha by animateFloatAsState(
+        targetValue = if (isDragging) 1f else 0f,
+        animationSpec = folmeSpring(damping = 0.9f, response = 0.38f),
+        label = "routeRuleDragShadowAlpha",
+    )
+    val shadowColor = MiuixTheme.colorScheme.primary
+    val hapticFeedback = LocalHapticFeedback.current
+    val dragModifier = if (draggable) {
+        Modifier.pointerInput(Unit) {
+            detectDragGesturesAfterLongPress(
+                onDragStart = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onDragStart()
+                },
+                onDragEnd = onDragEnd,
+                onDragCancel = onDragEnd,
+                onDrag = { change, dragAmount ->
+                    change.consume()
+                    onDrag(dragAmount.y)
+                },
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .padding(bottom = 12.dp),
+            .padding(bottom = 12.dp)
+            .zIndex(if (isDragging) 1f else 0f)
+            .graphicsLayer {
+                translationY = animatedDragOffset
+                scaleX = animatedScale
+                scaleY = animatedScale
+            }
+            .drawRouteRuleDragShadow(
+                alpha = animatedShadowAlpha,
+                color = shadowColor,
+            )
+            .then(dragModifier),
         insideMargin = PaddingValues(16.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = rule.remarks,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "${stringResource(R.string.routing_outbound_tag_label)}: $outboundLabel",
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.primary,
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = rule.remarks,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = "${stringResource(R.string.routing_outbound_tag_label)}: $outboundLabel",
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.primary,
+                    )
+                }
+                Switch(
+                    checked = rule.enabled,
+                    onCheckedChange = onToggle,
                 )
             }
-            Switch(
-                checked = rule.enabled,
-                onCheckedChange = onToggle,
-            )
+            Spacer(Modifier.height(8.dp))
+            RouteRuleLine(label = stringResource(R.string.routing_domain_label), values = rule.domain)
+            RouteRuleLine(label = stringResource(R.string.routing_ip_label), values = rule.ip)
+            RouteRuleLine(label = stringResource(R.string.routing_process_label), values = rule.process)
+            RouteRuleLine(label = stringResource(R.string.routing_port_label), value = rule.port)
+            RouteRuleLine(label = stringResource(R.string.routing_protocol_label), value = rule.protocol)
+            RouteRuleLine(label = stringResource(R.string.routing_network_label), value = rule.network)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        imageVector = MiuixIcons.Edit,
+                        contentDescription = stringResource(R.string.routing_edit),
+                        tint = MiuixTheme.colorScheme.onSurface,
+                    )
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = MiuixIcons.Delete,
+                        contentDescription = stringResource(R.string.routing_delete),
+                        tint = MiuixTheme.colorScheme.onSurface,
+                    )
+                }
+            }
         }
-        Spacer(Modifier.height(8.dp))
-        RouteRuleLine(label = stringResource(R.string.routing_domain_label), values = rule.domain)
-        RouteRuleLine(label = stringResource(R.string.routing_ip_label), values = rule.ip)
-        RouteRuleLine(label = stringResource(R.string.routing_process_label), values = rule.process)
-        RouteRuleLine(label = stringResource(R.string.routing_port_label), value = rule.port)
-        RouteRuleLine(label = stringResource(R.string.routing_protocol_label), value = rule.protocol)
-        RouteRuleLine(label = stringResource(R.string.routing_network_label), value = rule.network)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onEdit) {
-                Icon(
-                    imageVector = MiuixIcons.Edit,
-                    contentDescription = stringResource(R.string.routing_edit),
-                    tint = MiuixTheme.colorScheme.onSurface,
-                )
-            }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    imageVector = MiuixIcons.Delete,
-                    contentDescription = stringResource(R.string.routing_delete),
-                    tint = MiuixTheme.colorScheme.onSurface,
-                )
-            }
-        }
+    }
+}
+
+private fun Modifier.drawRouteRuleDragShadow(
+    alpha: Float,
+    color: Color,
+): Modifier {
+    if (alpha <= 0f) return this
+
+    return drawBehind {
+        val cornerRadius = CardDefaults.CornerRadius.toPx()
+        val spread = 10.dp.toPx()
+
+        drawRoundRect(
+            color = color.copy(alpha = alpha * 0.28f),
+            topLeft = Offset(-spread, -spread),
+            size = Size(
+                width = size.width + spread * 2,
+                height = size.height + spread * 2,
+            ),
+            cornerRadius = CornerRadius(
+                x = cornerRadius + spread,
+                y = cornerRadius + spread,
+            ),
+        )
     }
 }
 
