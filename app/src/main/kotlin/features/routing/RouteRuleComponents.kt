@@ -224,20 +224,27 @@ private fun Modifier.drawRouteRuleDragShadow(
 
     return drawBehind {
         val cornerRadius = CardDefaults.CornerRadius.toPx()
-        val spread = 10.dp.toPx()
+        val maxSpread = 12.dp.toPx()
+        val steps = 12
 
-        drawRoundRect(
-            color = color.copy(alpha = alpha * 0.28f),
-            topLeft = Offset(-spread, -spread),
-            size = Size(
-                width = size.width + spread * 2,
-                height = size.height + spread * 2,
-            ),
-            cornerRadius = CornerRadius(
-                x = cornerRadius + spread,
-                y = cornerRadius + spread,
-            ),
-        )
+        for (step in steps downTo 1) {
+            val progress = step / steps.toFloat()
+            val spread = maxSpread * progress
+            val layerAlpha = alpha * 0.035f * (1f - (step - 1f) / steps)
+
+            drawRoundRect(
+                color = color.copy(alpha = layerAlpha),
+                topLeft = Offset(-spread, -spread),
+                size = Size(
+                    width = size.width + spread * 2,
+                    height = size.height + spread * 2,
+                ),
+                cornerRadius = CornerRadius(
+                    x = cornerRadius + spread,
+                    y = cornerRadius + spread,
+                ),
+            )
+        }
     }
 }
 
