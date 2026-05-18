@@ -46,6 +46,18 @@ abstract class GenerateAboutLibrariesJsonTask : DefaultTask() {
         }
         val dependencyBucketSuffixes = listOf("api", "implementation", "compileonly", "runtimeonly")
         val libraryOverrides = mapOf(
+            "com.github.2dust:libv2ray" to
+                { version: String ->
+                    library(
+                        "github:2dust/AndroidLibXrayLite",
+                        version,
+                        "AndroidLibXrayLite",
+                        "Android AAR wrapper for Xray-core, built with gomobile.",
+                        "https://github.com/2dust/AndroidLibXrayLite",
+                        "https://github.com/2dust/AndroidLibXrayLite",
+                        listOf("LGPL-3.0"),
+                    )
+                },
             "com.github.topjohnwu.libsu:core" to
                 { version: String ->
                     library(
@@ -129,7 +141,10 @@ abstract class GenerateAboutLibrariesJsonTask : DefaultTask() {
 
         val libraries = (gradleLibraries + bundledRuntimeLibraries)
             .distinctBy { it["uniqueId"] }
-            .sortedBy { it["uniqueId"] as String }
+            .sortedWith(
+                compareBy<Map<String, Any?>> { (it["name"] as String).lowercase() }
+                    .thenBy { it["uniqueId"] as String },
+            )
 
         outputFile.get().asFile.apply {
             parentFile.mkdirs()
