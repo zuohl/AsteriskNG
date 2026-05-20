@@ -96,11 +96,7 @@ internal fun FragmentSettingsBottomSheet(
         defaultWindowInsetsPadding = false,
     ) {
         key(show) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-            ) {
+            SettingsSheetContent {
                 FragmentStatusText(stringResource(R.string.settings_fragment_description))
                 SwitchPreference(
                     title = stringResource(R.string.settings_fragment_enabled),

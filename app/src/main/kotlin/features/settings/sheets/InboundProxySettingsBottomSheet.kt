@@ -5,7 +5,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -62,11 +61,7 @@ internal fun ProxySettingsBottomSheet(
         defaultWindowInsetsPadding = false,
     ) {
         key(show) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-            ) {
+            SettingsSheetContent {
                 ProxyPortTextField(
                     value = transparentProxyPort,
                     onValueChange = onTransparentProxyPortChange,

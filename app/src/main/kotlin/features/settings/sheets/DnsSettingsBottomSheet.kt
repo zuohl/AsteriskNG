@@ -5,22 +5,20 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.R
-import ui.components.StringListEditor
-import ui.components.sanitizeStringListItems
 import engine.network.isIpAddress
-import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import ui.components.StringListEditor
+import ui.components.sanitizeStringListItems
 
 
 private const val DnsHostSeparator = ':'
@@ -96,11 +94,7 @@ internal fun DnsSettingsBottomSheet(
         onDismissRequest = onDismissRequest,
         defaultWindowInsetsPadding = false,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-        ) {
+        SettingsSheetContent {
             SwitchPreference(
                 title = stringResource(R.string.settings_vpn_local_dns),
                 summary = stringResource(R.string.settings_vpn_local_dns_summary),

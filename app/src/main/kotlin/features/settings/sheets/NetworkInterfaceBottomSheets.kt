@@ -1,6 +1,5 @@
 package features.settings.sheets
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -157,11 +156,7 @@ internal fun ExternalInterfacesBottomSheet(
         onDismissRequest = onDismissRequest,
         defaultWindowInsetsPadding = false,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-        ) {
+        SettingsSheetContent {
             SheetStatusText(stringResource(R.string.settings_external_interfaces_summary))
             ExternalInterfaceGroups.forEach { group ->
                 val sanitizedSelection = selectedInterfaces.sanitizeExternalInterfaces()
@@ -256,11 +251,7 @@ private fun InterfaceSelectionBottomSheet(
         onDismissRequest = onDismissRequest,
         defaultWindowInsetsPadding = false,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-        ) {
+        SettingsSheetContent {
             SheetStatusText(description)
             if (loading && loadingMessage != null) {
                 SheetStatusText(loadingMessage)

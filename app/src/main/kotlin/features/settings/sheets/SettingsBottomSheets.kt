@@ -1,14 +1,9 @@
 package features.settings.sheets
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
-import androidx.compose.ui.Modifier
-import app.R
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import app.R
 import engine.network.isCidrAddress
 import engine.network.isIpAddress
 import engine.vpn.VpnDefaults
@@ -88,11 +83,7 @@ internal fun VpnSettingsBottomSheet(
         defaultWindowInsetsPadding = false,
     ) {
         key(show) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-            ) {
+            SettingsSheetContent {
                 SettingsTextField(
                     value = mtu,
                     onValueChange = onMtuChange,
