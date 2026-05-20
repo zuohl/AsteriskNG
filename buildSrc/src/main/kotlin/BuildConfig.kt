@@ -11,7 +11,7 @@ object ProjectConfig {
     const val VERSION_NAME = "1.0.0-beta3"
     const val PACKAGE_NAME = "org.asterisk.zcc.ang"
     const val XRAY_CORE_VERSION = "v26.5.9"
-    const val ANDROID_LIB_XRAY_LITE_VERSION = XRAY_CORE_VERSION
+    const val ANDROID_LIB_XRAY_LITE_VERSION = "v26.5.19"
     const val TARGET_SDK = 37
     const val MIN_SDK = 24
     val SUPPORTED_ANDROID_ABIS = listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
