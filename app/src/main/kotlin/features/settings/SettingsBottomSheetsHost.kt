@@ -133,6 +133,7 @@ internal fun SettingsBottomSheetsHost(
         enableVpnLocalDns = sheetState.dnsSettingsDraft.enableVpnLocalDns,
         forceEnableLocalDns = appState.runMode == RunModeTproxy,
         enableFakeDns = sheetState.dnsSettingsDraft.enableFakeDns,
+        enableResolveProxyServerDomain = sheetState.dnsSettingsDraft.enableResolveProxyServerDomain,
         proxyDns = sheetState.dnsSettingsDraft.proxyDns,
         directDns = sheetState.dnsSettingsDraft.directDns,
         directDnsDomains = sheetState.dnsSettingsDraft.directDnsDomains,
@@ -147,6 +148,9 @@ internal fun SettingsBottomSheetsHost(
         onEnableFakeDnsChange = {
             sheetState.dnsSettingsDraft = sheetState.dnsSettingsDraft.copy(enableFakeDns = it)
         },
+        onEnableResolveProxyServerDomainChange = {
+            sheetState.dnsSettingsDraft = sheetState.dnsSettingsDraft.copy(enableResolveProxyServerDomain = it)
+        },
         onProxyDnsChange = { sheetState.dnsSettingsDraft = sheetState.dnsSettingsDraft.copy(proxyDns = it) },
         onDirectDnsChange = { sheetState.dnsSettingsDraft = sheetState.dnsSettingsDraft.copy(directDns = it) },
         onDirectDnsDomainsChange = {
@@ -159,11 +163,12 @@ internal fun SettingsBottomSheetsHost(
         },
         onDnsHostsChange = { sheetState.dnsSettingsDraft = sheetState.dnsSettingsDraft.copy(dnsHosts = it) },
         onDismissRequest = { sheetState.showDnsSettings = false },
-        onSave = { enableVpnLocalDns, enableFakeDns, proxyDns, directDns, directDnsDomains, enableDirectDnsForProxyServerDomains, dnsHosts ->
+        onSave = { enableVpnLocalDns, enableFakeDns, enableResolveProxyServerDomain, proxyDns, directDns, directDnsDomains, enableDirectDnsForProxyServerDomains, dnsHosts ->
             updateAppState { state ->
                 state.copy(
                     enableVpnLocalDns = enableVpnLocalDns,
                     enableFakeDns = enableFakeDns,
+                    enableResolveProxyServerDomain = enableResolveProxyServerDomain,
                     proxyDns = proxyDns,
                     directDns = directDns,
                     directDnsDomains = directDnsDomains,

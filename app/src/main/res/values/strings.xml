@@ -206,6 +206,7 @@
     <string name="settings_direct_dns_domains_input">Domain rule</string>
     <string name="settings_direct_dns_domains_empty">No direct DNS domain rules added</string>
     <string name="settings_direct_dns_resolve_proxy_server_domains">Use direct DNS to resolve proxy servers</string>
+    <string name="settings_direct_dns_resolve_proxy_server_domains_summary">Add proxy server domains to the direct DNS domain list</string>
     <string name="settings_dns_domain_invalid">Invalid DNS domain rule</string>
     <string name="settings_dns_hosts">DNS hosts</string>
     <string name="settings_dns_hosts_format">Format: domain:address1,address2,...</string>

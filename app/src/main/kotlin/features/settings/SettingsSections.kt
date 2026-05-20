@@ -157,12 +157,10 @@ internal fun SettingsCoreSection(
 internal fun SettingsAdvancedSection(
     enableIpv6: Boolean,
     enableIpv6Prefer: Boolean,
-    enableResolveProxyServerDomain: Boolean,
     runModeOptions: List<String>,
     runMode: Int,
     onEnableIpv6Change: (Boolean) -> Unit,
     onEnableIpv6PreferChange: (Boolean) -> Unit,
-    onEnableResolveProxyServerDomainChange: (Boolean) -> Unit,
     onRunModeChange: (Int) -> Unit,
 ) {
     SmallTitle(text = stringResource(R.string.settings_advanced))
@@ -185,12 +183,6 @@ internal fun SettingsAdvancedSection(
                 onCheckedChange = onEnableIpv6PreferChange,
             )
         }
-        SwitchPreference(
-            title = stringResource(R.string.settings_resolve_proxy_server_domain),
-            summary = stringResource(R.string.settings_resolve_proxy_server_domain_summary),
-            checked = enableResolveProxyServerDomain,
-            onCheckedChange = onEnableResolveProxyServerDomainChange,
-        )
         OverlayDropdownPreference(
             title = stringResource(R.string.settings_run_mode),
             items = runModeOptions,

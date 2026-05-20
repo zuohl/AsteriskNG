@@ -41,6 +41,7 @@ internal fun DnsSettingsBottomSheet(
     enableVpnLocalDns: Boolean,
     forceEnableLocalDns: Boolean,
     enableFakeDns: Boolean,
+    enableResolveProxyServerDomain: Boolean,
     onEnableVpnLocalDnsChange: (Boolean) -> Unit,
     proxyDns: List<String>,
     directDns: List<String>,
@@ -48,13 +49,14 @@ internal fun DnsSettingsBottomSheet(
     enableDirectDnsForProxyServerDomains: Boolean,
     dnsHosts: List<String>,
     onEnableFakeDnsChange: (Boolean) -> Unit,
+    onEnableResolveProxyServerDomainChange: (Boolean) -> Unit,
     onProxyDnsChange: (List<String>) -> Unit,
     onDirectDnsChange: (List<String>) -> Unit,
     onDirectDnsDomainsChange: (List<String>) -> Unit,
     onEnableDirectDnsForProxyServerDomainsChange: (Boolean) -> Unit,
     onDnsHostsChange: (List<String>) -> Unit,
     onDismissRequest: () -> Unit,
-    onSave: (Boolean, Boolean, List<String>, List<String>, List<String>, Boolean, List<String>) -> Unit,
+    onSave: (Boolean, Boolean, Boolean, List<String>, List<String>, List<String>, Boolean, List<String>) -> Unit,
 ) {
     val proxyDnsEntries = proxyDns.sanitizeDnsServerEntries()
     val directDnsEntries = directDns.sanitizeDnsServerEntries()
@@ -81,6 +83,7 @@ internal fun DnsSettingsBottomSheet(
                     onSave(
                         enableVpnLocalDns,
                         effectiveFakeDnsEnabled,
+                        enableResolveProxyServerDomain,
                         proxyDnsEntries,
                         directDnsEntries,
                         directDnsDomainEntries,
@@ -121,7 +124,14 @@ internal fun DnsSettingsBottomSheet(
                 )
             }
             SwitchPreference(
+                title = stringResource(R.string.settings_resolve_proxy_server_domain),
+                summary = stringResource(R.string.settings_resolve_proxy_server_domain_summary),
+                checked = enableResolveProxyServerDomain,
+                onCheckedChange = onEnableResolveProxyServerDomainChange,
+            )
+            SwitchPreference(
                 title = stringResource(R.string.settings_direct_dns_resolve_proxy_server_domains),
+                summary = stringResource(R.string.settings_direct_dns_resolve_proxy_server_domains_summary),
                 checked = enableDirectDnsForProxyServerDomains,
                 onCheckedChange = onEnableDirectDnsForProxyServerDomainsChange,
             )

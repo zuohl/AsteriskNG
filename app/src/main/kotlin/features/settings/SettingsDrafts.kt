@@ -59,6 +59,7 @@ internal fun AppState.toLocalProxySettingsDraft(): LocalProxySettingsDraft {
 internal data class DnsSettingsDraft(
     val enableVpnLocalDns: Boolean = true,
     val enableFakeDns: Boolean = false,
+    val enableResolveProxyServerDomain: Boolean = false,
     val proxyDns: List<String> = emptyList(),
     val directDns: List<String> = emptyList(),
     val directDnsDomains: List<String> = emptyList(),
@@ -70,6 +71,7 @@ internal fun AppState.toDnsSettingsDraft(): DnsSettingsDraft {
     return DnsSettingsDraft(
         enableVpnLocalDns = enableVpnLocalDns,
         enableFakeDns = effectiveFakeDnsEnabled,
+        enableResolveProxyServerDomain = enableResolveProxyServerDomain,
         proxyDns = proxyDns,
         directDns = directDns,
         directDnsDomains = directDnsDomains,

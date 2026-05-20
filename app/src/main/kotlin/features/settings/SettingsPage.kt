@@ -205,7 +205,6 @@ private fun SettingsContent(
                 SettingsAdvancedSection(
                     enableIpv6 = appState.enableIpv6,
                     enableIpv6Prefer = appState.enableIpv6Prefer,
-                    enableResolveProxyServerDomain = appState.enableResolveProxyServerDomain,
                     runModeOptions = runModeOptions,
                     runMode = appState.runMode,
                     onEnableIpv6Change = { enabled ->
@@ -213,9 +212,6 @@ private fun SettingsContent(
                     },
                     onEnableIpv6PreferChange = { enabled ->
                         updateAppState { state -> state.copy(enableIpv6Prefer = enabled) }
-                    },
-                    onEnableResolveProxyServerDomainChange = { enabled ->
-                        updateAppState { state -> state.copy(enableResolveProxyServerDomain = enabled) }
                     },
                     onRunModeChange = { index ->
                         if (index != appState.runMode && !runModeSwitchInProgress) {

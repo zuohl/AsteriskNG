@@ -64,7 +64,7 @@
     <string name="settings_run_mode_vpn_service">VPN Service</string>
     <string name="settings_run_mode_tproxy">TPROXY（ROOT）</string>
     <string name="settings_resolve_proxy_server_domain">解析节点域名</string>
-    <string name="settings_resolve_proxy_server_domain_summary">将代理节点的域名解析为IP并添加到DNS hosts</string>
+    <string name="settings_resolve_proxy_server_domain_summary">解析代理节点 IP 并添加到 DNS hosts</string>
     <string name="settings_tproxy_root_required">获取ROOT权限失败！</string>
     <string name="settings_proxy_tproxy">代理设置（TPROXY）</string>
     <string name="settings_proxy_vpn_service">代理设置（VPN Service）</string>
@@ -205,7 +205,8 @@
     <string name="settings_direct_dns_domains">直连 DNS 适用域名</string>
     <string name="settings_direct_dns_domains_input">域名规则</string>
     <string name="settings_direct_dns_domains_empty">还没有添加直连 DNS 适用域名</string>
-    <string name="settings_direct_dns_resolve_proxy_server_domains">使用直连 DNS 解析代理节点</string>
+    <string name="settings_direct_dns_resolve_proxy_server_domains">使用直连 DNS 解析节点</string>
+    <string name="settings_direct_dns_resolve_proxy_server_domains_summary">将代理节点域名添加到直连 DNS 适用域名列表</string>
     <string name="settings_dns_domain_invalid">无效 DNS 域名规则</string>
     <string name="settings_dns_hosts">DNS hosts</string>
     <string name="settings_dns_hosts_format">格式：域名:地址1,地址2,...</string>
