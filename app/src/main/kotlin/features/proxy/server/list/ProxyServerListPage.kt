@@ -1,19 +1,10 @@
 package features.proxy.server.list
 
-import app.LocalAppStateStore
-import app.LocalAppServices
-import app.LocalIsWideScreen
-import app.LocalNavigator
-import app.LocalUpdateAppState
-import app.ProxyServerState
-import app.R
-import app.collectProxyServerListState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -31,13 +22,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import features.subscription.DefaultSubscriptionGroupId
+import app.LocalAppServices
+import app.LocalAppStateStore
+import app.LocalIsWideScreen
+import app.LocalNavigator
+import app.LocalUpdateAppState
+import app.ProxyServerState
+import app.R
+import app.collectProxyServerListState
 import engine.proxy.latency.ProxyServerLatencyTestMode
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.restartProxyServiceAfterSelection
 import features.proxy.server.usecase.runProxyServerLatencyTest
+import features.subscription.DefaultSubscriptionGroupId
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import ui.layout.pageContentPaddingWithCutout
@@ -97,12 +98,26 @@ fun ProxyServerListPage(
     fun restartProxyServiceSilently(serverId: Int) {
         restartProxyServiceAfterSelection(
             serverId = serverId,
-            scope = scope,
+            scope = services.appScope,
             serviceRestartMutex = serviceRestartMutex,
             stateStore = stateStore,
             proxyEngine = proxyEngine,
             updateAppState = updateAppState,
         )
+    }
+
+    LaunchedEffect(stateStore, proxyEngine) {
+        var previousServerId = stateStore.state.value.selectedProxyServerId
+        stateStore.state
+            .map { state -> state.selectedProxyServerId }
+            .distinctUntilChanged()
+            .collect { serverId ->
+                if (serverId == previousServerId) {
+                    return@collect
+                }
+                previousServerId = serverId
+                restartProxyServiceSilently(serverId)
+            }
     }
 
     fun testProxyServerLatency(
@@ -239,7 +254,6 @@ fun ProxyServerListPage(
                 topAppBarScrollBehavior = topAppBarScrollBehavior,
                 listPadding = listPadding,
                 contentPadding = contentPadding,
-                stateStore = stateStore,
                 updateAppState = updateAppState,
                 navigator = navigator,
                 clipboard = clipboard,
@@ -248,7 +262,6 @@ fun ProxyServerListPage(
                 messages = messages,
                 resultKey = ProxyServerEditResultKey,
                 onSelectedServerIdChange = { selectedServerId = it },
-                onRestartProxyServiceSilently = ::restartProxyServiceSilently,
             )
             ProxyServerListFloatingToolbar(
                 running = proxyRunning,

@@ -24,7 +24,6 @@ import kotlinx.coroutines.launch
 import features.proxy.server.model.getUrlOrNull
 import app.navigation.Navigator
 import app.navigation.Route
-import data.AndroidAppStateStore
 import ui.feedback.AndroidToastTipNotifier
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
@@ -46,7 +45,6 @@ internal fun ProxyServerListPager(
     topAppBarScrollBehavior: ScrollBehavior,
     listPadding: PaddingValues,
     contentPadding: PaddingValues,
-    stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     navigator: Navigator,
     clipboard: Clipboard,
@@ -55,7 +53,6 @@ internal fun ProxyServerListPager(
     messages: ProxyServerListMessages,
     resultKey: String,
     onSelectedServerIdChange: (Int) -> Unit,
-    onRestartProxyServiceSilently: (Int) -> Unit,
 ) {
     HorizontalPager(
         state = groupPagerState,
@@ -99,7 +96,6 @@ internal fun ProxyServerListPager(
                             unknownGroupName = unknownGroupName,
                             itemTextFormatter = itemTextFormatter,
                             groupState = groupState,
-                            stateStore = stateStore,
                             updateAppState = updateAppState,
                             navigator = navigator,
                             clipboard = clipboard,
@@ -108,7 +104,6 @@ internal fun ProxyServerListPager(
                             messages = messages,
                             resultKey = resultKey,
                             onSelectedServerIdChange = onSelectedServerIdChange,
-                            onRestartProxyServiceSilently = onRestartProxyServiceSilently,
                         )
                     }
                 }
@@ -131,7 +126,6 @@ private fun ProxyServerListItem(
     unknownGroupName: String,
     itemTextFormatter: ProxyServerListItemTextFormatter,
     groupState: ProxyServerListGroups,
-    stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     navigator: Navigator,
     clipboard: Clipboard,
@@ -140,7 +134,6 @@ private fun ProxyServerListItem(
     messages: ProxyServerListMessages,
     resultKey: String,
     onSelectedServerIdChange: (Int) -> Unit,
-    onRestartProxyServiceSilently: (Int) -> Unit,
 ) {
     ProxyServerListItemCard(
         server = server,
@@ -152,8 +145,6 @@ private fun ProxyServerListItem(
             null
         },
         onSelect = {
-            val shouldRestart = stateStore.state.value.proxyRunning &&
-                stateStore.state.value.selectedProxyServerId != server.id
             onSelectedServerIdChange(server.id)
             updateAppState { state ->
                 if (state.selectedProxyServerId == server.id) {
@@ -161,9 +152,6 @@ private fun ProxyServerListItem(
                 } else {
                     state.copy(selectedProxyServerId = server.id)
                 }
-            }
-            if (shouldRestart) {
-                onRestartProxyServiceSilently(server.id)
             }
         },
         onShare = {

@@ -14,6 +14,7 @@ import features.resources.ResourceFileUseCase
 import features.settings.usecase.SwitchRunModeUseCase
 import features.settings.usecase.TproxyBootScriptUseCase
 import features.subscription.SubscriptionFetchUseCase
+import kotlinx.coroutines.CoroutineScope
 import system.AndroidNetworkInterfaceProvider
 import system.AndroidPackageProvider
 import system.AndroidRootShellGateway
@@ -21,6 +22,7 @@ import system.AndroidUserSpaceProvider
 import ui.feedback.AndroidToastTipNotifier
 
 internal data class AppServices(
+    val appScope: CoroutineScope,
     val proxyEngine: AndroidProxyEngine,
     val rootAccess: AndroidRootShellGateway,
     val userSpaces: AndroidUserSpaceProvider,

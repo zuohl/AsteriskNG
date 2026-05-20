@@ -3,6 +3,7 @@
 .gradle
 **/build/
 **/release/
+**/debug/
 xcuserdata
 !src/**/build/
 local.properties
