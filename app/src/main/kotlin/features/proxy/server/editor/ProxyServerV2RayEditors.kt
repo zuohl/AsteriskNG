@@ -103,9 +103,9 @@ internal fun LazyListScope.vmessProxyServer(vmessEdit: VMess) {
             modifier = Modifier
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 12.dp),
-            selectedIndex = encryption.value,
+            selectedIndex = encryption.intValue,
             onSelectedIndexChange = { newEncryption ->
-                encryption.value = newEncryption
+                encryption.intValue = newEncryption
                 vmessEdit.encryption = encryptionOptions[newEncryption]
             },
         )
@@ -255,9 +255,9 @@ internal fun LazyListScope.vlessProxyServer(vlessEdit: VLESS) {
             modifier = Modifier
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 12.dp),
-            selectedIndex = flow.value,
+            selectedIndex = flow.intValue,
             onSelectedIndexChange = { newFlow ->
-                flow.value = newFlow
+                flow.intValue = newFlow
                 vlessEdit.flow = flowOptions[newFlow]
             },
         )

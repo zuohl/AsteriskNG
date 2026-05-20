@@ -1,9 +1,9 @@
 package features.logs
 
 import android.content.Context
+import android.util.Base64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.util.Base64
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object AndroidLogcatRepository : InMemoryCoreLogRepository() {
@@ -83,11 +83,11 @@ private fun decodeLogLine(id: Long, line: String): CoreLogEntry? {
 }
 
 private fun String.encodeBase64(): String {
-    return Base64.getEncoder().encodeToString(toByteArray(Charsets.UTF_8))
+    return Base64.encodeToString(toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
 }
 
 private fun String.decodeBase64(): String? {
     return runCatching {
-        String(Base64.getDecoder().decode(this), Charsets.UTF_8)
+        String(Base64.decode(this, Base64.NO_WRAP), Charsets.UTF_8)
     }.getOrNull()
 }

@@ -261,9 +261,9 @@ internal fun LazyListScope.shadowsocksProxyServer(ssEdit: Shadowsocks) {
             modifier = Modifier
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 12.dp),
-            selectedIndex = method.value,
+            selectedIndex = method.intValue,
             onSelectedIndexChange = { newMethod ->
-                method.value = newMethod
+                method.intValue = newMethod
                 ssEdit.method = methodOptions[newMethod]
             },
         )

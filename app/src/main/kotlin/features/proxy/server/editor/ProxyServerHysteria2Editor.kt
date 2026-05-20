@@ -168,15 +168,15 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
             modifier = Modifier
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 12.dp),
-            selectedIndex = security.value,
+            selectedIndex = security.intValue,
             onSelectedIndexChange = { newSecurity ->
-                security.value = newSecurity
+                security.intValue = newSecurity
                 hy2Edit.security = securityOptions[newSecurity]
             },
         )
         //tls
         AnimatedVisibility(
-            visible = security.value == 1,
+            visible = security.intValue == 1,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {
@@ -201,12 +201,12 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
                 OverlayDropdownPreference(
                     title = stringResource(R.string.proxy_editor_allow_insecure),
                     items = allowInsecureOptions,
-                    selectedIndex = allowInsecure.value,
+                    selectedIndex = allowInsecure.intValue,
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .padding(bottom = 12.dp),
                     onSelectedIndexChange = { newOption ->
-                        allowInsecure.value = newOption
+                        allowInsecure.intValue = newOption
                         hy2Edit.insecure = newOption
                     },
                 )

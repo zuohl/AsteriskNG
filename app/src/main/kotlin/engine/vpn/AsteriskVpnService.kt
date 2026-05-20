@@ -1,25 +1,28 @@
 package engine.vpn
 
+import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.ProxyInfo
 import android.net.VpnService
+import android.os.Build
 import android.os.ParcelFileDescriptor
+import app.R
 import app.modes.ProxyAppListModeBlacklist
 import app.modes.ProxyAppListModeGlobal
 import app.modes.ProxyAppListModeWhitelist
-import app.R
-import features.logs.AndroidAppLogger
-import features.logs.CoreLogFileTailer
+import engine.network.NetworkDefaults
 import engine.xray.clearCoreLogs
 import engine.xray.startCoreLogTailers
-import system.getInstalledApplicationsCompat
-import engine.network.NetworkDefaults
+import features.logs.AndroidAppLogger
+import features.logs.CoreLogFileTailer
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.withTimeout
+import system.getInstalledApplicationsCompat
 
+@SuppressLint("VpnServicePolicy")
 class AsteriskVpnService : VpnService() {
     private var tunFileDescriptor: ParcelFileDescriptor? = null
     private var logFileTailers: List<CoreLogFileTailer> = emptyList()
@@ -28,7 +31,7 @@ class AsteriskVpnService : VpnService() {
         when (intent?.action) {
             AsteriskVpnServiceIntents.ACTION_STOP -> {
                 stopVpn()
-                stopSelf()
+                stopSelf(startId)
             }
 
             AsteriskVpnServiceIntents.ACTION_START -> {
@@ -77,7 +80,10 @@ class AsteriskVpnService : VpnService() {
             .setSession(config.sessionName)
             .setMtu(config.mtu)
             .addAddress(config.ipv4Address, config.ipv4PrefixLength)
-            .setMetered(false)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            builder.setMetered(false)
+        }
 
         if (config.enableIpv6 && config.ipv6Address != null) {
             builder
@@ -133,7 +139,7 @@ class AsteriskVpnService : VpnService() {
     }
 
     private fun Builder.applyAppendHttpProxy(config: VpnServiceStartConfig): Builder {
-        if (config.appendHttpProxyOptions.enabled) {
+        if (config.appendHttpProxyOptions.enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             setHttpProxy(ProxyInfo.buildDirectProxy(LocalProxyLoopbackAddress, config.appendHttpProxyOptions.port))
             AndroidAppLogger.info(
                 LogTag,

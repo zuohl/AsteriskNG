@@ -68,7 +68,7 @@ fun ProxyServerListPage(
     val serviceRestartMutex = remember { Mutex() }
 
     var searchValue by rememberSaveable { mutableStateOf("") }
-    var selectedGroupId by rememberSaveable { mutableStateOf(DefaultSubscriptionGroupId) }
+    var selectedGroupId by rememberSaveable { mutableIntStateOf(DefaultSubscriptionGroupId) }
     var serviceOperationInProgress by rememberSaveable { mutableStateOf(false) }
     val servers = proxyListState.proxyServers
     var selectedServerId by rememberSaveable { mutableIntStateOf(proxyListState.selectedProxyServerId) }

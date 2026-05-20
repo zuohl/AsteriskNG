@@ -7,10 +7,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import data.AndroidAppStateStore
 
 data class AppChromeState(
@@ -47,18 +46,18 @@ fun AndroidAppStateStore.collectAppState(): State<AppState> {
 
 @Composable
 fun AndroidAppStateStore.collectAppChromeState(): State<AppChromeState> {
-    val flow = remember(this) {
-        state.map { appState -> appState.toAppChromeState() }.distinctUntilChanged()
+    val appState = state.collectAsState()
+    return remember {
+        derivedStateOf { appState.value.toAppChromeState() }
     }
-    return flow.collectAsState(initial = state.value.toAppChromeState())
 }
 
 @Composable
 fun AndroidAppStateStore.collectProxyServerListState(): State<ProxyServerListState> {
-    val flow = remember(this) {
-        state.map { appState -> appState.toProxyServerListState() }.distinctUntilChanged()
+    val appState = state.collectAsState()
+    return remember {
+        derivedStateOf { appState.value.toProxyServerListState() }
     }
-    return flow.collectAsState(initial = state.value.toProxyServerListState())
 }
 
 private fun AppState.toAppChromeState(): AppChromeState {

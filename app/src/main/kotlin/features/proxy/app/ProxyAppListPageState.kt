@@ -6,6 +6,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
@@ -43,7 +44,7 @@ internal class ProxyAppListPageState {
     var appPackages by mutableStateOf<List<AppPackageEntry>>(emptyList())
     var loadingApps by mutableStateOf(false)
     var loadedPackageFilterKey by mutableStateOf<Pair<Boolean, Boolean>?>(null)
-    var refreshSeed by mutableStateOf(0)
+    var refreshSeed by mutableIntStateOf(0)
     var preparedAppListData by mutableStateOf(ProxyAppListPreparedData.Empty)
     var userTabs by mutableStateOf(emptyList<ProxyAppListUserSpaceTabUi>())
     var searchValue by mutableStateOf("")

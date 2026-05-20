@@ -6,7 +6,6 @@ package system
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.os.Process
-import android.os.UserManager
 import features.logs.AndroidAppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -103,10 +102,9 @@ internal class AndroidPackageRepository(
 
 internal fun Context.currentAndroidUser(): AndroidUser {
     val userId = Process.myUid().toAndroidUserId()
-    val userManager = getSystemService(Context.USER_SERVICE) as UserManager
     return AndroidUser(
         id = userId,
-        name = userManager.userName.ifBlank { "User $userId" },
+        name = "User $userId",
     )
 }
 

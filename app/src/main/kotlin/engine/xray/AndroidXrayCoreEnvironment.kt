@@ -1,5 +1,6 @@
 package engine.xray
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.provider.Settings
 import android.util.Base64
@@ -21,6 +22,7 @@ internal fun Context.initializeAndroidXrayCoreEnvironment(dataDir: String) {
     }
 }
 
+@SuppressLint("HardwareIds")
 private fun Context.xrayCoreBaseKey(): String {
     val deviceId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
         .orEmpty()

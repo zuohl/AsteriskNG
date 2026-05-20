@@ -1,5 +1,6 @@
 package features.subscription.runtime
 
+import android.util.Base64
 import features.subscription.DefaultSubscriptionUserAgent
 import engine.vpn.LocalProxyLoopbackAddress
 import engine.vpn.VpnLocalProxyRuntime
@@ -12,7 +13,6 @@ import java.net.PasswordAuthentication
 import java.net.Proxy
 import java.net.URI
 import java.net.URL
-import java.util.Base64
 
 internal class AndroidSubscriptionFetcher {
     fun fetch(
@@ -137,7 +137,7 @@ private fun HttpURLConnection.setEmbeddedBasicAuth(rawUrl: String) {
     val parts = userInfo.split(":", limit = 2)
     val user = parts.getOrElse(0) { "" }
     val password = parts.getOrElse(1) { "" }
-    val token = Base64.getEncoder().encodeToString("$user:$password".toByteArray())
+    val token = Base64.encodeToString("$user:$password".toByteArray(), Base64.NO_WRAP)
     setRequestProperty("Authorization", "Basic $token")
 }
 

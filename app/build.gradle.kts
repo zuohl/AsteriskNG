@@ -1,3 +1,4 @@
+@file:Suppress("UnstableApiUsage")
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
@@ -24,6 +25,12 @@ android {
         localeFilters += listOf("en", "zh-rCN")
     }
 
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+
     buildFeatures {
         compose = true
     }
@@ -40,7 +47,6 @@ android {
     buildTypes {
         debug {
             isMinifyEnabled = false
-            isShrinkResources = false
         }
 
         release {
@@ -77,6 +83,12 @@ android {
         }
     }
 
+    lint {
+        disable += setOf(
+            "ChromeOsAbiSupport",
+            "IconLauncherShape",
+        )
+    }
 }
 
 tasks.named("preBuild") {
@@ -92,6 +104,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.coil)
     implementation(libs.coil.compose)
+    //noinspection UseTomlInstead
     implementation("com.github.2dust:libv2ray:${ProjectConfig.ANDROID_LIB_XRAY_LITE_VERSION}@aar")
     implementation(project(":setuidgid"))
     implementation(libs.ktor.http)

@@ -15,12 +15,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.R
-import features.proxy.server.model.HTTP
 import features.proxy.server.model.V2RayParameters
-import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
@@ -56,16 +55,16 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         OverlayDropdownPreference(
             title = stringResource(R.string.proxy_editor_transport_type),
             items = typeOptions,
-            selectedIndex = type.value,
+            selectedIndex = type.intValue,
             modifier = Modifier.padding(horizontal = 12.dp),
             onSelectedIndexChange = { newType ->
-                type.value = newType
+                type.intValue = newType
                 params.type = typeOptions[newType]
             },
         )
         //tcp
         AnimatedVisibility(
-            visible = type.value == 0,
+            visible = type.intValue == 0,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {
@@ -82,17 +81,17 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                 OverlayDropdownPreference(
                     title = stringResource(R.string.proxy_editor_header_type),
                     items = headerTypeOptions,
-                    selectedIndex = headerType.value,
+                    selectedIndex = headerType.intValue,
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .padding(bottom = 12.dp),
                     onSelectedIndexChange = { newHeaderType ->
-                        headerType.value = newHeaderType
+                        headerType.intValue = newHeaderType
                         params.headerType = headerTypeOptions[newHeaderType]
                     },
                 )
                 TextField(
-                    enabled = headerType.value != 0,
+                    enabled = headerType.intValue != 0,
                     label = "http host",
                     state = rememberTextFieldState(initialText = params.host ?: ""),
                     lineLimits = TextFieldLineLimits.SingleLine,
@@ -109,7 +108,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         }
         //kcp
         AnimatedVisibility(
-            visible = type.value == 1,
+            visible = type.intValue == 1,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {
@@ -153,7 +152,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         }
         //ws
         AnimatedVisibility(
-            visible = type.value == 2,
+            visible = type.intValue == 2,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {
@@ -189,7 +188,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         }
         //httpupgrade
         AnimatedVisibility(
-            visible = type.value == 3,
+            visible = type.intValue == 3,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {
@@ -225,7 +224,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         }
         //xhttp
         AnimatedVisibility(
-            visible = type.value == 4,
+            visible = type.intValue == 4,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {
@@ -242,12 +241,12 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                 OverlayDropdownPreference(
                     title = stringResource(R.string.proxy_editor_xhttp_mode),
                     items = modeOptions,
-                    selectedIndex = mode.value,
+                    selectedIndex = mode.intValue,
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .padding(bottom = 12.dp),
                     onSelectedIndexChange = { newMode ->
-                        mode.value = newMode
+                        mode.intValue = newMode
                         params.mode = modeOptions[newMode]
                     },
                 )
@@ -294,7 +293,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         }
         //grpc
         AnimatedVisibility(
-            visible = type.value == 5,
+            visible = type.intValue == 5,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {
@@ -311,12 +310,12 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                 OverlayDropdownPreference(
                     title = stringResource(R.string.proxy_editor_grpc_mode),
                     items = modeOptions,
-                    selectedIndex = mode.value,
+                    selectedIndex = mode.intValue,
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .padding(bottom = 12.dp),
                     onSelectedIndexChange = { newMode ->
-                        mode.value = newMode
+                        mode.intValue = newMode
                         params.mode = modeOptions[newMode]
                     },
                 )
@@ -404,15 +403,15 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
             modifier = Modifier
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 12.dp),
-            selectedIndex = security.value,
+            selectedIndex = security.intValue,
             onSelectedIndexChange = { newSecurity ->
-                security.value = newSecurity
+                security.intValue = newSecurity
                 params.security = securityOptions[newSecurity]
             },
         )
         //tls
         AnimatedVisibility(
-            visible = security.value == 1,
+            visible = security.intValue == 1,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {
@@ -434,24 +433,24 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                 OverlayDropdownPreference(
                     title = stringResource(R.string.proxy_editor_tls_fingerprint),
                     items = fingerprintOptions,
-                    selectedIndex = fingerprint.value,
+                    selectedIndex = fingerprint.intValue,
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .padding(bottom = 12.dp),
                     onSelectedIndexChange = { newFingerprint ->
-                        fingerprint.value = newFingerprint
+                        fingerprint.intValue = newFingerprint
                         params.fp = fingerprintOptions[newFingerprint]
                     },
                 )
                 OverlayDropdownPreference(
                     title = "ALPN",
                     items = alpnOptions,
-                    selectedIndex = alpn.value,
+                    selectedIndex = alpn.intValue,
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .padding(bottom = 12.dp),
                     onSelectedIndexChange = { newAlpn ->
-                        alpn.value = newAlpn
+                        alpn.intValue = newAlpn
                         params.alpn = alpnOptions[newAlpn]
                     },
                 )
@@ -485,7 +484,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         }
         //reality
         AnimatedVisibility(
-            visible = security.value == 2,
+            visible = security.intValue == 2,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {
@@ -507,12 +506,12 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                 OverlayDropdownPreference(
                     title = stringResource(R.string.proxy_editor_tls_fingerprint),
                     items = fingerprintOptions,
-                    selectedIndex = fingerprint.value,
+                    selectedIndex = fingerprint.intValue,
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .padding(bottom = 12.dp),
                     onSelectedIndexChange = { newFingerprint ->
-                        fingerprint.value = newFingerprint
+                        fingerprint.intValue = newFingerprint
                         params.fp = fingerprintOptions[newFingerprint]
                     },
                 )

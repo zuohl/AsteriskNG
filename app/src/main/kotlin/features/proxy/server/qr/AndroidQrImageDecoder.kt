@@ -2,8 +2,11 @@ package features.proxy.server.qr
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
@@ -25,11 +28,34 @@ fun decodeQrCodeFromImage(
 }
 
 private fun loadQrBitmap(context: Context, uri: Uri): Bitmap {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        loadQrBitmapWithImageDecoder(context, uri)
+    } else {
+        loadQrBitmapWithBitmapFactory(context, uri)
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.P)
+private fun loadQrBitmapWithImageDecoder(context: Context, uri: Uri): Bitmap {
     val source = ImageDecoder.createSource(context.contentResolver, uri)
     return ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
         decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
         decoder.setTargetSampleSize(calculateSampleSize(info.size.width, info.size.height))
     }
+}
+
+private fun loadQrBitmapWithBitmapFactory(context: Context, uri: Uri): Bitmap {
+    val resolver = context.contentResolver
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    resolver.openInputStream(uri)?.use { input ->
+        BitmapFactory.decodeStream(input, null, bounds)
+    }
+    val options = BitmapFactory.Options().apply {
+        inSampleSize = calculateSampleSize(bounds.outWidth, bounds.outHeight)
+    }
+    return resolver.openInputStream(uri)?.use { input ->
+        BitmapFactory.decodeStream(input, null, options)
+    } ?: error("Unable to decode QR image")
 }
 
 private fun decodeQrBitmap(bitmap: Bitmap): String? {

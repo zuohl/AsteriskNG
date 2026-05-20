@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">AsteriskNG</string>
     <string name="error_vpn_permission_denied">VPN 权限未授予，无法启动 VPN Service</string>
     <string name="error_vpn_start_config_missing">VPN Service 启动配置缺失</string>
@@ -25,7 +25,7 @@
     <string name="quick_settings_tile_label">AsteriskNG</string>
     <string name="quick_settings_tile_running">代理运行中</string>
     <string name="quick_settings_tile_stopped">代理已停止</string>
-    <string name="quick_settings_tile_processing">正在处理...</string>
+    <string name="quick_settings_tile_processing">正在处理…</string>
     <string name="quick_settings_tile_vpn_permission_required">授予 VPN 权限后，再次点击即可启动</string>
     <string name="quick_settings_tile_toggle_failed">代理切换失败</string>
 <!-- Common -->
@@ -81,7 +81,7 @@
     <string name="settings_local_proxy_listen_all_interfaces_summary">绑定到 0.0.0.0，允许外部设备连接</string>
     <string name="settings_local_proxy_username">本地代理用户名</string>
     <string name="settings_local_proxy_password">本地代理密码</string>
-    <string name="settings_local_proxy_port_invalid">端口范围应为 1-65535</string>
+    <string name="settings_local_proxy_port_invalid">端口范围应为 1–65535</string>
     <string name="settings_local_proxy_summary_fixed">127.0.0.1:{port}</string>
     <string name="settings_local_proxy_summary_all_interfaces">0.0.0.0:{port}</string>
     <string name="settings_local_proxy_summary_dynamic">动态端口</string>
@@ -93,7 +93,7 @@
     <string name="settings_vpn_default_dns">默认 DNS</string>
     <string name="settings_vpn_ipv4_cidr">IPv4 CIDR</string>
     <string name="settings_vpn_ipv6_cidr">IPv6 CIDR</string>
-    <string name="settings_vpn_mtu_invalid">MTU 范围应为 1280-65535</string>
+    <string name="settings_vpn_mtu_invalid">MTU 范围应为 1280–65535</string>
     <string name="settings_vpn_dns_invalid">默认 DNS 必须为 IPv4 地址</string>
     <string name="settings_vpn_ipv4_cidr_invalid">无效 IPv4 CIDR</string>
     <string name="settings_vpn_ipv6_cidr_invalid">无效 IPv6 CIDR</string>
@@ -112,7 +112,7 @@
     <string name="settings_ignored_interfaces_summary">忽略所选接口的流量，避免进入代理核心</string>
     <string name="settings_ignored_interfaces_none">未选择</string>
     <string name="settings_ignored_interfaces_selected">已选择：{interfaces}</string>
-    <string name="settings_ignored_interfaces_loading">正在加载网络接口...</string>
+    <string name="settings_ignored_interfaces_loading">正在加载网络接口…</string>
     <string name="settings_ignored_interfaces_empty">未找到可忽略的网络出口接口</string>
     <string name="settings_ignored_interfaces_error">接口加载失败：{message}</string>
     <string name="settings_ignored_interfaces_error_detail">无法读取网络接口</string>
@@ -141,7 +141,7 @@
     <string name="settings_resource_files_ready">已就绪</string>
     <string name="settings_resource_files_missing">缺失</string>
     <string name="settings_resource_files_size">大小 {size}</string>
-    <string name="settings_resource_files_updating">正在更新资源文件...</string>
+    <string name="settings_resource_files_updating">正在更新资源文件…</string>
     <string name="settings_resource_files_updated">资源文件已更新</string>
     <string name="settings_resource_files_replaced">{name} 已替换</string>
     <string name="settings_resource_files_restored">{name} 已恢复为内置文件</string>
@@ -156,11 +156,11 @@
     <string name="settings_mux_enabled">启用 Mux</string>
     <string name="settings_mux_enabled_summary">使用连接复用</string>
     <string name="settings_mux_concurrency">TCP 并发</string>
-    <string name="settings_mux_concurrency_summary">-1 关闭，0 默认，1-128</string>
-    <string name="settings_mux_concurrency_error">请输入 -1、0 或 1-128</string>
+    <string name="settings_mux_concurrency_summary" tools:ignore="TypographyDashes">-1 关闭，0 默认，1–128</string>
+    <string name="settings_mux_concurrency_error" tools:ignore="TypographyDashes">请输入 -1、0 或 1–128</string>
     <string name="settings_mux_xudp_concurrency">XUDP 并发</string>
-    <string name="settings_mux_xudp_concurrency_summary">-1 关闭，0 同 TCP，1-1024</string>
-    <string name="settings_mux_xudp_concurrency_error">请输入 -1、0 或 1-1024</string>
+    <string name="settings_mux_xudp_concurrency_summary" tools:ignore="TypographyDashes">-1 关闭，0 同 TCP，1–1024</string>
+    <string name="settings_mux_xudp_concurrency_error" tools:ignore="TypographyDashes">请输入 -1、0 或 1–1024</string>
     <string name="settings_mux_udp443">QUIC 流量处理方式</string>
     <string name="settings_mux_udp443_reject">不代理</string>
     <string name="settings_mux_udp443_allow">多路复用</string>
@@ -209,7 +209,7 @@
     <string name="settings_direct_dns_resolve_proxy_server_domains_summary">将代理节点域名添加到直连 DNS 适用域名列表</string>
     <string name="settings_dns_domain_invalid">无效 DNS 域名规则</string>
     <string name="settings_dns_hosts">DNS hosts</string>
-    <string name="settings_dns_hosts_format">格式：域名:地址1,地址2,...</string>
+    <string name="settings_dns_hosts_format">格式：域名:地址1,地址2,…</string>
     <string name="settings_dns_hosts_input">DNS hosts 条目</string>
     <string name="settings_dns_hosts_empty">还没有添加 DNS hosts</string>
     <string name="settings_dns_hosts_duplicate">已添加</string>
@@ -252,7 +252,7 @@
     <string name="logs_output">日志输出</string>
     <string name="logs_pull_to_refresh">下拉刷新</string>
     <string name="logs_release_to_refresh">松开刷新</string>
-    <string name="logs_refreshing">正在刷新...</string>
+    <string name="logs_refreshing">正在刷新…</string>
     <string name="logs_refreshed">刷新完成</string>
 
     <!-- Proxy app list -->
@@ -267,7 +267,7 @@
     <string name="proxy_app_list_entry_summary">{package}</string>
     <string name="proxy_app_list_pull_to_refresh">下拉刷新</string>
     <string name="proxy_app_list_release_to_refresh">松开刷新</string>
-    <string name="proxy_app_list_refreshing">正在刷新...</string>
+    <string name="proxy_app_list_refreshing">正在刷新…</string>
     <string name="proxy_app_list_refreshed">刷新完成</string>
     <string name="proxy_app_list_load_failed">应用列表加载失败</string>
 
@@ -382,8 +382,8 @@
     <string name="proxy_validation_server_address_contains_invalid_content">服务器地址不能包含协议、路径、空格或用户信息</string>
     <string name="proxy_validation_invalid_server_address">服务器地址无效</string>
     <string name="proxy_validation_number_required">请输入数字</string>
-    <string name="proxy_validation_port_out_of_range">端口范围应为 {min}-{max}</string>
-    <string name="proxy_validation_value_out_of_range">取值范围应为 {min}-{max}</string>
+    <string name="proxy_validation_port_out_of_range">端口范围应为 {min}–{max}</string>
+    <string name="proxy_validation_value_out_of_range">取值范围应为 {min}–{max}</string>
     <string name="proxy_validation_unsupported_value">不支持的取值：{value}</string>
     <string name="proxy_validation_username_required_for_password">设置密码时必须填写用户名</string>
     <string name="proxy_validation_password_required_for_username">设置用户名时必须填写密码</string>
@@ -392,12 +392,12 @@
     <string name="proxy_validation_reality_mldsa65_verify_invalid">Reality Mldsa65Verify 必须是 1952 字节公钥的 URL-safe base64</string>
     <string name="proxy_validation_wireguard_key_invalid">WireGuard 密钥必须是有效的 base64 密钥</string>
     <string name="proxy_validation_wireguard_reserved_count_invalid">Reserved 必须包含三个逗号分隔的数字</string>
-    <string name="proxy_validation_wireguard_reserved_value_invalid">每个 Reserved 值范围应为 {min}-{max}</string>
+    <string name="proxy_validation_wireguard_reserved_value_invalid">每个 Reserved 值范围应为 {min}–{max}</string>
     <string name="proxy_validation_local_address_cidr_required">本地地址必须使用 CIDR 格式</string>
     <string name="proxy_validation_local_address_prefix_number_required">本地地址 CIDR 前缀必须是数字</string>
     <string name="proxy_validation_invalid_local_address_cidr">本地地址 CIDR 无效</string>
     <string name="proxy_validation_mtu_number_required">MTU 必须是数字</string>
-    <string name="proxy_validation_mtu_out_of_range">MTU 范围应为 {min}-{max}</string>
+    <string name="proxy_validation_mtu_out_of_range">MTU 范围应为 {min}–{max}</string>
     <string name="proxy_validation_invalid_port_hopping_format">端口跳跃格式无效</string>
     <string name="proxy_validation_port_hopping_range_invalid">端口跳跃范围起始值不能大于结束值</string>
     <string name="proxy_validation_invalid_bandwidth_format">带宽格式无效</string>
@@ -407,7 +407,7 @@
     <string name="proxy_validation_xray_user_id_invalid">用户 ID 必须是 UUID 或小于 {max} 字节的字符串</string>
     <string name="proxy_validation_invalid_vless_encryption">VLESS 加密格式无效</string>
     <string name="proxy_validation_vless_padding_boundary_invalid">VLESS padding 配置必须以 padding 开始并以 padding 结束</string>
-    <string name="proxy_validation_vless_padding_format_invalid">VLESS padding 或 delay 必须为 probability-min-max</string>
+    <string name="proxy_validation_vless_padding_format_invalid" tools:ignore="TypographyDashes">VLESS padding 或 delay 必须为 probability-min-max</string>
     <string name="proxy_validation_vless_padding_range_invalid">VLESS padding 或 delay 范围无效</string>
     <string name="proxy_validation_vless_first_padding_invalid">第一个 VLESS padding 的概率必须为 100，且最小长度大于 0</string>
     <string name="proxy_validation_vless_encryption_verifier_invalid">VLESS 加密校验值必须是 URL-safe base64</string>

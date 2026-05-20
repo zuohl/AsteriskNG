@@ -42,10 +42,9 @@ class AndroidUserSpaceRepository(context: Context) {
 
     private fun Context.currentAndroidUserSpace(): AndroidUserSpace {
         val userId = Process.myUid().toAndroidUserId()
-        val userManager = getSystemService(Context.USER_SERVICE) as UserManager
         return AndroidUserSpace(
             id = userId,
-            name = userManager.userName.ifBlank { "User $userId" },
+            name = "User $userId",
         )
     }
 

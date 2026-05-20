@@ -16,8 +16,6 @@ import app.modes.LanguageModeEnglish
 import app.modes.LanguageModeSimplifiedChinese
 import java.util.Locale
 
-private val systemLocale: Locale = Locale.getDefault()
-
 private fun languageTagForMode(mode: Int): String? = when (mode) {
     LanguageModeEnglish -> "en"
     LanguageModeSimplifiedChinese -> "zh-CN"
@@ -30,8 +28,9 @@ fun ProvideAppLanguage(
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
+    val systemLocale = LocalConfiguration.current.primaryLocale()
     val languageTag = languageTagForMode(languageMode)
-    val locale = remember(languageTag) { languageTag.toAppLocale() }
+    val locale = remember(languageTag, systemLocale) { languageTag.toAppLocale(systemLocale) }
     val configuration = remember(context, locale) { context.localizedConfiguration(locale) }
     val localizedContext = remember(context, configuration) {
         context.createConfigurationContext(configuration)
@@ -50,13 +49,17 @@ fun ProvideAppLanguage(
     )
 }
 
-private fun String?.toAppLocale(): Locale {
+private fun String?.toAppLocale(systemLocale: Locale): Locale {
     return this?.let(Locale::forLanguageTag) ?: systemLocale
 }
 
 internal fun Context.localizedAppContext(languageMode: Int): Context {
-    val locale = languageTagForMode(languageMode).toAppLocale()
+    val locale = languageTagForMode(languageMode).toAppLocale(resources.configuration.primaryLocale())
     return createConfigurationContext(localizedConfiguration(locale))
+}
+
+private fun Configuration.primaryLocale(): Locale {
+    return locales[0] ?: Locale.getDefault()
 }
 
 private fun Context.localizedConfiguration(locale: Locale): Configuration {

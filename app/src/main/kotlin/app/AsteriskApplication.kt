@@ -8,8 +8,13 @@ import features.logs.AndroidLogcatRepository
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 class AsteriskApplication : Application(), SingletonImageLoader.Factory {
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     override fun onCreate() {
         super.onCreate()
         AndroidLogcatRepository.initialize(applicationContext)

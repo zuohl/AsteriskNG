@@ -3,6 +3,7 @@
 
 package features.quicksettings
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
@@ -190,6 +191,7 @@ class ProxyQuickSettingsTileService : TileService() {
             ?.takeIf(String::isNotBlank)
     }
 
+    @SuppressLint("StartActivityAndCollapseDeprecated")
     private fun launchActivityAndCollapse(intent: Intent?) {
         val targetIntent = (intent ?: Intent(this, MainActivity::class.java)).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

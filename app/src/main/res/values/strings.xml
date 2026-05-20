@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">AsteriskNG</string>
     <string name="error_vpn_permission_denied">VPN permission was not granted. VPN Service cannot be started</string>
     <string name="error_vpn_start_config_missing">VPN Service start configuration is missing</string>
@@ -25,7 +25,7 @@
     <string name="quick_settings_tile_label">AsteriskNG</string>
     <string name="quick_settings_tile_running">Proxy running</string>
     <string name="quick_settings_tile_stopped">Proxy stopped</string>
-    <string name="quick_settings_tile_processing">Processing...</string>
+    <string name="quick_settings_tile_processing">Processing…</string>
     <string name="quick_settings_tile_vpn_permission_required">Grant VPN permission, then tap again to start</string>
     <string name="quick_settings_tile_toggle_failed">Failed to toggle proxy</string>
 <!-- Common -->
@@ -81,7 +81,7 @@
     <string name="settings_local_proxy_listen_all_interfaces_summary">Bind to 0.0.0.0 for external devices</string>
     <string name="settings_local_proxy_username">Local proxy username</string>
     <string name="settings_local_proxy_password">Local proxy password</string>
-    <string name="settings_local_proxy_port_invalid">Port must be 1-65535</string>
+    <string name="settings_local_proxy_port_invalid">Port must be 1–65535</string>
     <string name="settings_local_proxy_summary_fixed">127.0.0.1:{port}</string>
     <string name="settings_local_proxy_summary_all_interfaces">0.0.0.0:{port}</string>
     <string name="settings_local_proxy_summary_dynamic">Dynamic port</string>
@@ -93,7 +93,7 @@
     <string name="settings_vpn_default_dns">Default DNS</string>
     <string name="settings_vpn_ipv4_cidr">IPv4 CIDR</string>
     <string name="settings_vpn_ipv6_cidr">IPv6 CIDR</string>
-    <string name="settings_vpn_mtu_invalid">MTU must be 1280-65535</string>
+    <string name="settings_vpn_mtu_invalid">MTU must be 1280–65535</string>
     <string name="settings_vpn_dns_invalid">Default DNS must be an IPv4 address</string>
     <string name="settings_vpn_ipv4_cidr_invalid">Invalid IPv4 CIDR</string>
     <string name="settings_vpn_ipv6_cidr_invalid">Invalid IPv6 CIDR</string>
@@ -112,7 +112,7 @@
     <string name="settings_ignored_interfaces_summary">Ignore traffic on selected interfaces to keep it out of the proxy core</string>
     <string name="settings_ignored_interfaces_none">Not selected</string>
     <string name="settings_ignored_interfaces_selected">Selected: {interfaces}</string>
-    <string name="settings_ignored_interfaces_loading">Loading network interfaces...</string>
+    <string name="settings_ignored_interfaces_loading">Loading network interfaces…</string>
     <string name="settings_ignored_interfaces_empty">No network outlet interfaces found</string>
     <string name="settings_ignored_interfaces_error">Failed to load interfaces: {message}</string>
     <string name="settings_ignored_interfaces_error_detail">Unable to read network interfaces</string>
@@ -141,7 +141,7 @@
     <string name="settings_resource_files_ready">Ready</string>
     <string name="settings_resource_files_missing">Missing</string>
     <string name="settings_resource_files_size">Size {size}</string>
-    <string name="settings_resource_files_updating">Updating resource files...</string>
+    <string name="settings_resource_files_updating">Updating resource files…</string>
     <string name="settings_resource_files_updated">Resource files updated</string>
     <string name="settings_resource_files_replaced">{name} replaced</string>
     <string name="settings_resource_files_restored">{name} restored from bundled assets</string>
@@ -156,11 +156,11 @@
     <string name="settings_mux_enabled">Enable Mux</string>
     <string name="settings_mux_enabled_summary">Use connection multiplexing</string>
     <string name="settings_mux_concurrency">TCP concurrency</string>
-    <string name="settings_mux_concurrency_summary">-1 off, 0 default, 1-128</string>
-    <string name="settings_mux_concurrency_error">Use -1, 0, or 1-128</string>
+    <string name="settings_mux_concurrency_summary" tools:ignore="TypographyDashes">-1 off, 0 default, 1–128</string>
+    <string name="settings_mux_concurrency_error" tools:ignore="TypographyDashes">Use -1, 0, or 1–128</string>
     <string name="settings_mux_xudp_concurrency">XUDP concurrency</string>
-    <string name="settings_mux_xudp_concurrency_summary">-1 off, 0 same as TCP, 1-1024</string>
-    <string name="settings_mux_xudp_concurrency_error">Use -1, 0, or 1-1024</string>
+    <string name="settings_mux_xudp_concurrency_summary" tools:ignore="TypographyDashes">-1 off, 0 same as TCP, 1–1024</string>
+    <string name="settings_mux_xudp_concurrency_error" tools:ignore="TypographyDashes">Use -1, 0, or 1–1024</string>
     <string name="settings_mux_udp443">QUIC handling</string>
     <string name="settings_mux_udp443_reject">No proxy</string>
     <string name="settings_mux_udp443_allow">Multiplex</string>
@@ -209,7 +209,7 @@
     <string name="settings_direct_dns_resolve_proxy_server_domains_summary">Add proxy server domains to the direct DNS domain list</string>
     <string name="settings_dns_domain_invalid">Invalid DNS domain rule</string>
     <string name="settings_dns_hosts">DNS hosts</string>
-    <string name="settings_dns_hosts_format">Format: domain:address1,address2,...</string>
+    <string name="settings_dns_hosts_format">Format: domain:address1,address2,…</string>
     <string name="settings_dns_hosts_input">DNS hosts entry</string>
     <string name="settings_dns_hosts_empty">No DNS hosts added</string>
     <string name="settings_dns_hosts_duplicate">Already added</string>
@@ -252,7 +252,7 @@
     <string name="logs_output">Log output</string>
     <string name="logs_pull_to_refresh">Pull down to refresh</string>
     <string name="logs_release_to_refresh">Release to refresh</string>
-    <string name="logs_refreshing">Refreshing...</string>
+    <string name="logs_refreshing">Refreshing…</string>
     <string name="logs_refreshed">Refresh complete</string>
 
     <!-- Proxy app list -->
@@ -267,7 +267,7 @@
     <string name="proxy_app_list_entry_summary">{package}</string>
     <string name="proxy_app_list_pull_to_refresh">Pull down to refresh</string>
     <string name="proxy_app_list_release_to_refresh">Release to refresh</string>
-    <string name="proxy_app_list_refreshing">Refreshing...</string>
+    <string name="proxy_app_list_refreshing">Refreshing…</string>
     <string name="proxy_app_list_refreshed">Refresh complete</string>
     <string name="proxy_app_list_load_failed">Unable to load app list</string>
 
@@ -382,8 +382,8 @@
     <string name="proxy_validation_server_address_contains_invalid_content">Server address must not include protocol, path, whitespace, or user info</string>
     <string name="proxy_validation_invalid_server_address">Invalid server address</string>
     <string name="proxy_validation_number_required">Value must be a number</string>
-    <string name="proxy_validation_port_out_of_range">Port must be {min}-{max}</string>
-    <string name="proxy_validation_value_out_of_range">Value must be {min}-{max}</string>
+    <string name="proxy_validation_port_out_of_range">Port must be {min}–{max}</string>
+    <string name="proxy_validation_value_out_of_range">Value must be {min}–{max}</string>
     <string name="proxy_validation_unsupported_value">Unsupported value: {value}</string>
     <string name="proxy_validation_username_required_for_password">Username is required when password is set</string>
     <string name="proxy_validation_password_required_for_username">Password is required when username is set</string>
@@ -392,12 +392,12 @@
     <string name="proxy_validation_reality_mldsa65_verify_invalid">Reality Mldsa65Verify must be URL-safe base64 for a 1952-byte public key</string>
     <string name="proxy_validation_wireguard_key_invalid">WireGuard key must be a valid base64 key</string>
     <string name="proxy_validation_wireguard_reserved_count_invalid">Reserved must contain three comma-separated numbers</string>
-    <string name="proxy_validation_wireguard_reserved_value_invalid">Each reserved value must be {min}-{max}</string>
+    <string name="proxy_validation_wireguard_reserved_value_invalid">Each reserved value must be {min}–{max}</string>
     <string name="proxy_validation_local_address_cidr_required">Local address must use CIDR format</string>
     <string name="proxy_validation_local_address_prefix_number_required">Local address CIDR prefix must be a number</string>
     <string name="proxy_validation_invalid_local_address_cidr">Invalid local address CIDR</string>
     <string name="proxy_validation_mtu_number_required">MTU must be a number</string>
-    <string name="proxy_validation_mtu_out_of_range">MTU must be {min}-{max}</string>
+    <string name="proxy_validation_mtu_out_of_range">MTU must be {min}–{max}</string>
     <string name="proxy_validation_invalid_port_hopping_format">Invalid port hopping format</string>
     <string name="proxy_validation_port_hopping_range_invalid">Port hopping range start must not be greater than end</string>
     <string name="proxy_validation_invalid_bandwidth_format">Invalid bandwidth format</string>
@@ -407,7 +407,7 @@
     <string name="proxy_validation_xray_user_id_invalid">User ID must be a UUID or shorter than {max} bytes</string>
     <string name="proxy_validation_invalid_vless_encryption">Invalid VLESS encryption format</string>
     <string name="proxy_validation_vless_padding_boundary_invalid">VLESS padding config must start and end with padding</string>
-    <string name="proxy_validation_vless_padding_format_invalid">VLESS padding or delay must be probability-min-max</string>
+    <string name="proxy_validation_vless_padding_format_invalid" tools:ignore="TypographyDashes">VLESS padding or delay must be probability-min-max</string>
     <string name="proxy_validation_vless_padding_range_invalid">Invalid VLESS padding or delay range</string>
     <string name="proxy_validation_vless_first_padding_invalid">First VLESS padding must have probability 100 and min length greater than 0</string>
     <string name="proxy_validation_vless_encryption_verifier_invalid">VLESS encryption verifier must be URL-safe base64</string>

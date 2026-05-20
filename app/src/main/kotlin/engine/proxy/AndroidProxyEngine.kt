@@ -7,6 +7,8 @@ import engine.proxy.mode.AndroidModeProxyEngine
 import engine.tproxy.TproxyEngine
 import engine.vpn.VpnXrayEngine
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import system.AndroidRootShellGateway
 
@@ -18,9 +20,26 @@ class AndroidProxyEngine(
     private val appContext = context.applicationContext
     private val vpnXrayEngine = VpnXrayEngine(appContext, requestVpnPermission)
     private val tproxyEngine = TproxyEngine(appContext, rootAccess)
+    private val operationMutex = Mutex()
     private var activeEngine: AndroidModeProxyEngine? = null
 
-    suspend fun start(request: ProxyEngineStartRequest): ProxyEngineStatus = withContext(Dispatchers.Default) {
+    suspend fun start(request: ProxyEngineStartRequest): ProxyEngineStatus = operationMutex.withLock {
+        startUnlocked(request)
+    }
+
+    suspend fun stop(preferredRunMode: Int? = null): ProxyEngineStatus = operationMutex.withLock {
+        stopUnlocked(preferredRunMode)
+    }
+
+    suspend fun restart(request: ProxyEngineStartRequest): ProxyEngineStatus = operationMutex.withLock {
+        startUnlocked(request)
+    }
+
+    suspend fun status(preferredRunMode: Int? = null): ProxyEngineStatus = operationMutex.withLock {
+        statusUnlocked(preferredRunMode)
+    }
+
+    private suspend fun startUnlocked(request: ProxyEngineStartRequest): ProxyEngineStatus = withContext(Dispatchers.Default) {
         val nextEngine = when (request.appState.runMode) {
             RunModeTproxy -> tproxyEngine
             else -> vpnXrayEngine
@@ -32,7 +51,7 @@ class AndroidProxyEngine(
         nextEngine.start(request)
     }
 
-    suspend fun stop(preferredRunMode: Int? = null): ProxyEngineStatus = withContext(Dispatchers.Default) {
+    private suspend fun stopUnlocked(preferredRunMode: Int? = null): ProxyEngineStatus = withContext(Dispatchers.Default) {
         val engine = activeEngine
             ?: preferredRunMode?.engine()?.takeIf { it.status().running }
             ?: tproxyEngine.takeIf { it.status().running }
@@ -43,12 +62,7 @@ class AndroidProxyEngine(
         ProxyEngineStatus(running = false, runMode = stoppedMode)
     }
 
-    suspend fun restart(request: ProxyEngineStartRequest): ProxyEngineStatus {
-        stop(request.appState.runMode)
-        return start(request)
-    }
-
-    suspend fun status(preferredRunMode: Int? = null): ProxyEngineStatus = withContext(Dispatchers.Default) {
+    private suspend fun statusUnlocked(preferredRunMode: Int? = null): ProxyEngineStatus = withContext(Dispatchers.Default) {
         val activeStatus = activeEngine?.status()
         if (activeStatus?.running == true) {
             return@withContext activeStatus

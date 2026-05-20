@@ -101,24 +101,24 @@ internal fun LazyListScope.strategyGroupProxyServer(
         OverlayDropdownPreference(
             title = stringResource(R.string.proxy_editor_strategy_group_type),
             items = strategyLabels,
-            selectedIndex = strategyIndex.value,
+            selectedIndex = strategyIndex.intValue,
             modifier = Modifier
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 12.dp),
             onSelectedIndexChange = { index ->
-                strategyIndex.value = index
+                strategyIndex.intValue = index
                 strategyGroupEdit.strategy = strategyValues[index]
             },
         )
         OverlayDropdownPreference(
             title = stringResource(R.string.proxy_editor_strategy_group_source_group),
             items = effectiveGroupOptions.map { option -> option.label },
-            selectedIndex = groupIndex.value,
+            selectedIndex = groupIndex.intValue,
             modifier = Modifier
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 12.dp),
             onSelectedIndexChange = { index ->
-                groupIndex.value = index
+                groupIndex.intValue = index
                 strategyGroupEdit.subscriptionGroupId = effectiveGroupOptions[index].id
             },
         )

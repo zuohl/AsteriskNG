@@ -36,9 +36,6 @@ import system.AndroidUserSpaceProvider
 import ui.AppTheme
 import ui.feedback.AndroidToastTipNotifier
 import ui.keyColorFor
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 
 @Composable
 fun App(
@@ -48,7 +45,7 @@ fun App(
     requestVpnPermission: suspend (Intent) -> Boolean,
 ) {
     val appContext = LocalContext.current.applicationContext
-    val appScope = remember { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+    val appScope = (appContext as AsteriskApplication).appScope
     val rootAccess = remember { AndroidRootShellGateway() }
     val userSpaces = remember(appContext, rootAccess) {
         AndroidUserSpaceProvider(
