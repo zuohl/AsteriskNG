@@ -4,6 +4,7 @@
 package features.quicksettings
 
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.VpnService
@@ -26,14 +27,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import system.AndroidRootShellGateway
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
 
 class ProxyQuickSettingsTileService : TileService() {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val operationInProgress = AtomicBoolean(false)
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val stateStore by lazy { AndroidAppStateStore.get(applicationContext) }
     private val rootAccess by lazy { AndroidRootShellGateway() }
     private val proxyEngine by lazy {
@@ -67,8 +68,10 @@ class ProxyQuickSettingsTileService : TileService() {
         super.onClick()
         if (!operationInProgress.compareAndSet(false, true)) return
 
-        scope.launch {
+        val appContext = applicationContext
+        operationScope.launch {
             updateTile(processing = true)
+            requestTileRefresh(appContext)
             try {
                 toggleProxy()
             } catch (error: Throwable) {
@@ -77,21 +80,29 @@ class ProxyQuickSettingsTileService : TileService() {
                 showToast(error.message ?: getString(R.string.quick_settings_tile_toggle_failed))
             } finally {
                 operationInProgress.set(false)
-                refreshTileState()
+                runCatching { refreshTileState() }
+                    .onFailure { error ->
+                        AndroidAppLogger.warn(LogTag, "Failed to refresh quick settings tile after proxy toggle", error)
+                    }
+                requestTileRefreshBurst(appContext)
             }
         }
     }
 
     override fun onDestroy() {
-        scope.cancel()
+        serviceScope.cancel()
         super.onDestroy()
     }
 
     private fun refreshTile() {
-        scope.launch { refreshTileState() }
+        serviceScope.launch { refreshTileState() }
     }
 
     private suspend fun refreshTileState() {
+        if (operationInProgress.get()) {
+            updateTile(processing = true)
+            return
+        }
         val running = syncProxyRunningState()
         updateTile(running = running)
     }
@@ -162,11 +173,21 @@ class ProxyQuickSettingsTileService : TileService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             tile.subtitle = when {
                 processing -> getString(R.string.quick_settings_tile_processing)
-                running -> getString(R.string.quick_settings_tile_running)
+                running -> selectedProxyServerRemarks() ?: getString(R.string.quick_settings_tile_running)
                 else -> getString(R.string.quick_settings_tile_stopped)
             }
         }
         tile.updateTile()
+    }
+
+    private fun selectedProxyServerRemarks(): String? {
+        val state = stateStore.state.value
+        return state.proxyServers
+            .firstOrNull { server -> server.id == state.selectedProxyServerId }
+            ?.server
+            ?.getInfo()
+            ?.remarks
+            ?.takeIf(String::isNotBlank)
     }
 
     private fun launchActivityAndCollapse(intent: Intent?) {
@@ -193,5 +214,31 @@ class ProxyQuickSettingsTileService : TileService() {
 
     private companion object {
         private const val LogTag = "ProxyQuickSettingsTile"
+
+        private val operationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        private val operationInProgress = AtomicBoolean(false)
+
+        private suspend fun requestTileRefreshBurst(context: Context) {
+            repeat(TileRefreshRequestCount) { index ->
+                requestTileRefresh(context)
+                if (index < TileRefreshRequestCount - 1) {
+                    delay(TileRefreshRequestIntervalMillis)
+                }
+            }
+        }
+
+        private fun requestTileRefresh(context: Context) {
+            runCatching {
+                TileService.requestListeningState(
+                    context,
+                    ComponentName(context, ProxyQuickSettingsTileService::class.java),
+                )
+            }.onFailure { error ->
+                AndroidAppLogger.warn(LogTag, "Failed to request quick settings tile refresh", error)
+            }
+        }
+
+        private const val TileRefreshRequestCount = 3
+        private const val TileRefreshRequestIntervalMillis = 500L
     }
 }
