@@ -4,6 +4,7 @@
 package app
 
 import androidx.compose.runtime.staticCompositionLocalOf
+import android.net.Uri
 import engine.proxy.AndroidProxyEngine
 import engine.proxy.latency.AndroidProxyLatencyTester
 import features.logs.CoreLogClearUseCase
@@ -37,6 +38,7 @@ internal data class AppServices(
     val tproxyBootScriptUseCase: TproxyBootScriptUseCase,
     val tipNotifier: AndroidToastTipNotifier,
     val coreLogClearUseCase: CoreLogClearUseCase,
+    val logFileCreator: suspend (String) -> Uri?,
     val coreLogRepository: CoreLogRepository,
     val accessLogRepository: CoreLogRepository,
     val logcatRepository: CoreLogRepository,

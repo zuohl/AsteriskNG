@@ -20,6 +20,7 @@ internal fun NavigationIcon(
     onClick: () -> Unit,
     imageVector: ImageVector,
     modifier: Modifier = Modifier,
+    contentDescription: String? = null,
 ) {
     val layoutDirection = LocalLayoutDirection.current
     IconButton(
@@ -31,7 +32,7 @@ internal fun NavigationIcon(
                 if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
             },
             imageVector = imageVector,
-            contentDescription = null,
+            contentDescription = contentDescription,
             tint = colorScheme.onBackground,
         )
     }

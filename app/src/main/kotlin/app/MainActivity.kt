@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.safeDrawing
 import engine.vpn.AndroidVpnPermissionRequester
+import features.logs.AndroidLogFileCreator
 import features.resources.runtime.AndroidResourceFilePicker
 import features.proxy.server.qr.AndroidQrCodeScanRequester
 import com.journeyapps.barcodescanner.ScanContract
@@ -36,6 +37,12 @@ class MainActivity : ComponentActivity() {
     private val resourceFilePicker = AndroidResourceFilePicker(
         missingLauncherMessage = {
             getString(R.string.error_resource_file_picker_missing)
+        },
+    )
+
+    private val logFileCreator = AndroidLogFileCreator(
+        missingLauncherMessage = {
+            getString(R.string.error_log_export_launcher_missing)
         },
     )
 
@@ -65,6 +72,12 @@ class MainActivity : ComponentActivity() {
         resourceFilePicker.complete(uri)
     }
 
+    private val logFileCreatorLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("*/*"),
+    ) { uri ->
+        logFileCreator.complete(uri)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         vpnPermissionRequester.registerLauncher { intent ->
@@ -79,6 +92,9 @@ class MainActivity : ComponentActivity() {
         resourceFilePicker.registerLauncher { mimeTypes ->
             resourceFilePickerLauncher.launch(mimeTypes)
         }
+        logFileCreator.registerLauncher { fileName ->
+            logFileCreatorLauncher.launch(fileName)
+        }
         showAppContent()
         requestStartupPermissions()
     }
@@ -92,6 +108,8 @@ class MainActivity : ComponentActivity() {
         qrCodeScanRequester.registerScanLauncher(null)
         resourceFilePicker.complete(null)
         resourceFilePicker.registerLauncher(null)
+        logFileCreator.complete(null)
+        logFileCreator.registerLauncher(null)
         super.onDestroy()
     }
 
@@ -111,6 +129,7 @@ class MainActivity : ComponentActivity() {
                 padding = WindowInsets.safeDrawing.asPaddingValues(),
                 qrCodeScanner = qrCodeScanRequester::scan,
                 resourceFilePicker = resourceFilePicker::pick,
+                logFileCreator = logFileCreator::create,
                 requestVpnPermission = vpnPermissionRequester::request,
             )
         }

@@ -11,6 +11,7 @@
     <string name="error_qr_scan_launcher_missing">QR code scanner launcher is not registered</string>
     <string name="error_qr_image_decode_failed">No QR code was found in this image</string>
     <string name="error_resource_file_picker_missing">Resource file picker is not registered</string>
+    <string name="error_log_export_launcher_missing">Log export launcher is not registered</string>
     <string name="qr_scan_album_button">Album</string>
     <string name="qr_scan_choose_image">Choose from album</string>
     <string name="error_android_lib_xray_lite_start_failed">Failed to start AndroidLibXrayLite: %1$s</string>
@@ -249,6 +250,9 @@
     <string name="logcat_logs_title">Logcat</string>
     <string name="logs_count">{count} entries</string>
     <string name="logs_copied_to_clipboard">Copied to clipboard</string>
+    <string name="logs_export">Export logs</string>
+    <string name="logs_exported">Logs exported</string>
+    <string name="logs_export_failed">Failed to export logs</string>
     <string name="logs_output">Log output</string>
     <string name="logs_pull_to_refresh">Pull down to refresh</string>
     <string name="logs_release_to_refresh">Release to refresh</string>

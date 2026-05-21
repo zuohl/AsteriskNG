@@ -11,6 +11,7 @@
     <string name="error_qr_scan_launcher_missing">二维码扫描请求器未注册</string>
     <string name="error_qr_image_decode_failed">未在图片中识别到二维码</string>
     <string name="error_resource_file_picker_missing">资源文件选择器未注册</string>
+    <string name="error_log_export_launcher_missing">日志导出请求器未注册</string>
     <string name="qr_scan_album_button">相册</string>
     <string name="qr_scan_choose_image">从相册选择</string>
     <string name="error_android_lib_xray_lite_start_failed">AndroidLibXrayLite 启动失败：%1$s</string>
@@ -249,6 +250,9 @@
     <string name="logcat_logs_title">Logcat</string>
     <string name="logs_count">{count} 条</string>
     <string name="logs_copied_to_clipboard">已复制到剪切板</string>
+    <string name="logs_export">导出日志</string>
+    <string name="logs_exported">日志已导出</string>
+    <string name="logs_export_failed">日志导出失败</string>
     <string name="logs_output">日志输出</string>
     <string name="logs_pull_to_refresh">下拉刷新</string>
     <string name="logs_release_to_refresh">松开刷新</string>

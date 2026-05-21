@@ -42,6 +42,7 @@ fun App(
     padding: PaddingValues = PaddingValues(0.dp),
     qrCodeScanner: suspend () -> String?,
     resourceFilePicker: suspend () -> Uri?,
+    logFileCreator: suspend (String) -> Uri?,
     requestVpnPermission: suspend (Intent) -> Boolean,
 ) {
     val appContext = LocalContext.current.applicationContext
@@ -122,6 +123,7 @@ fun App(
         tproxyBootScriptUseCase,
         tipNotifier,
         coreLogClearUseCase,
+        logFileCreator,
     ) {
         AppServices(
             appScope = appScope,
@@ -139,6 +141,7 @@ fun App(
             tproxyBootScriptUseCase = tproxyBootScriptUseCase,
             tipNotifier = tipNotifier,
             coreLogClearUseCase = coreLogClearUseCase,
+            logFileCreator = logFileCreator,
             coreLogRepository = AndroidCoreLogRepository,
             accessLogRepository = AndroidAccessLogRepository,
             logcatRepository = AndroidLogcatRepository,

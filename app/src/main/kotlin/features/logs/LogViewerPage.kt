@@ -2,6 +2,8 @@
 
 package features.logs
 
+import android.content.Context
+import android.net.Uri
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalAppServices
@@ -23,11 +25,14 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import app.R
 import ui.components.BackNavigationIcon
 import ui.components.NavigationIcon
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PullToRefresh
@@ -37,6 +42,7 @@ import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.layout.AdaptiveTopAppBar
 import ui.text.formatTemplate
@@ -105,13 +111,19 @@ private fun LogViewerPage(
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
     val clipboard = LocalClipboard.current
-    val tipNotifier = LocalAppServices.current.tipNotifier
+    val context = LocalContext.current
+    val services = LocalAppServices.current
+    val tipNotifier = services.tipNotifier
+    val logFileCreator = services.logFileCreator
     val scope = rememberCoroutineScope()
     val topAppBarScrollBehavior = MiuixScrollBehavior()
     var refreshing by remember { mutableStateOf(false) }
     var logEntries by remember(repository) { mutableStateOf(repository.entries.value) }
     val displayedLogEntries = remember(logEntries) { logEntries.asReversed() }
     val copiedMessage = stringResource(R.string.logs_copied_to_clipboard)
+    val exportDescription = stringResource(R.string.logs_export)
+    val exportedMessage = stringResource(R.string.logs_exported)
+    val exportFailedMessage = stringResource(R.string.logs_export_failed)
 
     LaunchedEffect(repository) {
         repository.refresh()
@@ -133,6 +145,23 @@ private fun LogViewerPage(
                 actions = {
                     NavigationIcon(
                         onClick = {
+                            val exportEntries = logEntries.toList()
+                            scope.launch {
+                                val uri = logFileCreator(logExportFileName(title)) ?: return@launch
+                                runCatching {
+                                    context.exportLogEntries(uri, exportEntries)
+                                }.onSuccess {
+                                    tipNotifier.show(exportedMessage)
+                                }.onFailure { error ->
+                                    tipNotifier.showError(error, exportFailedMessage)
+                                }
+                            }
+                        },
+                        imageVector = MiuixIcons.Share,
+                        contentDescription = exportDescription,
+                    )
+                    NavigationIcon(
+                        onClick = {
                             scope.launch {
                                 onClear()
                                 repository.clear()
@@ -140,6 +169,7 @@ private fun LogViewerPage(
                             }
                         },
                         imageVector = MiuixIcons.Delete,
+                        contentDescription = stringResource(R.string.common_delete),
                     )
                 },
             )
@@ -232,4 +262,29 @@ private fun LogViewerPage(
 
 private fun CoreLogEntry.copyText(): String {
     return "$time  ${level.uppercase()}  $message"
+}
+
+private suspend fun Context.exportLogEntries(
+    uri: Uri,
+    entries: List<CoreLogEntry>,
+) {
+    withContext(Dispatchers.IO) {
+        val outputStream = contentResolver.openOutputStream(uri) ?: throw IllegalStateException()
+        outputStream.writer(Charsets.UTF_8).use { writer ->
+            entries.forEachIndexed { index, entry ->
+                if (index > 0) writer.write("\n")
+                writer.write(entry.copyText())
+            }
+        }
+    }
+}
+
+private fun logExportFileName(title: String): String {
+    val safeTitle = title
+        .trim()
+        .map { char -> if (char.isLetterOrDigit()) char else '-' }
+        .joinToString("")
+        .trim('-')
+        .ifBlank { "logs" }
+    return "asteriskng-$safeTitle-${System.currentTimeMillis()}.log"
 }
