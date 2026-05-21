@@ -1,6 +1,7 @@
 package features.proxy.app
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -33,14 +37,12 @@ import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.AppRecording
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -159,7 +161,11 @@ internal fun ProxyAppListItemCard(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            AppIcon(app, iconSizePx)
+            AppIcon(
+                app = app,
+                enabled = enabled,
+                iconSizePx = iconSizePx,
+            )
             Spacer(Modifier.width(12.dp))
             Row(
                 modifier = Modifier.weight(1f),
@@ -294,22 +300,28 @@ private fun UidChip(
 @Composable
 private fun AppIcon(
     app: AppPackageEntry,
+    enabled: Boolean,
     iconSizePx: Int,
 ) {
     val backgroundColor by animateColorAsState(
-        targetValue = MiuixTheme.colorScheme.primary.copy(alpha = if (app.system) 0.10f else 0.16f),
+        targetValue = if (enabled) {
+            MiuixTheme.colorScheme.primary.copy(alpha = if (app.system) 0.10f else 0.16f)
+        } else {
+            MiuixTheme.colorScheme.disabledOnSecondaryVariant.copy(alpha = 0.10f)
+        },
         animationSpec = tween(180),
         label = "per-app-icon-background",
     )
-    val contentColor by animateColorAsState(
-        targetValue = if (app.system) {
-            MiuixTheme.colorScheme.onSurfaceVariantSummary
-        } else {
-            MiuixTheme.colorScheme.primary
-        },
+    val appIconAlpha by animateFloatAsState(
+        targetValue = if (enabled) 1f else 0.42f,
         animationSpec = tween(180),
-        label = "per-app-icon-content",
+        label = "per-app-icon-alpha",
     )
+    val appIconColorFilter = if (enabled) {
+        null
+    } else {
+        ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
+    }
 
     Box(
         modifier = Modifier
@@ -318,20 +330,19 @@ private fun AppIcon(
             .background(backgroundColor),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            modifier = Modifier.size(24.dp),
-            imageVector = MiuixIcons.AppRecording,
-            contentDescription = null,
-            tint = contentColor,
-        )
         AsyncImage(
             model = ProxyAppIconRequest(
                 packageName = app.packageName,
                 sizePx = iconSizePx,
             ),
             contentDescription = app.name,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    alpha = appIconAlpha
+                },
             contentScale = ContentScale.Fit,
+            colorFilter = appIconColorFilter,
         )
     }
 }
