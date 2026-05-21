@@ -2,11 +2,14 @@ package features.proxy.server.list
 
 import app.ProxyServerState
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,17 +23,24 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import app.R
 import androidx.compose.ui.res.stringResource
+import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.FloatingToolbar
@@ -54,6 +64,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.isInDarkTheme
 import ui.components.IconDropdownMenu
 import ui.components.IconDropdownMenuEntry
+import ui.components.draggedCardShadow
 
 private val proxyServerLatencyNumberRegex = Regex("""\d+""")
 
@@ -141,13 +152,71 @@ internal fun ProxyServerListItemCard(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     groupName: String? = null,
+    isDragging: Boolean = false,
+    dragActive: Boolean = false,
+    visualOffset: Float = 0f,
+    draggable: Boolean = false,
+    onDragStart: () -> Unit = {},
+    onDrag: (Float) -> Unit = {},
+    onDragEnd: () -> Unit = {},
 ) {
     val latencyText = server.latency.trim()
+    val animatedDragOffset by animateFloatAsState(
+        targetValue = visualOffset,
+        animationSpec = if (dragActive) {
+            snap()
+        } else {
+            folmeSpring(damping = 0.9f, response = 0.38f)
+        },
+        label = "proxyServerDragOffset",
+    )
+    val animatedScale by animateFloatAsState(
+        targetValue = if (isDragging) 1.025f else 1f,
+        animationSpec = folmeSpring(damping = 0.9f, response = 0.38f),
+        label = "proxyServerDragScale",
+    )
+    val animatedShadowAlpha by animateFloatAsState(
+        targetValue = if (isDragging) 1f else 0f,
+        animationSpec = folmeSpring(damping = 0.9f, response = 0.38f),
+        label = "proxyServerDragShadowAlpha",
+    )
+    val shadowColor = MiuixTheme.colorScheme.primary
+    val hapticFeedback = LocalHapticFeedback.current
+    val dragModifier = if (draggable) {
+        Modifier.pointerInput(Unit) {
+            detectDragGesturesAfterLongPress(
+                onDragStart = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onDragStart()
+                },
+                onDragEnd = onDragEnd,
+                onDragCancel = onDragEnd,
+                onDrag = { change, dragAmount ->
+                    change.consume()
+                    onDrag(dragAmount.y)
+                },
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .padding(bottom = 12.dp),
+            .padding(bottom = 12.dp)
+            .zIndex(if (isDragging) 1f else 0f)
+            .graphicsLayer {
+                translationY = animatedDragOffset
+                scaleX = animatedScale
+                scaleY = animatedScale
+            }
+            .draggedCardShadow(
+                alpha = animatedShadowAlpha,
+                color = shadowColor,
+            )
+            .then(dragModifier),
         colors = CardDefaults.defaultColors(
             color = if (selected) {
                 MiuixTheme.colorScheme.primary.copy(alpha = 0.10f)

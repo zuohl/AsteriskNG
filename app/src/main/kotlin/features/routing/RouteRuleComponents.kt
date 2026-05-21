@@ -18,11 +18,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -38,7 +33,6 @@ import engine.network.isPortList
 import features.routing.model.RouteRule
 import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Switch
@@ -56,6 +50,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import ui.components.StringListEditor
 import ui.components.StringListStatusText
+import ui.components.draggedCardShadow
 import ui.components.sanitizeStringListItems
 
 internal data class RouteRuleOutboundOption(
@@ -152,7 +147,7 @@ internal fun RouteRuleCard(
                 scaleX = animatedScale
                 scaleY = animatedScale
             }
-            .drawRouteRuleDragShadow(
+            .draggedCardShadow(
                 alpha = animatedShadowAlpha,
                 color = shadowColor,
             )
@@ -212,38 +207,6 @@ internal fun RouteRuleCard(
                     )
                 }
             }
-        }
-    }
-}
-
-private fun Modifier.drawRouteRuleDragShadow(
-    alpha: Float,
-    color: Color,
-): Modifier {
-    if (alpha <= 0f) return this
-
-    return drawBehind {
-        val cornerRadius = CardDefaults.CornerRadius.toPx()
-        val maxSpread = 12.dp.toPx()
-        val steps = 12
-
-        for (step in steps downTo 1) {
-            val progress = step / steps.toFloat()
-            val spread = maxSpread * progress
-            val layerAlpha = alpha * 0.035f * (1f - (step - 1f) / steps)
-
-            drawRoundRect(
-                color = color.copy(alpha = layerAlpha),
-                topLeft = Offset(-spread, -spread),
-                size = Size(
-                    width = size.width + spread * 2,
-                    height = size.height + spread * 2,
-                ),
-                cornerRadius = CornerRadius(
-                    x = cornerRadius + spread,
-                    y = cornerRadius + spread,
-                ),
-            )
         }
     }
 }
