@@ -42,7 +42,7 @@ internal class TproxyRootRunner(
     ) = withContext(Dispatchers.IO) {
         val command = config?.stopCommand()
             ?: TproxyIptablesConfig().stopCommand(fallbackRuntimeConfig)
-        val result = rootAccess.exec(command)
+        val result = rootAccess.exec(command, ShellExecOptions(logFailure = false))
         if (result.errno != 0) {
             AndroidAppLogger.warn(LogTag, "Failed to stop TPROXY cleanly:\n${result.stderr}")
         }
@@ -88,10 +88,15 @@ internal class TproxyRootRunner(
     }
 
     private suspend fun runRootCommand(command: String, failureMessage: String) {
-        val result = rootAccess.exec(command)
+        val result = rootAccess.exec(command, ShellExecOptions(logFailure = false))
         if (result.errno != 0) {
-            AndroidAppLogger.error(LogTag, "$failureMessage:\n${result.stderr}")
-            error(result.stderr.ifBlank { result.stdout })
+            error(
+                diagnosticMessage(
+                    failureMessage,
+                    result.stderr,
+                    result.stdout,
+                ),
+            )
         }
     }
 
@@ -252,16 +257,6 @@ internal class TproxyRootRunner(
             delay(PortListenCheckIntervalMillis)
         }
         val result = rootAccess.exec(checkCommand, ShellExecOptions(logFailure = false))
-        if (result.errno != 0) {
-            AndroidAppLogger.warn(
-                LogTag,
-                diagnosticMessage(
-                    "netstat did not report tproxy-in port $tproxyPort as listening",
-                    result.stderr,
-                    result.stdout,
-                ),
-            )
-        }
         return result.errno == 0
     }
 

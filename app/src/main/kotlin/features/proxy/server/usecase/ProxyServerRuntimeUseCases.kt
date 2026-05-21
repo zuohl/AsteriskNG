@@ -2,7 +2,6 @@ package features.proxy.server.usecase
 
 import app.AppState
 import app.ProxyServerState
-import features.logs.AndroidAppLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -66,7 +65,6 @@ internal fun restartProxyServiceAfterSelection(
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
-                AndroidAppLogger.error(LogTag, "Failed to restart proxy service after selecting server", error)
                 updateAppState { state ->
                     if (state.selectedProxyServerId == serverId) {
                         state.copy(proxyRunning = false)
@@ -159,5 +157,3 @@ internal fun runProxyServerLatencyTest(
 private fun ProxyServerLatencyTestResult.toLatencyText(failedMessage: String): String {
     return if (elapsedMillis >= 0) "$elapsedMillis ms" else failedMessage
 }
-
-private const val LogTag = "ProxyServerRuntime"

@@ -21,7 +21,7 @@ class AndroidUserSpaceProvider(
     }
 
     suspend fun listAndroidUsers(): List<AndroidUser> {
-        val result = rootAccess.exec("cmd user list")
+        val result = rootAccess.exec("cmd user list", ShellExecOptions(logFailure = false))
         if (result.errno != 0) {
             error(result.stderr.ifBlank { "Unable to read Android users" })
         }

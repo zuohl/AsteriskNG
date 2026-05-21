@@ -12,7 +12,7 @@ class AndroidPackageProvider(
 ) {
     private val packageRepository = AndroidPackageRepository(
         context = context.applicationContext,
-        exec = { command -> rootAccess.exec(command) },
+        exec = { command -> rootAccess.exec(command, ShellExecOptions(logFailure = false)) },
         listAndroidUsers = { userSpaces.listAndroidUsers() },
     )
 

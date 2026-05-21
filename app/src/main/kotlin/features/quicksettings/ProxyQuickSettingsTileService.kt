@@ -87,7 +87,6 @@ class ProxyQuickSettingsTileService : TileService() {
                 finalRunning = toggleProxy()
             } catch (error: Throwable) {
                 if (error is CancellationException) throw error
-                AndroidAppLogger.error(LogTag, getString(R.string.quick_settings_tile_toggle_failed), error)
                 showToast(error.message ?: getString(R.string.quick_settings_tile_toggle_failed))
             } finally {
                 operationInProgress.set(false)
@@ -152,7 +151,6 @@ class ProxyQuickSettingsTileService : TileService() {
 
             is ProxyServiceResult.Failed -> {
                 stateStore.update { currentState -> currentState.copy(proxyRunning = false) }
-                AndroidAppLogger.error(LogTag, getString(R.string.quick_settings_tile_toggle_failed), result.error)
                 showToast(result.error.message ?: getString(R.string.quick_settings_tile_toggle_failed))
                 return false
             }

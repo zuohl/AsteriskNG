@@ -24,7 +24,6 @@ internal object AndroidLibXrayLiteRuntime {
         runCatching {
             controller.startLoop(config.xrayConfigJson, tunFd)
         }.onFailure { error ->
-            AndroidAppLogger.error(LogTag, "Failed to start AndroidLibXrayLite", error)
             runCatching { controller.stopLoop() }
                 .onFailure { stopError ->
                     AndroidAppLogger.warn(LogTag, "Failed to stop AndroidLibXrayLite after start failure", stopError)

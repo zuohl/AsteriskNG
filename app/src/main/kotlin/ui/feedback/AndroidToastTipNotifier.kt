@@ -2,7 +2,6 @@ package ui.feedback
 
 import android.content.Context
 import android.widget.Toast
-import features.logs.AndroidAppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -17,12 +16,7 @@ class AndroidToastTipNotifier(context: Context) {
 
     suspend fun showError(error: Throwable, fallbackMessage: String? = null) {
         val message = error.tipMessage(fallbackMessage)
-        AndroidAppLogger.error(LogTag, message, error)
         show(message)
-    }
-
-    private companion object {
-        private const val LogTag = "AsteriskNG"
     }
 }
 
