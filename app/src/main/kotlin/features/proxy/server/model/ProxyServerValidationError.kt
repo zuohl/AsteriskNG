@@ -47,7 +47,6 @@ enum class ProxyServerValidationError {
     BooleanRequired,
     PortHoppingIntervalNumberRequired,
     PortHoppingIntervalTooSmall,
-    PluginNameRequired,
     Shadowsocks2022KeyBase64Invalid,
     Shadowsocks2022KeyLengthInvalid,
     VlessVisionFlowUnsupported,

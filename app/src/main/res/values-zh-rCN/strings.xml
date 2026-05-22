@@ -423,7 +423,6 @@
     <string name="proxy_validation_boolean_required">取值必须为 true 或 false</string>
     <string name="proxy_validation_port_hopping_interval_number_required">端口跳跃间隔必须是数字</string>
     <string name="proxy_validation_port_hopping_interval_too_small">端口跳跃间隔至少为 5 秒</string>
-    <string name="proxy_validation_plugin_name_required">设置插件选项时必须填写插件名称</string>
     <string name="proxy_validation_shadowsocks_2022_key_base64_invalid">Shadowsocks 2022 密钥必须是 base64</string>
     <string name="proxy_validation_shadowsocks_2022_key_length_invalid">Shadowsocks 2022 密钥长度无效，解码后长度必须为 {lengths} 字节</string>
     <string name="proxy_validation_vless_vision_flow_unsupported">VLESS Vision flow 仅支持 RAW + TLS/REALITY</string>

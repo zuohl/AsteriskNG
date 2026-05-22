@@ -423,7 +423,6 @@
     <string name="proxy_validation_boolean_required">Value must be true or false</string>
     <string name="proxy_validation_port_hopping_interval_number_required">Port hopping interval must be a number</string>
     <string name="proxy_validation_port_hopping_interval_too_small">Port hopping interval must be at least 5 seconds</string>
-    <string name="proxy_validation_plugin_name_required">Plugin name is required when plugin options are set</string>
     <string name="proxy_validation_shadowsocks_2022_key_base64_invalid">Shadowsocks 2022 key must be base64</string>
     <string name="proxy_validation_shadowsocks_2022_key_length_invalid">Invalid Shadowsocks 2022 key length. Decoded length must be {lengths} bytes</string>
     <string name="proxy_validation_vless_vision_flow_unsupported">VLESS Vision flow only supports RAW + TLS/REALITY</string>

@@ -75,7 +75,6 @@ internal fun rememberProxyServerValidationMessageResolver(
         portHoppingIntervalNumberRequired =
             stringResource(R.string.proxy_validation_port_hopping_interval_number_required),
         portHoppingIntervalTooSmall = stringResource(R.string.proxy_validation_port_hopping_interval_too_small),
-        pluginNameRequired = stringResource(R.string.proxy_validation_plugin_name_required),
         shadowsocks2022KeyBase64Invalid =
             stringResource(R.string.proxy_validation_shadowsocks_2022_key_base64_invalid),
         shadowsocks2022KeyLengthInvalid =
@@ -130,7 +129,6 @@ private data class ProxyServerValidationMessages(
     val booleanRequired: String,
     val portHoppingIntervalNumberRequired: String,
     val portHoppingIntervalTooSmall: String,
-    val pluginNameRequired: String,
     val shadowsocks2022KeyBase64Invalid: String,
     val shadowsocks2022KeyLengthInvalid: String,
     val vlessVisionFlowUnsupported: String,
@@ -182,7 +180,6 @@ private data class ProxyServerValidationMessages(
             ProxyServerValidationError.BooleanRequired -> booleanRequired
             ProxyServerValidationError.PortHoppingIntervalNumberRequired -> portHoppingIntervalNumberRequired
             ProxyServerValidationError.PortHoppingIntervalTooSmall -> portHoppingIntervalTooSmall
-            ProxyServerValidationError.PluginNameRequired -> pluginNameRequired
             ProxyServerValidationError.Shadowsocks2022KeyBase64Invalid -> shadowsocks2022KeyBase64Invalid
             ProxyServerValidationError.Shadowsocks2022KeyLengthInvalid ->
                 shadowsocks2022KeyLengthInvalid.formatTemplate("lengths" to values.valueAt(0))

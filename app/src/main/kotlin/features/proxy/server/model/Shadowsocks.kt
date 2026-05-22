@@ -15,8 +15,6 @@ data class Shadowsocks(
     var port: String = "443",
     var method: String = "aes-256-gcm",
     var password: String = "",
-    var plugin: String? = null,
-    var pluginOpt: String? = null,
 ) : UrlProxyServer<Shadowsocks> {
     override fun getInfo(): ProxyServerInfo {
         return ProxyServerInfo(this.remarks, "${this.server}:${this.port}", "Shadowsocks")
@@ -64,14 +62,6 @@ data class Shadowsocks(
                 this.method = info.substring(0, pos)
                 this.password = info.substring(pos + 1)
             }
-            //parse Shadowsocks SIP003 plugin
-            url.parameters["plugin"]?.let {
-                val split = it.split(';')
-                this.plugin = split[0]
-                if (split.size > 1) {
-                    this.pluginOpt = it.substring(split[0].length + 1)
-                }
-            }
         }
         return this
     }
@@ -83,10 +73,6 @@ data class Shadowsocks(
             this@Shadowsocks.port.toIntOrNull()?.let { port = it }
             user = ProxyServer.base64
                 .encode("${this@Shadowsocks.method}:${this@Shadowsocks.password}".toByteArray())
-            if (!plugin.isNullOrBlank()) parameters.append(
-                "plugin",
-                "${this@Shadowsocks.plugin};${this@Shadowsocks.pluginOpt}"
-            )
             fragment = this@Shadowsocks.remarks
         }.build().toString()
     }
@@ -101,8 +87,6 @@ data class Shadowsocks(
             port = other.port
             method = other.method
             password = other.password
-            plugin = other.plugin
-            pluginOpt = other.pluginOpt
         }
     }
 
@@ -127,9 +111,6 @@ data class Shadowsocks(
         )
         validateRequired(password, "password")
         method.toXrayShadowsocksPassword(password)
-        if (plugin.isNullOrBlank() && !pluginOpt.isNullOrBlank()) {
-            proxyValidationError(ProxyServerValidationError.PluginNameRequired)
-        }
     }
 }
 
