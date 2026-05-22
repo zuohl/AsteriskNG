@@ -1,25 +1,29 @@
-@file:OptIn(ExperimentalScrollBarApi::class)
+@file:OptIn(ExperimentalFoundationApi::class, ExperimentalScrollBarApi::class)
 
 package features.routing
 
-import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import app.LocalAppServices
 import app.LocalAppStateStore
@@ -46,7 +50,13 @@ import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
+import ui.components.DragReorderLazyListCacheWindow
+import ui.components.adjacentDragDisplacementForItem
+import ui.components.autoScrollWhileDragging
+import ui.components.findDragDropTarget
+import ui.components.rememberLazyListOverlayDragState
 import ui.text.formatTemplate
+import kotlin.math.roundToInt
 
 private val DomainStrategyOptions = listOf(
     "AsIs",
@@ -98,8 +108,6 @@ fun RoutingPage(
 
     var editingRule by remember { mutableStateOf<RouteRule?>(null) }
     var showRuleDialog by remember { mutableStateOf(false) }
-    var draggingRuleId by remember { mutableStateOf<Int?>(null) }
-    var draggedRuleOffset by remember { mutableFloatStateOf(0f) }
     val rules = appState.routeRules
 
     Scaffold(
@@ -120,13 +128,50 @@ fun RoutingPage(
             )
         },
     ) { innerPadding ->
-        val lazyListState = rememberLazyListState()
+        val lazyListState = rememberLazyListState(cacheWindow = DragReorderLazyListCacheWindow)
+        val density = LocalDensity.current
+        val maxAutoScrollPerFrame = with(density) { 28.dp.toPx() }
+        val dragState = rememberLazyListOverlayDragState(lazyListState)
+        val draggedRuleId = dragState.draggedKey as? Int
+        val activeGhostRuleId = dragState.activeGhostKey as? Int
+        val hiddenRuleId = dragState.hiddenKey as? Int
         val contentPadding = pageContentPaddingWithCutout(
             innerPadding = innerPadding,
             outerPadding = padding,
             isWideScreen = isWideScreen,
         )
         val listPadding = pageListPadding(contentPadding)
+
+        fun moveDraggedRuleIfNeeded() {
+            val currentDragged = dragState.draggedItem ?: return
+            val ruleId = currentDragged.key as? Int ?: return
+            val target = lazyListState.findDragDropTarget(
+                draggedItem = currentDragged,
+                isReorderableItem = { item -> item.key is Int },
+                swapThreshold = RouteRuleSwapThreshold,
+            )
+            val targetRuleId = target?.key as? Int ?: return
+
+            updateAppState { state ->
+                state.copy(
+                    routeRules = state.routeRules.moveRuleTo(
+                        ruleId = ruleId,
+                        targetRuleId = targetRuleId,
+                    ),
+                )
+            }
+            dragState.updateDraggedIndex(target.index)
+        }
+
+        LaunchedEffect(lazyListState, draggedRuleId, maxAutoScrollPerFrame) {
+            if (draggedRuleId != null) {
+                lazyListState.autoScrollWhileDragging(
+                    draggedItemProvider = { dragState.draggedItem },
+                    maxScrollPerFrame = maxAutoScrollPerFrame,
+                    onFrame = { moveDraggedRuleIfNeeded() },
+                )
+            }
+        }
 
         Box {
             LazyColumn(
@@ -156,48 +201,23 @@ fun RoutingPage(
                     RouteRuleCard(
                         rule = rule,
                         outboundLabel = outboundLabels[rule.outboundTag] ?: rule.outboundTag,
-                        isDragging = draggingRuleId == rule.id,
-                        dragActive = draggingRuleId != null,
-                        visualOffset = lazyListState.routeRuleVisualOffset(
-                            ruleId = rule.id,
-                            draggedRuleId = draggingRuleId,
-                            draggedOffset = draggedRuleOffset,
+                        isDragging = false,
+                        dragActive = dragState.dragActive,
+                        visualOffset = lazyListState.adjacentDragDisplacementForItem(
+                            itemKey = rule.id,
+                            draggedItem = dragState.draggedItem,
+                            isReorderableItem = { item -> item.key is Int },
                         ),
                         draggable = rules.size > 1,
                         onDragStart = {
-                            draggingRuleId = rule.id
-                            draggedRuleOffset = 0f
+                            dragState.start(rule.id)
                         },
                         onDrag = { dragAmountY ->
-                            if (draggingRuleId != rule.id) {
-                                draggingRuleId = rule.id
-                                draggedRuleOffset = 0f
-                            }
-                            draggedRuleOffset += dragAmountY
-                            lazyListState.autoScrollForDraggedRouteRule(
-                                draggedRuleId = rule.id,
-                                draggedOffset = draggedRuleOffset,
-                                scrollBy = { amount ->
-                                    scope.launch { lazyListState.scrollBy(amount) }
-                                },
-                            )
+                            dragState.dragBy(rule.id, dragAmountY)
+                            moveDraggedRuleIfNeeded()
                         },
                         onDragEnd = {
-                            lazyListState.findRouteRuleDropTarget(
-                                draggedRuleId = rule.id,
-                                draggedOffset = draggedRuleOffset,
-                            )?.let { targetRuleId ->
-                                updateAppState { state ->
-                                    state.copy(
-                                        routeRules = state.routeRules.moveRuleTo(
-                                            ruleId = rule.id,
-                                            targetRuleId = targetRuleId,
-                                        ),
-                                    )
-                                }
-                            }
-                            draggingRuleId = null
-                            draggedRuleOffset = 0f
+                            dragState.settle()
                         },
                         onToggle = { enabled ->
                             updateAppState { state ->
@@ -213,10 +233,7 @@ fun RoutingPage(
                             showRuleDialog = true
                         },
                         onDelete = {
-                            if (draggingRuleId == rule.id) {
-                                draggingRuleId = null
-                                draggedRuleOffset = 0f
-                            }
+                            dragState.clearIfActive(rule.id)
                             updateAppState { state ->
                                 state.copy(
                                     routeRules = state.routeRules.filterNot { it.id == rule.id },
@@ -226,13 +243,15 @@ fun RoutingPage(
                                 tipNotifier.show(deletedTemplate.formatTemplate("name" to rule.remarks))
                             }
                         },
-                        modifier = Modifier
-                            .zIndex(if (draggingRuleId == rule.id) 2f else 0f)
-                            .animateItem(
+                        modifier = if (hiddenRuleId == rule.id) {
+                            Modifier.alpha(0f)
+                        } else {
+                            Modifier.animateItem(
                                 fadeInSpec = null,
                                 fadeOutSpec = null,
                                 placementSpec = folmeSpring(damping = 0.9f, response = 0.38f),
-                            ),
+                            )
+                        },
                     )
                 }
                 item(key = "routing_empty") {
@@ -246,6 +265,24 @@ fun RoutingPage(
                 modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
                 trackPadding = contentPadding,
             )
+            activeGhostRuleId?.let { ruleId ->
+                val rule = rules.firstOrNull { item -> item.id == ruleId }
+                if (rule != null) {
+                    RouteRuleDragGhost(
+                        rule = rule,
+                        outboundLabel = outboundLabels[rule.outboundTag] ?: rule.outboundTag,
+                        isDragging = dragState.isDragging(ruleId),
+                        modifier = Modifier
+                            .offset {
+                                IntOffset(
+                                    0,
+                                    dragState.ghostTop.roundToInt(),
+                                )
+                            }
+                            .zIndex(3f),
+                    )
+                }
+            }
         }
     }
 
@@ -280,82 +317,36 @@ fun RoutingPage(
 }
 
 @Composable
+private fun RouteRuleDragGhost(
+    rule: RouteRule,
+    outboundLabel: String,
+    isDragging: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    RouteRuleCard(
+        rule = rule,
+        outboundLabel = outboundLabel,
+        isDragging = isDragging,
+        dragActive = true,
+        visualOffset = 0f,
+        draggable = false,
+        onDragStart = {},
+        onDrag = {},
+        onDragEnd = {},
+        onToggle = {},
+        onEdit = {},
+        onDelete = {},
+        modifier = modifier,
+    )
+}
+
+@Composable
 private fun fixedRouteRuleOutboundOptions(): List<RouteRuleOutboundOption> {
     return listOf(
         RouteRuleOutboundOption(tag = "proxy", label = stringResource(R.string.routing_outbound_proxy)),
         RouteRuleOutboundOption(tag = "direct", label = stringResource(R.string.routing_outbound_direct)),
         RouteRuleOutboundOption(tag = "block", label = stringResource(R.string.routing_outbound_block)),
     )
-}
-
-private fun androidx.compose.foundation.lazy.LazyListState.routeRuleVisualOffset(
-    ruleId: Int,
-    draggedRuleId: Int?,
-    draggedOffset: Float,
-): Float {
-    if (draggedRuleId == null) return 0f
-    if (ruleId == draggedRuleId) return draggedOffset
-
-    val visibleRouteRules = layoutInfo.visibleItemsInfo.filter { item -> item.key is Int }
-    val dragged = visibleRouteRules.firstOrNull { item -> item.key == draggedRuleId } ?: return 0f
-    val item = visibleRouteRules.firstOrNull { item -> item.key == ruleId } ?: return 0f
-
-    return when {
-        draggedOffset > 0f && item.offset > dragged.offset -> {
-            val draggedBottom = dragged.offset + dragged.size + draggedOffset
-            val progress = ((draggedBottom - item.offset) / item.size).coerceIn(0f, 1f)
-            -dragged.size * progress
-        }
-        draggedOffset < 0f && item.offset < dragged.offset -> {
-            val draggedTop = dragged.offset + draggedOffset
-            val progress = ((item.offset + item.size - draggedTop) / item.size).coerceIn(0f, 1f)
-            dragged.size * progress
-        }
-        else -> 0f
-    }
-}
-
-private fun androidx.compose.foundation.lazy.LazyListState.findRouteRuleDropTarget(
-    draggedRuleId: Int,
-    draggedOffset: Float,
-): Int? {
-    val visibleRouteRules = layoutInfo.visibleItemsInfo.filter { item -> item.key is Int }
-    val dragged = visibleRouteRules.firstOrNull { item -> item.key == draggedRuleId } ?: return null
-    val draggedCenter = dragged.offset + dragged.size / 2f + draggedOffset
-    val target = when {
-        draggedOffset > 0f -> visibleRouteRules.lastOrNull { item ->
-            item.offset > dragged.offset && draggedCenter >= item.forwardSwapThreshold
-        }
-        draggedOffset < 0f -> visibleRouteRules.firstOrNull { item ->
-            item.offset < dragged.offset && draggedCenter <= item.backwardSwapThreshold
-        }
-        else -> null
-    } ?: return null
-
-    return target.key as? Int
-}
-
-private val LazyListItemInfo.forwardSwapThreshold: Float
-    get() = offset + size * RouteRuleSwapThreshold
-
-private val LazyListItemInfo.backwardSwapThreshold: Float
-    get() = offset + size * (1f - RouteRuleSwapThreshold)
-
-private fun androidx.compose.foundation.lazy.LazyListState.autoScrollForDraggedRouteRule(
-    draggedRuleId: Int,
-    draggedOffset: Float,
-    scrollBy: (Float) -> Unit,
-) {
-    val dragged = layoutInfo.visibleItemsInfo.firstOrNull { item -> item.key == draggedRuleId } ?: return
-    val draggedCenter = dragged.offset + dragged.size / 2f + draggedOffset
-    val edgeSize = dragged.size.coerceAtLeast(1) / 2f
-    val topEdge = layoutInfo.viewportStartOffset + edgeSize
-    val bottomEdge = layoutInfo.viewportEndOffset - edgeSize
-
-    when {
-        draggedCenter < topEdge -> scrollBy(-edgeSize / 3f)
-        draggedCenter > bottomEdge -> scrollBy(edgeSize / 3f)
-    }
 }
 
 private fun List<RouteRule>.moveRuleTo(ruleId: Int, targetRuleId: Int): List<RouteRule> {

@@ -163,7 +163,7 @@ internal fun ProxyServerListItemCard(
     val latencyText = server.latency.trim()
     val animatedDragOffset by animateFloatAsState(
         targetValue = visualOffset,
-        animationSpec = if (dragActive) {
+        animationSpec = if (dragActive && isDragging) {
             snap()
         } else {
             folmeSpring(damping = 0.9f, response = 0.38f)
