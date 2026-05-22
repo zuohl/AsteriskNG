@@ -150,7 +150,7 @@ data class VMess(
         this.server = url.host
         this.port = url.port.toString()
         this.encryption = url.parameters["encryption"] ?: "auto"
-        this.parms = this.parms.parse(url, "tcp", "none")
+        this.parms = this.parms.parse(url, "raw", "none")
         return this
     }
 

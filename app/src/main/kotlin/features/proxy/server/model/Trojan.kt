@@ -38,7 +38,7 @@ data class Trojan(
         this.password = url.user ?: throw ParseException("Invalid Trojan url")
         this.server = url.host
         this.port = url.port.toString()
-        this.parms = this.parms.parse(url, "tcp", "none")
+        this.parms = this.parms.parse(url, "raw", "none")
         return this
     }
 

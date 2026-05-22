@@ -99,7 +99,7 @@ internal fun unsupportedProxyServerUrl(url: Url): Nothing {
 @Serializable
 data class V2RayParameters(
     // standard
-    var type: String = "tcp",
+    var type: String = "raw",
     var security: String = "none",
     var path: String? = null,
     var host: String? = null,
@@ -194,12 +194,13 @@ data class V2RayParameters(
     }
 
     fun get(): Parameters {
+        val transportType = type.toV2RayTransportTypeParameter()
         return ParametersBuilder().apply {
-            appendIfNotBlank("type", this@V2RayParameters.type)
+            appendIfNotBlank("type", transportType)
             appendIfNotBlank("security", this@V2RayParameters.security)
             appendIfNotBlank("fm", this@V2RayParameters.fm)
-            when (type) {
-                "tcp", "raw" -> {
+            when (transportType) {
+                "raw" -> {
                     appendIfNotBlank("headerType", this@V2RayParameters.headerType)
                     appendIfNotBlank("host", this@V2RayParameters.host)
                 }
@@ -252,6 +253,13 @@ data class V2RayParameters(
                 else -> throw ParseException("Unknown v2ray security type: $security")
             }
         }.build()
+    }
+}
+
+private fun String.toV2RayTransportTypeParameter(): String {
+    return when (val transportType = ifBlank { "raw" }) {
+        "tcp" -> "raw"
+        else -> transportType
     }
 }
 

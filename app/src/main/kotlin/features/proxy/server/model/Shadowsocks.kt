@@ -15,6 +15,7 @@ data class Shadowsocks(
     var port: String = "443",
     var method: String = "aes-256-gcm",
     var password: String = "",
+    var parms: V2RayParameters = V2RayParameters(),
 ) : UrlProxyServer<Shadowsocks> {
     override fun getInfo(): ProxyServerInfo {
         return ProxyServerInfo(this.remarks, "${this.server}:${this.port}", "Shadowsocks")
@@ -30,6 +31,7 @@ data class Shadowsocks(
                 put("method", method)
                 put("password", method.toXrayShadowsocksPassword(password))
             },
+            streamSettings = parms.toXrayStreamSettings(),
         )
     }
 
@@ -87,6 +89,7 @@ data class Shadowsocks(
             port = other.port
             method = other.method
             password = other.password
+            parms = other.parms.copy()
         }
     }
 
@@ -111,6 +114,7 @@ data class Shadowsocks(
         )
         validateRequired(password, "password")
         method.toXrayShadowsocksPassword(password)
+        validateV2RayParameters(parms)
     }
 }
 

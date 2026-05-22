@@ -268,4 +268,5 @@ internal fun LazyListScope.shadowsocksProxyServer(ssEdit: Shadowsocks) {
             },
         )
     }
+    v2rayServerTransport(ssEdit.parms)
 }

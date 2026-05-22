@@ -44,7 +44,7 @@ data class VLESS(
         this.port = url.port.toString()
         this.encryption = url.parameters["encryption"] ?: "none"
         this.flow = url.parameters["flow"] ?: ""
-        this.parms = this.parms.parse(url, "tcp", "none")
+        this.parms = this.parms.parse(url, "raw", "none")
         return this
     }
 
@@ -85,7 +85,7 @@ data class VLESS(
         validateVlessEncryption(encryption)
         if (flow.isNotBlank()) {
             val usesVlessEncryption = encryption.isNotBlank() && encryption != "none"
-            val transport = parms.type.ifBlank { "tcp" }
+            val transport = parms.type.ifBlank { "raw" }
             if (!usesVlessEncryption && (transport !in setOf("tcp", "raw") || parms.security !in setOf("tls", "reality"))) {
                 proxyValidationError(ProxyServerValidationError.VlessVisionFlowUnsupported)
             }

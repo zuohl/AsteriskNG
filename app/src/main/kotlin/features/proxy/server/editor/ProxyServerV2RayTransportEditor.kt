@@ -30,7 +30,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         val focusManager = LocalFocusManager.current
         val typeOptions = remember {
             listOf(
-                "tcp",
+                "raw",
                 "kcp",
                 "ws",
                 "httpupgrade",
@@ -62,7 +62,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                 params.type = typeOptions[newType]
             },
         )
-        //tcp
+        //raw
         AnimatedVisibility(
             visible = type.intValue == 0,
             enter = fadeIn() + expandVertically(),
@@ -77,7 +77,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                         if (headerTypeOptions.indexOf(params.headerType) > -1) headerTypeOptions.indexOf(params.headerType) else 0
                     )
                 }
-                SmallTitle(text = stringResource(R.string.proxy_editor_transport_tcp))
+                SmallTitle(text = stringResource(R.string.proxy_editor_transport_raw))
                 OverlayDropdownPreference(
                     title = stringResource(R.string.proxy_editor_header_type),
                     items = headerTypeOptions,
