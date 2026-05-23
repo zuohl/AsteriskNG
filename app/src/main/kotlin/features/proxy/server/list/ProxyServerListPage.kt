@@ -62,6 +62,7 @@ fun ProxyServerListPage(
     val subscriptionFetchUseCase = services.subscriptionFetchUseCase
     val proxyEngine = services.proxyEngine
     val proxyServiceUseCase = services.proxyServiceUseCase
+    val proxyServerImportFileUseCase = services.proxyServerImportFileUseCase
     val tipNotifier = services.tipNotifier
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
@@ -210,6 +211,7 @@ fun ProxyServerListPage(
                 updateAppState = updateAppState,
                 navigator = navigator,
                 qrScanner = qrScanner,
+                proxyServerImportFileUseCase = proxyServerImportFileUseCase,
                 subscriptionFetchUseCase = subscriptionFetchUseCase,
                 proxyServiceUseCase = proxyServiceUseCase,
                 clipboard = clipboard,

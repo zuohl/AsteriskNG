@@ -10,33 +10,35 @@ import app.AppState
 import app.ProxyServerListState
 import app.ProxyServerState
 import app.R
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import features.subscription.DefaultSubscriptionGroupId
-import features.proxy.server.model.getUrlOrNull
 import app.navigation.Navigator
 import app.navigation.Route
+import data.AndroidAppStateStore
 import engine.proxy.latency.ProxyServerLatencyTestMode
+import features.proxy.server.model.getUrlOrNull
 import features.proxy.server.qr.ProxyServerQrScanUseCase
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
-import features.subscription.SubscriptionFetchUseCase
-import data.AndroidAppStateStore
+import features.proxy.server.usecase.ProxyServerImportFileUseCase
+import features.proxy.server.usecase.ProxyServerImportSource
 import features.proxy.server.usecase.createProxyServer
 import features.proxy.server.usecase.deleteDuplicateServersInGroup
 import features.proxy.server.usecase.importProxyServersFromText
 import features.proxy.server.usecase.updatableSubscriptionGroups
 import features.proxy.server.usecase.withImportedProxyServers
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
-import ui.feedback.AndroidToastTipNotifier
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import ui.layout.AdaptiveTopAppBar
-import ui.text.formatTemplate
-import ui.clipboard.getPlainText
-import ui.clipboard.setPlainText
+import features.subscription.DefaultSubscriptionGroupId
+import features.subscription.SubscriptionFetchUseCase
 import features.subscription.usecase.subscriptionUpdateMessage
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import ui.clipboard.getPlainText
+import ui.clipboard.setPlainText
+import ui.feedback.AndroidToastTipNotifier
+import ui.layout.AdaptiveTopAppBar
+import ui.text.formatTemplate
 
 @Composable
 internal fun ProxyServerListTopBar(
@@ -51,6 +53,7 @@ internal fun ProxyServerListTopBar(
     updateAppState: ((AppState) -> AppState) -> Unit,
     navigator: Navigator,
     qrScanner: ProxyServerQrScanUseCase,
+    proxyServerImportFileUseCase: ProxyServerImportFileUseCase,
     subscriptionFetchUseCase: SubscriptionFetchUseCase,
     proxyServiceUseCase: ProxyServiceUseCase,
     clipboard: Clipboard,
@@ -76,6 +79,7 @@ internal fun ProxyServerListTopBar(
                     updateAppState = updateAppState,
                     navigator = navigator,
                     qrScanner = qrScanner,
+                    proxyServerImportFileUseCase = proxyServerImportFileUseCase,
                     clipboard = clipboard,
                     tipNotifier = tipNotifier,
                     scope = scope,
@@ -132,6 +136,7 @@ private fun handleProxyServerListAddAction(
     updateAppState: ((AppState) -> AppState) -> Unit,
     navigator: Navigator,
     qrScanner: ProxyServerQrScanUseCase,
+    proxyServerImportFileUseCase: ProxyServerImportFileUseCase,
     clipboard: Clipboard,
     tipNotifier: AndroidToastTipNotifier,
     scope: CoroutineScope,
@@ -146,8 +151,8 @@ private fun handleProxyServerListAddAction(
                         if (scanText.isNullOrBlank()) return@onSuccess
                         importProxyServers(
                             text = scanText,
+                            source = ProxyServerImportSource.QrCode,
                             groupState = groupState,
-                            proxyListState = proxyListState,
                             updateAppState = updateAppState,
                             tipNotifier = tipNotifier,
                             messages = messages,
@@ -161,12 +166,29 @@ private fun handleProxyServerListAddAction(
             scope.launch {
                 importProxyServers(
                     text = clipboard.getPlainText().orEmpty(),
+                    source = ProxyServerImportSource.Clipboard,
                     groupState = groupState,
-                    proxyListState = proxyListState,
                     updateAppState = updateAppState,
                     tipNotifier = tipNotifier,
                     messages = messages,
                 )
+            }
+        }
+
+        ProxyServerListAddAction.File -> {
+            scope.launch {
+                runCatching {
+                    proxyServerImportFileUseCase.readText()?.let { text ->
+                        importProxyServers(
+                            text = text,
+                            source = ProxyServerImportSource.File,
+                            groupState = groupState,
+                            updateAppState = updateAppState,
+                            tipNotifier = tipNotifier,
+                            messages = messages,
+                        )
+                    }
+                }.onFailure { error -> tipNotifier.showError(error) }
             }
         }
 
@@ -192,8 +214,8 @@ private fun handleProxyServerListAddAction(
 
 private suspend fun importProxyServers(
     text: String,
+    source: ProxyServerImportSource,
     groupState: ProxyServerListGroups,
-    proxyListState: ProxyServerListState,
     updateAppState: ((AppState) -> AppState) -> Unit,
     tipNotifier: AndroidToastTipNotifier,
     messages: ProxyServerListMessages,
@@ -205,15 +227,13 @@ private suspend fun importProxyServers(
     }
     val importResult = importProxyServersFromText(
         text = text,
-        startServerId = proxyListState.nextProxyServerId,
-        groupId = targetGroupId,
+        source = source,
     )
     if (importResult.servers.isNotEmpty()) {
-        updateAppState { state -> state.withImportedProxyServers(importResult) }
+        updateAppState { state -> state.withImportedProxyServers(importResult, targetGroupId) }
     }
     tipNotifier.show(
-        messages.clipboardImportResultTemplate.formatTemplate(
-            "urlCount" to importResult.urlCount,
+        messages.importResultTemplate.formatTemplate(
             "serverCount" to importResult.servers.size,
         ),
     )

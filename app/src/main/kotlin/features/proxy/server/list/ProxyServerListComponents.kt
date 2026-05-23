@@ -448,6 +448,7 @@ private fun ProtocolChip(
 private fun proxyServerListAddMenuEntries() = listOf(
     ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_scan_qr_code), ProxyServerListAddAction.ScanQrCode),
     ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_import_clipboard), ProxyServerListAddAction.Clipboard),
+    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_import_file), ProxyServerListAddAction.File),
     ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_strategy_group), ProxyServerListAddAction.StrategyGroup),
     ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_chain_proxy), ProxyServerListAddAction.ChainProxy),
     ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_http), ProxyServerListAddAction.HTTP),

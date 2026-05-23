@@ -23,6 +23,7 @@ import data.AndroidAppStateStore
 import engine.proxy.AndroidProxyEngine
 import engine.proxy.latency.AndroidProxyLatencyTester
 import features.proxy.server.qr.ProxyServerQrScanUseCase
+import features.proxy.server.usecase.ProxyServerImportFileUseCase
 import features.proxy.server.usecase.ProxyServiceUseCase
 import features.resources.ResourceFileUseCase
 import features.settings.locale.ProvideAppLanguage
@@ -74,6 +75,12 @@ fun App(
     val qrScanner = remember(qrCodeScanner) {
         ProxyServerQrScanUseCase(qrCodeScanner)
     }
+    val proxyServerImportFileUseCase = remember(appContext, resourceFilePicker) {
+        ProxyServerImportFileUseCase(
+            context = appContext,
+            filePicker = resourceFilePicker,
+        )
+    }
     val proxyLatencyTester = remember(appContext) {
         AndroidProxyLatencyTester(appContext)
     }
@@ -117,6 +124,7 @@ fun App(
         resourceFileUseCase,
         subscriptionFetchUseCase,
         qrScanner,
+        proxyServerImportFileUseCase,
         proxyLatencyTester,
         proxyServiceUseCase,
         switchRunModeUseCase,
@@ -135,6 +143,7 @@ fun App(
             resourceFileUseCase = resourceFileUseCase,
             subscriptionFetchUseCase = subscriptionFetchUseCase,
             qrScanner = qrScanner,
+            proxyServerImportFileUseCase = proxyServerImportFileUseCase,
             proxyLatencyTester = proxyLatencyTester,
             proxyServiceUseCase = proxyServiceUseCase,
             switchRunModeUseCase = switchRunModeUseCase,

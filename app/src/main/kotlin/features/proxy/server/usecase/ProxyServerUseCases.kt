@@ -16,12 +16,6 @@ import features.proxy.server.model.VLESS
 import features.proxy.server.model.VMess
 import features.proxy.server.model.Wireguard
 import features.proxy.server.model.getUrlOrNull
-import kotlin.io.encoding.Base64
-
-internal data class ProxyServerListImportResult(
-    val urlCount: Int,
-    val servers: List<ProxyServerState>,
-)
 
 internal data class ProxyServerListSubscriptionUpdate(
     val groupId: Int,
@@ -44,17 +38,23 @@ internal data class ProxyServerListDuplicateDeleteResult(
 )
 
 internal fun AppState.withImportedProxyServers(
-    importResult: ProxyServerListImportResult,
+    importResult: ProxyServerImportResult,
+    groupId: Int,
 ): AppState {
     if (importResult.servers.isEmpty()) {
         return this
     }
+    var nextServerId = nextProxyServerId
+    val importedServers = importResult.servers.map { server ->
+        ProxyServerState(
+            id = nextServerId++,
+            groupId = groupId,
+            server = server,
+        )
+    }
     return copy(
-        proxyServers = importResult.servers + proxyServers,
-        nextProxyServerId = maxOf(
-            nextProxyServerId,
-            (importResult.servers.maxOfOrNull { server -> server.id } ?: 0) + 1,
-        ),
+        proxyServers = importedServers + proxyServers,
+        nextProxyServerId = maxOf(nextProxyServerId, nextServerId),
     )
 }
 
@@ -139,7 +139,7 @@ internal fun AppState.withUpdatedSubscriptionServers(
 
 internal fun List<SubscriptionGroupState>.updatableSubscriptionGroups(): List<SubscriptionGroupState> {
     return filter { group ->
-        group.enabled && !group.builtIn && group.url.isNotBlank()
+        group.enabled && group.url.isNotBlank()
     }
 }
 
@@ -193,6 +193,8 @@ internal fun createProxyServer(action: ProxyServerListAddAction): ProxyServer<*>
     return when (action) {
         ProxyServerListAddAction.ScanQrCode,
         ProxyServerListAddAction.Clipboard,
+        ProxyServerListAddAction.File -> error("Import action cannot create a proxy server")
+
         ProxyServerListAddAction.Shadowsocks -> Shadowsocks(port = "")
 
         ProxyServerListAddAction.ChainProxy -> ChainProxy()
@@ -214,116 +216,5 @@ internal fun createProxyServer(action: ProxyServerListAddAction): ProxyServer<*>
         ProxyServerListAddAction.Wireguard -> Wireguard(port = "", reserved = "", address = "", mtu = "")
     }
 }
-
-internal fun importProxyServersFromText(
-    text: String,
-    startServerId: Int,
-    groupId: Int,
-): ProxyServerListImportResult {
-    return importProxyServersFromLines(
-        lines = text.lineSequence(),
-        startServerId = startServerId,
-        groupId = groupId,
-    )
-}
-
-internal fun importProxyServersFromSubscriptionText(
-    text: String,
-    groupId: Int,
-): ProxyServerListSubscriptionUpdate {
-    val decodedText = text.decodeSubscriptionBase64()
-    if (!decodedText.isNullOrBlank()) {
-        val decodedResult = parseProxyServersFromLines(
-            lines = decodedText.lineSequence(),
-            distinct = true,
-        )
-        if (decodedResult.servers.isNotEmpty()) {
-            return ProxyServerListSubscriptionUpdate(
-                groupId = groupId,
-                urlCount = decodedResult.urlCount,
-                servers = decodedResult.servers,
-            )
-        }
-    }
-    val plainResult = parseProxyServersFromLines(
-        lines = text.lineSequence(),
-        distinct = true,
-    )
-    return ProxyServerListSubscriptionUpdate(
-        groupId = groupId,
-        urlCount = plainResult.urlCount,
-        servers = plainResult.servers,
-    )
-}
-
-private fun importProxyServersFromLines(
-    lines: Sequence<String>,
-    startServerId: Int,
-    groupId: Int,
-    distinct: Boolean = false,
-): ProxyServerListImportResult {
-    val urls = lines
-        .map(String::trim)
-        .filter(String::isNotEmpty)
-        .let { sequence -> if (distinct) sequence.distinct() else sequence }
-        .toList()
-    var nextServerId = startServerId
-    val servers = urls.mapNotNull { url ->
-        runCatching {
-            val server = ProxyServer.parse(url)
-            ProxyServerState(
-                id = nextServerId++,
-                groupId = groupId,
-                server = server,
-            )
-        }.getOrNull()
-    }
-    return ProxyServerListImportResult(
-        urlCount = urls.size,
-        servers = servers,
-    )
-}
-
-private data class ParsedProxyServerLines(
-    val urlCount: Int,
-    val servers: List<ProxyServer<*>>,
-)
-
-private fun parseProxyServersFromLines(
-    lines: Sequence<String>,
-    distinct: Boolean = false,
-): ParsedProxyServerLines {
-    val urls = lines
-        .map(String::trim)
-        .filter(String::isNotEmpty)
-        .let { sequence -> if (distinct) sequence.distinct() else sequence }
-        .toList()
-    val servers = urls.mapNotNull { url ->
-        runCatching { ProxyServer.parse(url) }.getOrNull()
-    }
-    return ParsedProxyServerLines(
-        urlCount = urls.size,
-        servers = servers,
-    )
-}
-
-private fun String.decodeSubscriptionBase64(): String? {
-    val normalized = filterNot(Char::isWhitespace)
-    if (normalized.isBlank()) return null
-    return SubscriptionBase64Decoders.firstNotNullOfOrNull { decoder ->
-        runCatching { decoder.decode(normalized).decodeToString() }.getOrNull()
-    } ?: normalized.trimEnd('=').takeIf { it.length != normalized.length }?.let { trimmed ->
-        SubscriptionBase64Decoders.firstNotNullOfOrNull { decoder ->
-            runCatching { decoder.decode(trimmed).decodeToString() }.getOrNull()
-        }
-    }
-}
-
-private val SubscriptionBase64Decoders = listOf(
-    Base64.Default,
-    Base64.Default.withPadding(Base64.PaddingOption.ABSENT_OPTIONAL),
-    Base64.UrlSafe,
-    Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT_OPTIONAL),
-)
 
 private const val MillisPerHour = 60L * 60L * 1000L

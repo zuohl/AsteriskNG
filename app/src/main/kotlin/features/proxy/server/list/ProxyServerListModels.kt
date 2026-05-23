@@ -3,6 +3,7 @@ package features.proxy.server.list
 internal enum class ProxyServerListAddAction {
     ScanQrCode,
     Clipboard,
+    File,
     StrategyGroup,
     ChainProxy,
     HTTP,

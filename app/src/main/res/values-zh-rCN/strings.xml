@@ -289,6 +289,7 @@
     <string name="proxy_server_list_stop_proxy">停止代理</string>
     <string name="proxy_server_list_scan_qr_code">扫描二维码</string>
     <string name="proxy_server_list_import_clipboard">从剪贴板导入</string>
+    <string name="proxy_server_list_import_file">从文件导入</string>
     <string name="proxy_server_list_add_strategy_group">添加 策略组</string>
     <string name="proxy_server_list_add_chain_proxy">添加 链式代理</string>
     <string name="proxy_server_list_add_http">添加 HTTP</string>
@@ -320,9 +321,10 @@
     <string name="proxy_server_list_delete_selected_blocked">不能删除当前选择的代理节点</string>
     <string name="proxy_server_list_latency_result">{name} 延迟 {latency}</string>
     <string name="proxy_server_list_latency_failed">失败</string>
-    <string name="proxy_server_list_clipboard_import_result">已读取{urlCount}个URL，导入成功{serverCount}个代理节点</string>
+    <string name="proxy_server_list_import_result">导入成功{serverCount}个代理节点</string>
     <string name="proxy_server_list_duplicates_deleted">已删除 {count} 个重复代理节点</string>
     <string name="proxy_server_list_no_duplicates">未发现重复代理节点</string>
+    <string name="error_proxy_server_import_file_open_failed">无法打开导入文件</string>
 
     <!-- Proxy editor -->
     <string name="proxy_editor_validation_failed">配置校验失败</string>

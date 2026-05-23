@@ -3,8 +3,10 @@ package features.subscription.usecase
 import app.AppState
 import app.SubscriptionGroupState
 import app.modes.RunModeVpnService
+import features.proxy.server.usecase.ProxyServerImportSource
+import features.proxy.server.usecase.ProxyServerListSubscriptionUpdate
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdateResult
-import features.proxy.server.usecase.importProxyServersFromSubscriptionText
+import features.proxy.server.usecase.importProxyServersFromText
 import features.subscription.SubscriptionFetchOptions
 import features.subscription.SubscriptionFetchUseCase
 import kotlinx.coroutines.async
@@ -26,9 +28,14 @@ internal suspend fun updateSubscriptions(
                     userAgent = group.userAgent,
                     options = fetchOptions(group),
                 )
-                importProxyServersFromSubscriptionText(
+                val importResult = importProxyServersFromText(
                     text = text,
+                    source = ProxyServerImportSource.SubscriptionUrl,
+                )
+                ProxyServerListSubscriptionUpdate(
                     groupId = group.id,
+                    urlCount = importResult.urlCount,
+                    servers = importResult.servers,
                 )
             }.getOrNull()
         }
@@ -64,4 +71,3 @@ internal fun subscriptionUpdateMessage(
         "serverCount" to result.importedServerCount,
     )
 }
-
