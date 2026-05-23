@@ -7,48 +7,40 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.Clipboard
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import app.AppState
 import app.ProxyServerState
 import app.R
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import features.proxy.server.model.getUrlOrNull
 import app.navigation.Navigator
 import app.navigation.Route
-import ui.feedback.AndroidToastTipNotifier
+import features.proxy.server.model.getUrlOrNull
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import sh.calvin.reorderable.ReorderableItem
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
-import ui.text.formatTemplate
-import ui.layout.pageScrollModifiers
 import ui.clipboard.setPlainText
-import ui.components.DragReorderLazyListCacheWindow
-import ui.components.adjacentDragDisplacementForItem
-import ui.components.autoScrollWhileDragging
-import ui.components.findDragDropTarget
-import ui.components.rememberLazyListOverlayDragState
-import kotlin.math.roundToInt
-
-private const val ProxyServerSwapThreshold = 0.3f
+import ui.components.longPressReorderDragModifier
+import ui.components.moveItem
+import ui.components.rememberAsteriskReorderableLazyListState
+import ui.components.rememberReorderableLazyListContentPaddingWithoutTop
+import ui.components.rememberReorderableScrollThresholdPadding
+import ui.feedback.AndroidToastTipNotifier
+import ui.layout.pageScrollModifiers
+import ui.text.formatTemplate
 
 @Composable
 internal fun ProxyServerListPager(
@@ -79,58 +71,49 @@ internal fun ProxyServerListPager(
         val pageGroupId = groupState.groupTabs.getOrNull(it)?.id ?: groupState.selectedTabId
         val pageIsAllGroupsSelected = pageGroupId == AllProxyGroupId
         val keyword = searchValue.trim()
-        val pageServers = servers.filter { server ->
-            val info = server.server.getInfo()
-            ((pageIsAllGroupsSelected && server.groupId in groupState.visibleGroupIds) || server.groupId == pageGroupId) &&
-                (
-                    keyword.isEmpty() ||
-                        info.remarks.contains(keyword, ignoreCase = true)
-                    )
-        }
-        val lazyListState = rememberLazyListState(cacheWindow = DragReorderLazyListCacheWindow)
-        val density = LocalDensity.current
-        val maxAutoScrollPerFrame = with(density) { 28.dp.toPx() }
-        val dragState = rememberLazyListOverlayDragState(lazyListState)
-        val draggedServerId = dragState.draggedKey as? Int
-        val activeGhostServerId = dragState.activeGhostKey as? Int
-        val hiddenServerId = dragState.hiddenKey as? Int
-
-        fun moveDraggedServerIfNeeded() {
-            val currentDragged = dragState.draggedItem ?: return
-            val serverId = currentDragged.key as? Int ?: return
-            val target = lazyListState.findDragDropTarget(
-                draggedItem = currentDragged,
-                isReorderableItem = { item -> item.key is Int },
-                swapThreshold = ProxyServerSwapThreshold,
-            )
-            val targetServerId = target?.key as? Int ?: return
-
+        val pageServers = servers.filterPageServers(
+            pageGroupId = pageGroupId,
+            pageIsAllGroupsSelected = pageIsAllGroupsSelected,
+            visibleGroupIds = groupState.visibleGroupIds,
+            keyword = keyword,
+        )
+        val lazyListState = rememberLazyListState()
+        val listBottomPadding = listPadding.calculateBottomPadding()
+        val lazyContentPadding = rememberReorderableLazyListContentPaddingWithoutTop(listPadding)
+        val reorderableLazyListState = rememberAsteriskReorderableLazyListState(
+            lazyListState = lazyListState,
+            itemCount = pageServers.size,
+            scrollThresholdPadding = rememberReorderableScrollThresholdPadding(
+                bottom = listBottomPadding,
+            ),
+        ) { fromIndex, toIndex ->
             updateAppState { state ->
-                state.copy(
-                    proxyServers = state.proxyServers.moveServerTo(
-                        serverId = serverId,
-                        targetServerId = targetServerId,
-                    ),
+                val currentPageServers = state.proxyServers.filterPageServers(
+                    pageGroupId = pageGroupId,
+                    pageIsAllGroupsSelected = pageIsAllGroupsSelected,
+                    visibleGroupIds = groupState.visibleGroupIds,
+                    keyword = keyword,
                 )
-            }
-            dragState.updateDraggedIndex(target.index)
-        }
-
-        LaunchedEffect(lazyListState, draggedServerId, maxAutoScrollPerFrame) {
-            if (draggedServerId != null) {
-                lazyListState.autoScrollWhileDragging(
-                    draggedItemProvider = { dragState.draggedItem },
-                    maxScrollPerFrame = maxAutoScrollPerFrame,
-                    onFrame = { moveDraggedServerIfNeeded() },
+                val reorderedServers = state.proxyServers.reorderVisibleServer(
+                    pageServers = currentPageServers,
+                    fromIndex = fromIndex,
+                    toIndex = toIndex,
                 )
+                if (reorderedServers === state.proxyServers) {
+                    state
+                } else {
+                    state.copy(proxyServers = reorderedServers)
+                }
             }
         }
 
         Box(Modifier.fillMaxSize()) {
             LazyColumn(
                 state = lazyListState,
-                modifier = Modifier.pageScrollModifiers(topAppBarScrollBehavior),
-                contentPadding = listPadding,
+                modifier = Modifier
+                    .padding(top = listPadding.calculateTopPadding())
+                    .pageScrollModifiers(topAppBarScrollBehavior),
+                contentPadding = lazyContentPadding,
             ) {
                 if (pageServers.isEmpty()) {
                     item(key = "proxy_empty", contentType = "empty") {
@@ -142,50 +125,35 @@ internal fun ProxyServerListPager(
                         key = { server -> server.id },
                         contentType = { "proxy_server" },
                     ) { server ->
-                        ProxyServerListItem(
-                            server = server,
-                            selectedServerId = selectedServerId,
-                            pageIsAllGroupsSelected = pageIsAllGroupsSelected,
-                            pageGroupId = pageGroupId,
-                            unknownGroupName = unknownGroupName,
-                            itemTextFormatter = itemTextFormatter,
-                            groupState = groupState,
-                            updateAppState = updateAppState,
-                            navigator = navigator,
-                            clipboard = clipboard,
-                            tipNotifier = tipNotifier,
-                            scope = scope,
-                            messages = messages,
-                            resultKey = resultKey,
-                            onSelectedServerIdChange = onSelectedServerIdChange,
-                            isDragging = false,
-                            dragActive = dragState.dragActive,
-                            visualOffset = lazyListState.adjacentDragDisplacementForItem(
-                                itemKey = server.id,
-                                draggedItem = dragState.draggedItem,
-                                isReorderableItem = { item -> item.key is Int },
-                            ),
-                            draggable = pageServers.size > 1,
-                            onDragStart = {
-                                dragState.start(server.id)
-                            },
-                            onDrag = { dragAmountY ->
-                                dragState.dragBy(server.id, dragAmountY)
-                                moveDraggedServerIfNeeded()
-                            },
-                            onDragEnd = {
-                                dragState.settle()
-                            },
-                            modifier = if (hiddenServerId == server.id) {
-                                Modifier.alpha(0f)
-                            } else {
-                                Modifier.animateItem(
+                        ReorderableItem(reorderableLazyListState.reorderableState, key = server.id) { isDragging ->
+                            ProxyServerListItem(
+                                server = server,
+                                selectedServerId = selectedServerId,
+                                pageIsAllGroupsSelected = pageIsAllGroupsSelected,
+                                pageGroupId = pageGroupId,
+                                unknownGroupName = unknownGroupName,
+                                itemTextFormatter = itemTextFormatter,
+                                groupState = groupState,
+                                updateAppState = updateAppState,
+                                navigator = navigator,
+                                clipboard = clipboard,
+                                tipNotifier = tipNotifier,
+                                scope = scope,
+                                messages = messages,
+                                resultKey = resultKey,
+                                onSelectedServerIdChange = onSelectedServerIdChange,
+                                isDragging = isDragging,
+                                dragModifier = longPressReorderDragModifier(
+                                    enabled = pageServers.size > 1,
+                                    state = reorderableLazyListState,
+                                ),
+                                modifier = Modifier.animateItem(
                                     fadeInSpec = null,
                                     fadeOutSpec = null,
                                     placementSpec = folmeSpring(damping = 0.9f, response = 0.38f),
-                                )
-                            },
-                        )
+                                ),
+                            )
+                        }
                     }
                 }
             }
@@ -194,65 +162,8 @@ internal fun ProxyServerListPager(
                 modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
                 trackPadding = contentPadding,
             )
-            activeGhostServerId?.let { serverId ->
-                val server = pageServers.firstOrNull { item -> item.id == serverId }
-                if (server != null) {
-                    ProxyServerListDragGhost(
-                        server = server,
-                        selectedServerId = selectedServerId,
-                        pageIsAllGroupsSelected = pageIsAllGroupsSelected,
-                        unknownGroupName = unknownGroupName,
-                        itemTextFormatter = itemTextFormatter,
-                        groupState = groupState,
-                        isDragging = dragState.isDragging(serverId),
-                        modifier = Modifier
-                            .offset {
-                                IntOffset(
-                                    0,
-                                    dragState.ghostTop.roundToInt(),
-                                )
-                            }
-                            .zIndex(3f),
-                    )
-                }
-            }
         }
     }
-}
-
-@Composable
-private fun ProxyServerListDragGhost(
-    server: ProxyServerState,
-    selectedServerId: Int,
-    pageIsAllGroupsSelected: Boolean,
-    unknownGroupName: String,
-    itemTextFormatter: ProxyServerListItemTextFormatter,
-    groupState: ProxyServerListGroups,
-    isDragging: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    ProxyServerListItemCard(
-        server = server,
-        displayText = itemTextFormatter.displayOf(server),
-        selected = selectedServerId == server.id,
-        groupName = if (pageIsAllGroupsSelected) {
-            groupState.groupNames[server.groupId] ?: unknownGroupName
-        } else {
-            null
-        },
-        isDragging = isDragging,
-        dragActive = true,
-        visualOffset = 0f,
-        draggable = false,
-        onDragStart = {},
-        onDrag = {},
-        onDragEnd = {},
-        onSelect = {},
-        onShare = {},
-        onEdit = {},
-        onDelete = {},
-        modifier = modifier,
-    )
 }
 
 @Composable
@@ -273,12 +184,7 @@ private fun ProxyServerListItem(
     resultKey: String,
     onSelectedServerIdChange: (Int) -> Unit,
     isDragging: Boolean,
-    dragActive: Boolean,
-    visualOffset: Float,
-    draggable: Boolean,
-    onDragStart: () -> Unit,
-    onDrag: (Float) -> Unit,
-    onDragEnd: () -> Unit,
+    dragModifier: Modifier,
     modifier: Modifier = Modifier,
 ) {
     ProxyServerListItemCard(
@@ -292,12 +198,7 @@ private fun ProxyServerListItem(
             null
         },
         isDragging = isDragging,
-        dragActive = dragActive,
-        visualOffset = visualOffset,
-        draggable = draggable,
-        onDragStart = onDragStart,
-        onDrag = onDrag,
-        onDragEnd = onDragEnd,
+        dragModifier = dragModifier,
         onSelect = {
             onSelectedServerIdChange(server.id)
             updateAppState { state ->
@@ -356,17 +257,35 @@ private fun ProxyServerListItem(
     )
 }
 
-private fun List<ProxyServerState>.moveServerTo(
-    serverId: Int,
-    targetServerId: Int,
+private fun List<ProxyServerState>.filterPageServers(
+    pageGroupId: Int,
+    pageIsAllGroupsSelected: Boolean,
+    visibleGroupIds: Set<Int>,
+    keyword: String,
 ): List<ProxyServerState> {
-    val currentIndex = indexOfFirst { server -> server.id == serverId }
-    val targetIndex = indexOfFirst { server -> server.id == targetServerId }
-    if (currentIndex < 0 || targetIndex < 0 || currentIndex == targetIndex) {
-        return this
+    return filter { server ->
+        val groupMatches = if (pageIsAllGroupsSelected) {
+            server.groupId in visibleGroupIds
+        } else {
+            server.groupId == pageGroupId
+        }
+        groupMatches && (
+            keyword.isEmpty() ||
+                server.server.getInfo().remarks.contains(keyword, ignoreCase = true)
+            )
     }
+}
 
-    return toMutableList().apply {
-        add(targetIndex, removeAt(currentIndex))
-    }
+private fun List<ProxyServerState>.reorderVisibleServer(
+    pageServers: List<ProxyServerState>,
+    fromIndex: Int,
+    toIndex: Int,
+): List<ProxyServerState> {
+    val serverId = pageServers.getOrNull(fromIndex)?.id ?: return this
+    val targetServerId = pageServers.getOrNull(toIndex)?.id ?: return this
+
+    return moveItem(
+        fromIndex = indexOfFirst { server -> server.id == serverId },
+        toIndex = indexOfFirst { server -> server.id == targetServerId },
+    )
 }

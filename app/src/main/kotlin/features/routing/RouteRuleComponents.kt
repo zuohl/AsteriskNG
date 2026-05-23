@@ -1,8 +1,6 @@
 package features.routing
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,15 +11,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -31,7 +29,7 @@ import app.R
 import engine.network.isIpOrCidrAddress
 import engine.network.isPortList
 import features.routing.model.RouteRule
-import androidx.compose.ui.res.stringResource
+import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -39,15 +37,12 @@ import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import ui.components.StringListEditor
 import ui.components.StringListStatusText
 import ui.components.draggedCardShadow
@@ -86,25 +81,11 @@ internal fun RouteRuleCard(
     outboundLabel: String,
     onToggle: (Boolean) -> Unit,
     isDragging: Boolean,
-    dragActive: Boolean,
-    visualOffset: Float,
-    draggable: Boolean,
-    onDragStart: () -> Unit,
-    onDrag: (Float) -> Unit,
-    onDragEnd: () -> Unit,
+    dragModifier: Modifier = Modifier,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val animatedDragOffset by animateFloatAsState(
-        targetValue = visualOffset,
-        animationSpec = if (dragActive && isDragging) {
-            snap()
-        } else {
-            folmeSpring(damping = 0.9f, response = 0.38f)
-        },
-        label = "routeRuleDragOffset",
-    )
     val animatedScale by animateFloatAsState(
         targetValue = if (isDragging) 1.025f else 1f,
         animationSpec = folmeSpring(damping = 0.9f, response = 0.38f),
@@ -116,25 +97,6 @@ internal fun RouteRuleCard(
         label = "routeRuleDragShadowAlpha",
     )
     val shadowColor = MiuixTheme.colorScheme.primary
-    val hapticFeedback = LocalHapticFeedback.current
-    val dragModifier = if (draggable) {
-        Modifier.pointerInput(Unit) {
-            detectDragGesturesAfterLongPress(
-                onDragStart = {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onDragStart()
-                },
-                onDragEnd = onDragEnd,
-                onDragCancel = onDragEnd,
-                onDrag = { change, dragAmount ->
-                    change.consume()
-                    onDrag(dragAmount.y)
-                },
-            )
-        }
-    } else {
-        Modifier
-    }
 
     Card(
         modifier = modifier
@@ -143,7 +105,6 @@ internal fun RouteRuleCard(
             .padding(bottom = 12.dp)
             .zIndex(if (isDragging) 1f else 0f)
             .graphicsLayer {
-                translationY = animatedDragOffset
                 scaleX = animatedScale
                 scaleY = animatedScale
             }

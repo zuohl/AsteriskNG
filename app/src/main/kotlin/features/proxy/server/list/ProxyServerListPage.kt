@@ -242,7 +242,7 @@ fun ProxyServerListPage(
         } else {
             contentPadding.calculateBottomPadding()
         }
-        val listPadding = pageListPadding(contentPadding, bottomExtra = 128.dp)
+        val listPadding = pageListPadding(contentPadding)
 
         Box {
             ProxyServerListPager(

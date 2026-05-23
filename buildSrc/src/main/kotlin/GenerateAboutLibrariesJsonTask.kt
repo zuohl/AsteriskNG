@@ -122,7 +122,7 @@ abstract class GenerateAboutLibrariesJsonTask : DefaultTask() {
                     val scmUrl =
                         (pom.getElementsByTagName("scm").item(0) as? Element)?.let { text(it, "url") } ?: website
                     val licenses = pom.getElementsByTagName("license")
-                        .let { nodes -> (0 until nodes.length).mapNotNull { nodes.item(it) as? Element } }
+                        .let { elements -> (0 until elements.length).mapNotNull { elements.item(it) as? Element } }
                         .mapNotNull { text(it, "name")?.let(licenseName) }
                         .takeIf { it.isNotEmpty() }
                         ?: listOf("Unknown")

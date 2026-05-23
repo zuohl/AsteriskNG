@@ -65,7 +65,7 @@
     <string name="settings_run_mode_vpn_service">VPN Service</string>
     <string name="settings_run_mode_tproxy">TPROXY（ROOT）</string>
     <string name="settings_resolve_proxy_server_domain">解析节点域名</string>
-    <string name="settings_resolve_proxy_server_domain_summary">解析代理节点 IP 并添加到 DNS hosts</string>
+    <string name="settings_resolve_proxy_server_domain_summary">将代理节点 IP 写入 DNS hosts</string>
     <string name="settings_tproxy_root_required">获取ROOT权限失败！</string>
     <string name="settings_proxy_tproxy">代理设置（TPROXY）</string>
     <string name="settings_proxy_vpn_service">代理设置（VPN Service）</string>
@@ -87,7 +87,7 @@
     <string name="settings_local_proxy_summary_all_interfaces">0.0.0.0:{port}</string>
     <string name="settings_local_proxy_summary_dynamic">动态端口</string>
     <string name="settings_vpn_append_http_proxy">追加 HTTP 代理</string>
-    <string name="settings_vpn_append_http_proxy_summary">让一些支持的应用直接使用 HTTP 代理，不经过虚拟网卡设备</string>
+    <string name="settings_vpn_append_http_proxy_summary">让受支持的应用直接使用 HTTP 代理</string>
     <string name="settings_vpn">VPN 设置</string>
     <string name="settings_vpn_summary">MTU {mtu}，DNS {dns}，IPv4 {ipv4}，IPv6 {ipv6}</string>
     <string name="settings_vpn_mtu">MTU</string>
@@ -207,7 +207,7 @@
     <string name="settings_direct_dns_domains_input">域名规则</string>
     <string name="settings_direct_dns_domains_empty">还没有添加直连 DNS 适用域名</string>
     <string name="settings_direct_dns_resolve_proxy_server_domains">使用直连 DNS 解析节点</string>
-    <string name="settings_direct_dns_resolve_proxy_server_domains_summary">将代理节点域名添加到直连 DNS 适用域名列表</string>
+    <string name="settings_direct_dns_resolve_proxy_server_domains_summary">让代理节点域名走直连 DNS</string>
     <string name="settings_dns_domain_invalid">无效 DNS 域名规则</string>
     <string name="settings_dns_hosts">DNS hosts</string>
     <string name="settings_dns_hosts_format">格式：域名:地址1,地址2,…</string>
@@ -437,7 +437,7 @@
     <string name="routing_saved">{name} 已保存</string>
     <string name="routing_edit">编辑路由</string>
     <string name="routing_delete">删除路由</string>
-    <string name="routing_default_node">节点 {id}</string>
+    <string name="routing_default_proxy_server">代理节点 {id}</string>
     <string name="routing_new_rule">新路由规则</string>
     <string name="routing_unnamed_rule">未命名规则</string>
     <string name="routing_add_rule">添加路由规则</string>

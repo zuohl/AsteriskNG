@@ -65,8 +65,8 @@
     <string name="settings_run_mode_vpn_service">VPN Service</string>
     <string name="settings_run_mode_tproxy">TPROXY（ROOT）</string>
     <string name="settings_resolve_proxy_server_domain">Resolve proxy server domains</string>
-    <string name="settings_resolve_proxy_server_domain_summary">Resolve proxy server domains to IPs and add them to DNS hosts</string>
-    <string name="settings_tproxy_root_required">No ROOT access detected. This feature is only available on ROOT devices</string>
+    <string name="settings_resolve_proxy_server_domain_summary">Write proxy server IPs to DNS hosts</string>
+    <string name="settings_tproxy_root_required">No ROOT access detected!</string>
     <string name="settings_proxy_tproxy">Proxy settings (TPROXY)</string>
     <string name="settings_proxy_vpn_service">Proxy settings (VPN Service)</string>
     <string name="settings_tproxy_boot_script">Start on boot</string>
@@ -87,7 +87,7 @@
     <string name="settings_local_proxy_summary_all_interfaces">0.0.0.0:{port}</string>
     <string name="settings_local_proxy_summary_dynamic">Dynamic port</string>
     <string name="settings_vpn_append_http_proxy">Append HTTP proxy</string>
-    <string name="settings_vpn_append_http_proxy_summary">Internal loopback-only HTTP inbound with a dynamic port</string>
+    <string name="settings_vpn_append_http_proxy_summary">Supported apps use HTTP proxy directly</string>
     <string name="settings_vpn">VPN settings</string>
     <string name="settings_vpn_summary">MTU {mtu}, DNS {dns}, IPv4 {ipv4}, IPv6 {ipv6}</string>
     <string name="settings_vpn_mtu">MTU</string>
@@ -207,7 +207,7 @@
     <string name="settings_direct_dns_domains_input">Domain rule</string>
     <string name="settings_direct_dns_domains_empty">No direct DNS domain rules added</string>
     <string name="settings_direct_dns_resolve_proxy_server_domains">Use direct DNS to resolve proxy servers</string>
-    <string name="settings_direct_dns_resolve_proxy_server_domains_summary">Add proxy server domains to the direct DNS domain list</string>
+    <string name="settings_direct_dns_resolve_proxy_server_domains_summary">Resolve proxy domains via direct DNS</string>
     <string name="settings_dns_domain_invalid">Invalid DNS domain rule</string>
     <string name="settings_dns_hosts">DNS hosts</string>
     <string name="settings_dns_hosts_format">Format: domain:address1,address2,…</string>
@@ -309,8 +309,8 @@
     <string name="proxy_server_list_no_testable">No proxy servers to test</string>
     <string name="proxy_server_list_latency_done">Completed latency test for {count} servers</string>
     <string name="proxy_server_list_real_connection_done">Completed real connection test for {count} servers</string>
-    <string name="proxy_server_list_subscription_update_result">Updated {groupCount} subscription groups, imported {serverCount} nodes</string>
-    <string name="proxy_server_list_subscription_update_result_with_failed">Updated {groupCount} subscription groups, {failedCount} failed, imported {serverCount} nodes</string>
+    <string name="proxy_server_list_subscription_update_result">Updated {groupCount} subscription groups, imported {serverCount} proxy servers</string>
+    <string name="proxy_server_list_subscription_update_result_with_failed">Updated {groupCount} subscription groups, {failedCount} failed, imported {serverCount} proxy servers</string>
     <string name="proxy_server_list_strategy_group_summary">{strategy} · {group}</string>
     <string name="proxy_server_list_strategy_group_summary_with_filter">{strategy} · {group} · Filter: {filter}</string>
     <string name="proxy_server_list_chain_proxy_summary">{count} hops</string>
@@ -437,7 +437,7 @@
     <string name="routing_saved">{name} saved</string>
     <string name="routing_edit">Edit route</string>
     <string name="routing_delete">Delete route</string>
-    <string name="routing_default_node">Node {id}</string>
+    <string name="routing_default_proxy_server">Proxy server {id}</string>
     <string name="routing_new_rule">New routing rule</string>
     <string name="routing_unnamed_rule">Unnamed rule</string>
     <string name="routing_add_rule">Add routing rule</string>
@@ -469,7 +469,7 @@
     <string name="subscription_group_list_title">Subscription groups</string>
     <string name="subscription_group_list_count">{count} groups</string>
     <string name="subscription_group_list">Group list</string>
-    <string name="subscription_manual_group">Manual node group</string>
+    <string name="subscription_manual_group">Manual proxy server group</string>
     <string name="subscription_update_interval">Update every {interval} hours</string>
     <string name="subscription_edit_group">Edit subscription group</string>
     <string name="subscription_delete_group">Delete subscription group</string>

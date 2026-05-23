@@ -6,12 +6,11 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,12 +18,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import app.LocalAppServices
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
@@ -36,6 +30,7 @@ import features.proxy.server.display.displayNameById
 import features.proxy.server.display.displayNameWithGroup
 import features.routing.model.RouteRule
 import kotlinx.coroutines.launch
+import sh.calvin.reorderable.ReorderableItem
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -46,17 +41,16 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import ui.components.NavigationIcon
+import ui.components.longPressReorderDragModifier
+import ui.components.moveItem
+import ui.components.rememberAsteriskReorderableLazyListState
+import ui.components.rememberReorderableLazyListContentPaddingWithoutTop
+import ui.components.rememberReorderableScrollThresholdPadding
 import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
-import ui.components.DragReorderLazyListCacheWindow
-import ui.components.adjacentDragDisplacementForItem
-import ui.components.autoScrollWhileDragging
-import ui.components.findDragDropTarget
-import ui.components.rememberLazyListOverlayDragState
 import ui.text.formatTemplate
-import kotlin.math.roundToInt
 
 private val DomainStrategyOptions = listOf(
     "AsIs",
@@ -64,7 +58,9 @@ private val DomainStrategyOptions = listOf(
     "IPOnDemand",
 )
 
-private const val RouteRuleSwapThreshold = 0.3f
+private const val RoutingPolicyItemKey = "routing_policy"
+private const val RoutingRulesTitleItemKey = "routing_rules_title"
+private const val RouteRuleListHeaderItemCount = 2
 
 @Composable
 fun RoutingPage(
@@ -78,7 +74,7 @@ fun RoutingPage(
     val scope = rememberCoroutineScope()
     val unknownGroup = stringResource(R.string.common_unknown_group)
     val defaultGroupName = stringResource(R.string.subscription_default_group)
-    val defaultNodeTemplate = stringResource(R.string.routing_default_node)
+    val defaultProxyServerTemplate = stringResource(R.string.routing_default_proxy_server)
     val deletedTemplate = stringResource(R.string.routing_deleted)
     val savedTemplate = stringResource(R.string.routing_saved)
     val fixedOutboundOptions = fixedRouteRuleOutboundOptions()
@@ -88,14 +84,14 @@ fun RoutingPage(
         appState.subscriptionGroups,
         unknownGroup,
         defaultGroupName,
-        defaultNodeTemplate,
+        defaultProxyServerTemplate,
     ) {
         val groupNames = appState.subscriptionGroups.displayNameById(defaultGroupName)
-        (fixedOutboundOptions + appState.proxyServers.map { node ->
+        (fixedOutboundOptions + appState.proxyServers.map { proxyServer ->
             RouteRuleOutboundOption(
-                tag = node.proxyServerOutboundTag(),
-                label = node.displayNameWithGroup(
-                    defaultNodeTemplate = defaultNodeTemplate,
+                tag = proxyServer.proxyServerOutboundTag(),
+                label = proxyServer.displayNameWithGroup(
+                    defaultProxyServerTemplate = defaultProxyServerTemplate,
                     groupNames = groupNames,
                     unknownGroupName = unknownGroup,
                 ),
@@ -128,60 +124,45 @@ fun RoutingPage(
             )
         },
     ) { innerPadding ->
-        val lazyListState = rememberLazyListState(cacheWindow = DragReorderLazyListCacheWindow)
-        val density = LocalDensity.current
-        val maxAutoScrollPerFrame = with(density) { 28.dp.toPx() }
-        val dragState = rememberLazyListOverlayDragState(lazyListState)
-        val draggedRuleId = dragState.draggedKey as? Int
-        val activeGhostRuleId = dragState.activeGhostKey as? Int
-        val hiddenRuleId = dragState.hiddenKey as? Int
         val contentPadding = pageContentPaddingWithCutout(
             innerPadding = innerPadding,
             outerPadding = padding,
             isWideScreen = isWideScreen,
         )
         val listPadding = pageListPadding(contentPadding)
-
-        fun moveDraggedRuleIfNeeded() {
-            val currentDragged = dragState.draggedItem ?: return
-            val ruleId = currentDragged.key as? Int ?: return
-            val target = lazyListState.findDragDropTarget(
-                draggedItem = currentDragged,
-                isReorderableItem = { item -> item.key is Int },
-                swapThreshold = RouteRuleSwapThreshold,
-            )
-            val targetRuleId = target?.key as? Int ?: return
-
+        val lazyListState = rememberLazyListState()
+        val listBottomPadding = listPadding.calculateBottomPadding()
+        val lazyContentPadding = rememberReorderableLazyListContentPaddingWithoutTop(listPadding)
+        val reorderableLazyListState = rememberAsteriskReorderableLazyListState(
+            lazyListState = lazyListState,
+            itemCount = rules.size,
+            itemIndexOffset = RouteRuleListHeaderItemCount,
+            scrollThresholdPadding = rememberReorderableScrollThresholdPadding(
+                bottom = listBottomPadding,
+            ),
+        ) { fromRuleIndex, toRuleIndex ->
             updateAppState { state ->
-                state.copy(
-                    routeRules = state.routeRules.moveRuleTo(
-                        ruleId = ruleId,
-                        targetRuleId = targetRuleId,
-                    ),
+                val reorderedRules = state.routeRules.moveItem(
+                    fromIndex = fromRuleIndex,
+                    toIndex = toRuleIndex,
                 )
-            }
-            dragState.updateDraggedIndex(target.index)
-        }
-
-        LaunchedEffect(lazyListState, draggedRuleId, maxAutoScrollPerFrame) {
-            if (draggedRuleId != null) {
-                lazyListState.autoScrollWhileDragging(
-                    draggedItemProvider = { dragState.draggedItem },
-                    maxScrollPerFrame = maxAutoScrollPerFrame,
-                    onFrame = { moveDraggedRuleIfNeeded() },
-                )
+                if (reorderedRules === state.routeRules) {
+                    state
+                } else {
+                    state.copy(routeRules = reorderedRules)
+                }
             }
         }
 
         Box {
             LazyColumn(
                 state = lazyListState,
-                modifier = Modifier.pageScrollModifiers(
-                    topAppBarScrollBehavior,
-                ),
-                contentPadding = listPadding,
+                modifier = Modifier
+                    .padding(top = listPadding.calculateTopPadding())
+                    .pageScrollModifiers(topAppBarScrollBehavior),
+                contentPadding = lazyContentPadding,
             ) {
-                item(key = "routing_policy") {
+                item(key = RoutingPolicyItemKey) {
                     SmallTitle(text = stringResource(R.string.routing_domain_policy))
                     RoutingPolicyCard(
                         domainStrategyOptions = DomainStrategyOptions,
@@ -191,68 +172,52 @@ fun RoutingPage(
                         },
                     )
                 }
-                item(key = "routing_rules_title") {
+                item(key = RoutingRulesTitleItemKey) {
                     SmallTitle(text = stringResource(R.string.routing_title))
                 }
                 itemsIndexed(
                     items = rules,
                     key = { _, rule -> rule.id },
                 ) { _, rule ->
-                    RouteRuleCard(
-                        rule = rule,
-                        outboundLabel = outboundLabels[rule.outboundTag] ?: rule.outboundTag,
-                        isDragging = false,
-                        dragActive = dragState.dragActive,
-                        visualOffset = lazyListState.adjacentDragDisplacementForItem(
-                            itemKey = rule.id,
-                            draggedItem = dragState.draggedItem,
-                            isReorderableItem = { item -> item.key is Int },
-                        ),
-                        draggable = rules.size > 1,
-                        onDragStart = {
-                            dragState.start(rule.id)
-                        },
-                        onDrag = { dragAmountY ->
-                            dragState.dragBy(rule.id, dragAmountY)
-                            moveDraggedRuleIfNeeded()
-                        },
-                        onDragEnd = {
-                            dragState.settle()
-                        },
-                        onToggle = { enabled ->
-                            updateAppState { state ->
-                                state.copy(
-                                    routeRules = state.routeRules.map {
-                                        if (it.id == rule.id) it.copy(enabled = enabled) else it
-                                    },
-                                )
-                            }
-                        },
-                        onEdit = {
-                            editingRule = rule
-                            showRuleDialog = true
-                        },
-                        onDelete = {
-                            dragState.clearIfActive(rule.id)
-                            updateAppState { state ->
-                                state.copy(
-                                    routeRules = state.routeRules.filterNot { it.id == rule.id },
-                                )
-                            }
-                            scope.launch {
-                                tipNotifier.show(deletedTemplate.formatTemplate("name" to rule.remarks))
-                            }
-                        },
-                        modifier = if (hiddenRuleId == rule.id) {
-                            Modifier.alpha(0f)
-                        } else {
-                            Modifier.animateItem(
+                    ReorderableItem(reorderableLazyListState.reorderableState, key = rule.id) { isDragging ->
+                        RouteRuleCard(
+                            rule = rule,
+                            outboundLabel = outboundLabels[rule.outboundTag] ?: rule.outboundTag,
+                            isDragging = isDragging,
+                            dragModifier = longPressReorderDragModifier(
+                                enabled = rules.size > 1,
+                                state = reorderableLazyListState,
+                            ),
+                            onToggle = { enabled ->
+                                updateAppState { state ->
+                                    state.copy(
+                                        routeRules = state.routeRules.map {
+                                            if (it.id == rule.id) it.copy(enabled = enabled) else it
+                                        },
+                                    )
+                                }
+                            },
+                            onEdit = {
+                                editingRule = rule
+                                showRuleDialog = true
+                            },
+                            onDelete = {
+                                updateAppState { state ->
+                                    state.copy(
+                                        routeRules = state.routeRules.filterNot { it.id == rule.id },
+                                    )
+                                }
+                                scope.launch {
+                                    tipNotifier.show(deletedTemplate.formatTemplate("name" to rule.remarks))
+                                }
+                            },
+                            modifier = Modifier.animateItem(
                                 fadeInSpec = null,
                                 fadeOutSpec = null,
                                 placementSpec = folmeSpring(damping = 0.9f, response = 0.38f),
-                            )
-                        },
-                    )
+                            ),
+                        )
+                    }
                 }
                 item(key = "routing_empty") {
                     if (rules.isEmpty()) {
@@ -265,24 +230,6 @@ fun RoutingPage(
                 modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
                 trackPadding = contentPadding,
             )
-            activeGhostRuleId?.let { ruleId ->
-                val rule = rules.firstOrNull { item -> item.id == ruleId }
-                if (rule != null) {
-                    RouteRuleDragGhost(
-                        rule = rule,
-                        outboundLabel = outboundLabels[rule.outboundTag] ?: rule.outboundTag,
-                        isDragging = dragState.isDragging(ruleId),
-                        modifier = Modifier
-                            .offset {
-                                IntOffset(
-                                    0,
-                                    dragState.ghostTop.roundToInt(),
-                                )
-                            }
-                            .zIndex(3f),
-                    )
-                }
-            }
         }
     }
 
@@ -317,46 +264,10 @@ fun RoutingPage(
 }
 
 @Composable
-private fun RouteRuleDragGhost(
-    rule: RouteRule,
-    outboundLabel: String,
-    isDragging: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    RouteRuleCard(
-        rule = rule,
-        outboundLabel = outboundLabel,
-        isDragging = isDragging,
-        dragActive = true,
-        visualOffset = 0f,
-        draggable = false,
-        onDragStart = {},
-        onDrag = {},
-        onDragEnd = {},
-        onToggle = {},
-        onEdit = {},
-        onDelete = {},
-        modifier = modifier,
-    )
-}
-
-@Composable
 private fun fixedRouteRuleOutboundOptions(): List<RouteRuleOutboundOption> {
     return listOf(
         RouteRuleOutboundOption(tag = "proxy", label = stringResource(R.string.routing_outbound_proxy)),
         RouteRuleOutboundOption(tag = "direct", label = stringResource(R.string.routing_outbound_direct)),
         RouteRuleOutboundOption(tag = "block", label = stringResource(R.string.routing_outbound_block)),
     )
-}
-
-private fun List<RouteRule>.moveRuleTo(ruleId: Int, targetRuleId: Int): List<RouteRule> {
-    val currentIndex = indexOfFirst { rule -> rule.id == ruleId }
-    val targetIndex = indexOfFirst { rule -> rule.id == targetRuleId }
-    if (currentIndex < 0 || targetIndex < 0 || currentIndex == targetIndex) {
-        return this
-    }
-
-    return toMutableList().apply {
-        add(targetIndex, removeAt(currentIndex))
-    }
 }

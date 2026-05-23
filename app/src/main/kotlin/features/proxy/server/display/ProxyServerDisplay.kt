@@ -23,16 +23,16 @@ internal fun List<SubscriptionGroupState>.displayNameById(defaultGroupName: Stri
 }
 
 internal fun ProxyServerState.displayNameWithGroup(
-    defaultNodeTemplate: String,
+    defaultProxyServerTemplate: String,
     groupNames: Map<Int, String>,
     unknownGroupName: String,
 ): String {
-    val nodeName = server.getInfo().remarks.ifBlank {
-        defaultNodeTemplate.formatTemplate("id" to id)
+    val proxyServerName = server.getInfo().remarks.ifBlank {
+        defaultProxyServerTemplate.formatTemplate("id" to id)
     }
     if (groupId == DefaultSubscriptionGroupId) {
-        return nodeName
+        return proxyServerName
     }
     val groupName = groupNames[groupId] ?: unknownGroupName
-    return "$nodeName ($groupName)"
+    return "$proxyServerName ($groupName)"
 }
