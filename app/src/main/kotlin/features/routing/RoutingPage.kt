@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import app.DefaultRouteOutboundTag
 import app.LocalAppServices
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
@@ -39,7 +40,10 @@ import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import ui.components.IconDropdownMenu
+import ui.components.IconDropdownMenuEntry
 import ui.components.NavigationIcon
 import ui.components.longPressReorderDragModifier
 import ui.components.moveItem
@@ -101,6 +105,8 @@ fun RoutingPage(
     val outboundLabels = remember(outboundOptions) {
         outboundOptions.associate { option -> option.tag to option.label }
     }
+    val defaultOutboundTag = appState.defaultRouteOutboundTag.effectiveDefaultOutboundTag(outboundOptions)
+    val defaultOutboundLabel = outboundLabels[defaultOutboundTag] ?: defaultOutboundTag
 
     var editingRule by remember { mutableStateOf<RouteRule?>(null) }
     var showRuleDialog by remember { mutableStateOf(false) }
@@ -110,9 +116,18 @@ fun RoutingPage(
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(R.string.routing_title),
+                subtitle = stringResource(R.string.routing_default_outbound_subtitle)
+                    .formatTemplate("tag" to defaultOutboundLabel),
                 isWideScreen = isWideScreen,
                 scrollBehavior = topAppBarScrollBehavior,
                 actions = {
+                    RoutingDefaultOutboundMenu(
+                        outboundOptions = outboundOptions,
+                        selectedTag = defaultOutboundTag,
+                        onSelectedTagChange = { tag ->
+                            updateAppState { state -> state.copy(defaultRouteOutboundTag = tag) }
+                        },
+                    )
                     NavigationIcon(
                         onClick = {
                             editingRule = null
@@ -266,8 +281,38 @@ fun RoutingPage(
 @Composable
 private fun fixedRouteRuleOutboundOptions(): List<RouteRuleOutboundOption> {
     return listOf(
-        RouteRuleOutboundOption(tag = "proxy", label = stringResource(R.string.routing_outbound_proxy)),
+        RouteRuleOutboundOption(tag = DefaultRouteOutboundTag, label = stringResource(R.string.routing_outbound_proxy)),
         RouteRuleOutboundOption(tag = "direct", label = stringResource(R.string.routing_outbound_direct)),
         RouteRuleOutboundOption(tag = "block", label = stringResource(R.string.routing_outbound_block)),
     )
+}
+
+@Composable
+private fun RoutingDefaultOutboundMenu(
+    outboundOptions: List<RouteRuleOutboundOption>,
+    selectedTag: String,
+    onSelectedTagChange: (String) -> Unit,
+) {
+    IconDropdownMenu(
+        imageVector = MiuixIcons.Tune,
+        contentDescription = stringResource(R.string.routing_default_outbound_tag),
+        entries = outboundOptions.map { option ->
+            IconDropdownMenuEntry(
+                key = option.tag,
+                title = option.label,
+                selected = option.tag == selectedTag,
+                action = option.tag,
+            )
+        },
+        onAction = onSelectedTagChange,
+    )
+}
+
+private fun String.effectiveDefaultOutboundTag(outboundOptions: List<RouteRuleOutboundOption>): String {
+    val normalizedTag = trim().ifBlank { DefaultRouteOutboundTag }
+    return if (outboundOptions.any { option -> option.tag == normalizedTag }) {
+        normalizedTag
+    } else {
+        DefaultRouteOutboundTag
+    }
 }

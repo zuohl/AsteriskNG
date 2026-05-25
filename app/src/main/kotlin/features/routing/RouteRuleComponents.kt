@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import app.DefaultRouteOutboundTag
 import app.R
 import engine.network.isIpOrCidrAddress
 import engine.network.isPortList
@@ -202,7 +203,7 @@ internal fun RouteRuleEditorBottomSheet(
     var outboundIndex by remember(initialRule, show, effectiveOutboundOptions) {
         mutableIntStateOf(
             effectiveOutboundOptions
-                .indexOfFirst { it.tag == (currentOutbound ?: "proxy") }
+                .indexOfFirst { it.tag == (currentOutbound ?: DefaultRouteOutboundTag) }
                 .coerceAtLeast(0),
         )
     }

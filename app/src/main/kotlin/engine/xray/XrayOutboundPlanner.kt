@@ -120,9 +120,10 @@ private class XrayOutboundPlanner(
 }
 
 private fun AppState.routeTargetServers(): List<ProxyServerState> {
-    val routeOutboundTags = routeRules
+    val routeOutboundTags = (routeRules
         .filter(RouteRule::enabled)
-        .map { rule -> rule.outboundTag.trim() }
+        .map { rule -> rule.outboundTag } + defaultRouteOutboundTag)
+        .map { tag -> tag.trim() }
         .filter { tag -> tag.isNotEmpty() && tag !in XrayTags.FIXED_OUTBOUND_TAGS }
         .toSet()
     return proxyServers.filter { server -> server.proxyServerOutboundTag() in routeOutboundTags }

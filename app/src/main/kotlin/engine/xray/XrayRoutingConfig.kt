@@ -48,7 +48,7 @@ private fun AppState.routingRules(
             .filter(RouteRule::enabled)
             .mapNotNull { rule -> rule.toXrayRule(routeTargets) }
             .forEach(::put)
-        routeTargets[XrayTags.PROXY]?.let { target ->
+        defaultRouteTarget(routeTargets)?.let { target ->
             put(
                 target.applyTo(
                     JSONObject()
@@ -57,6 +57,14 @@ private fun AppState.routingRules(
             )
         }
     }
+}
+
+private fun AppState.defaultRouteTarget(routeTargets: Map<String, XrayRouteTarget>): XrayRouteTarget? {
+    val defaultOutboundTag = defaultRouteOutboundTag.trim().ifBlank { XrayTags.PROXY }
+    val defaultTarget = routeTargets[defaultOutboundTag]?.takeIf {
+        defaultOutboundTag !in ReservedDefaultRouteOutboundTags
+    }
+    return defaultTarget ?: routeTargets[XrayTags.PROXY]
 }
 
 private fun AppState.buildDnsHijackRule(inboundTags: List<String>): JSONObject? {
@@ -113,3 +121,5 @@ private fun JSONObject.putJsonStringArrayIfNotEmpty(name: String, values: List<S
 private fun String.toCommaSeparatedList(): List<String> {
     return split(",").map(String::trim).filter(String::isNotEmpty).distinct()
 }
+
+private val ReservedDefaultRouteOutboundTags = setOf(XrayTags.DNS_OUT, XrayTags.FRAGMENT)

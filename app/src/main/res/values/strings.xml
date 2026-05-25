@@ -433,6 +433,8 @@
     <string name="routing_title">Routing rules</string>
     <string name="routing_domain_policy">Domain policy</string>
     <string name="routing_domain_strategy">Domain strategy</string>
+    <string name="routing_default_outbound_tag">Default outbound proxy tag</string>
+    <string name="routing_default_outbound_subtitle">Default outbound proxy tag: {tag}</string>
     <string name="routing_deleted">{name} deleted</string>
     <string name="routing_saved">{name} saved</string>
     <string name="routing_edit">Edit route</string>

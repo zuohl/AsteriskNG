@@ -55,6 +55,10 @@ internal class AppSettingsPreferences(
             nextProxyServerId = preferences.getInt(KeyNextProxyServerId, defaults.nextProxyServerId),
             selectedProxyServerId = preferences.getInt(KeySelectedProxyServerId, defaults.selectedProxyServerId),
             routeDomainStrategy = preferences.getInt(KeyRouteDomainStrategy, defaults.routeDomainStrategy),
+            defaultRouteOutboundTag = preferences.getString(
+                KeyDefaultRouteOutboundTag,
+                defaults.defaultRouteOutboundTag,
+            ) ?: defaults.defaultRouteOutboundTag,
             nextRouteRuleId = preferences.getInt(KeyNextRouteRuleId, defaults.nextRouteRuleId),
             coreLogLevel = preferences.getInt(KeyCoreLogLevel, defaults.coreLogLevel),
             enableAccessLog = preferences.getBoolean(KeyEnableAccessLog, defaults.enableAccessLog),
@@ -143,6 +147,7 @@ internal class AppSettingsPreferences(
             .putInt(KeyNextProxyServerId, state.nextProxyServerId)
             .putInt(KeySelectedProxyServerId, state.selectedProxyServerId)
             .putInt(KeyRouteDomainStrategy, state.routeDomainStrategy)
+            .putString(KeyDefaultRouteOutboundTag, state.defaultRouteOutboundTag)
             .putInt(KeyNextRouteRuleId, state.nextRouteRuleId)
             .putInt(KeyCoreLogLevel, state.coreLogLevel)
             .putBoolean(KeyEnableAccessLog, state.enableAccessLog)
@@ -211,6 +216,7 @@ private const val KeyVpnIpv6Cidr = "vpn_ipv6_cidr"
 private const val KeyNextProxyServerId = "next_proxy_server_id"
 private const val KeySelectedProxyServerId = "selected_proxy_server_id"
 private const val KeyRouteDomainStrategy = "route_domain_strategy"
+private const val KeyDefaultRouteOutboundTag = "default_route_outbound_tag"
 private const val KeyNextRouteRuleId = "next_route_rule_id"
 private const val KeyCoreLogLevel = "core_log_level"
 private const val KeyEnableAccessLog = "enable_access_log"

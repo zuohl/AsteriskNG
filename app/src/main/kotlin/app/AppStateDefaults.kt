@@ -7,6 +7,8 @@ import features.routing.model.RouteRule
 import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.DefaultSubscriptionUserAgent
 
+const val DefaultRouteOutboundTag = "proxy"
+
 val DefaultSubscriptionGroups = listOf(
     SubscriptionGroupState(
         id = DefaultSubscriptionGroupId,
@@ -33,7 +35,7 @@ val DefaultRouteRules = listOf(
     RouteRule(
         id = 2,
         remarks = "国外站点代理",
-        outboundTag = "proxy",
+        outboundTag = DefaultRouteOutboundTag,
         domain = listOf("geosite:google", "geosite:geolocation-!cn"),
         port = "",
         protocol = "",

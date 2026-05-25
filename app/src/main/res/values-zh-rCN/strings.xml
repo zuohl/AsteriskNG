@@ -433,6 +433,8 @@
     <string name="routing_title">路由规则</string>
     <string name="routing_domain_policy">域名策略</string>
     <string name="routing_domain_strategy">域名解析策略</string>
+    <string name="routing_default_outbound_tag">默认出站代理标签</string>
+    <string name="routing_default_outbound_subtitle">默认出站代理标签：{tag}</string>
     <string name="routing_deleted">{name} 已删除</string>
     <string name="routing_saved">{name} 已保存</string>
     <string name="routing_edit">编辑路由</string>
