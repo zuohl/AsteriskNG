@@ -242,7 +242,11 @@ fun ProxyServerListPage(
         } else {
             contentPadding.calculateBottomPadding()
         }
-        val listPadding = pageListPadding(contentPadding)
+        val listPadding = pageListPadding(
+            contentPadding = contentPadding,
+            bottomExtra = ProxyServerListFloatingToolbarReservedBottomPadding,
+        )
+        val dragScrollThresholdBottomPadding = pageListPadding(contentPadding).calculateBottomPadding()
 
         Box {
             ProxyServerListPager(
@@ -255,6 +259,7 @@ fun ProxyServerListPage(
                 itemTextFormatter = itemTextFormatter,
                 topAppBarScrollBehavior = topAppBarScrollBehavior,
                 listPadding = listPadding,
+                dragScrollThresholdBottomPadding = dragScrollThresholdBottomPadding,
                 contentPadding = contentPadding,
                 updateAppState = updateAppState,
                 navigator = navigator,

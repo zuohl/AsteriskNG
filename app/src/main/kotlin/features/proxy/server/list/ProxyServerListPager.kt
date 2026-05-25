@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import app.AppState
 import app.ProxyServerState
 import app.R
@@ -53,6 +54,7 @@ internal fun ProxyServerListPager(
     itemTextFormatter: ProxyServerListItemTextFormatter,
     topAppBarScrollBehavior: ScrollBehavior,
     listPadding: PaddingValues,
+    dragScrollThresholdBottomPadding: Dp,
     contentPadding: PaddingValues,
     updateAppState: ((AppState) -> AppState) -> Unit,
     navigator: Navigator,
@@ -78,13 +80,12 @@ internal fun ProxyServerListPager(
             keyword = keyword,
         )
         val lazyListState = rememberLazyListState()
-        val listBottomPadding = listPadding.calculateBottomPadding()
         val lazyContentPadding = rememberReorderableLazyListContentPaddingWithoutTop(listPadding)
         val reorderableLazyListState = rememberAsteriskReorderableLazyListState(
             lazyListState = lazyListState,
             itemCount = pageServers.size,
             scrollThresholdPadding = rememberReorderableScrollThresholdPadding(
-                bottom = listBottomPadding,
+                bottom = dragScrollThresholdBottomPadding,
             ),
         ) { fromIndex, toIndex ->
             updateAppState { state ->

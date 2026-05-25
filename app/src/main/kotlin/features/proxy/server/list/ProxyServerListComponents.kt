@@ -62,6 +62,16 @@ import ui.components.IconDropdownMenuEntry
 import ui.components.draggedCardShadow
 
 private val proxyServerLatencyNumberRegex = Regex("""\d+""")
+private val ProxyServerListFloatingToolbarButtonSize = 52.dp
+private val ProxyServerListFloatingToolbarVerticalPadding = 8.dp
+private val ProxyServerListFloatingToolbarBottomSpacing = 16.dp
+private val ProxyServerListFloatingToolbarContentGap = 12.dp
+internal val ProxyServerListFloatingToolbarReservedBottomPadding =
+    ProxyServerListFloatingToolbarButtonSize +
+        ProxyServerListFloatingToolbarVerticalPadding +
+        ProxyServerListFloatingToolbarVerticalPadding +
+        ProxyServerListFloatingToolbarBottomSpacing +
+        ProxyServerListFloatingToolbarContentGap
 
 @Composable
 internal fun ProxyServerListGroupTabs(
@@ -285,7 +295,7 @@ internal fun ProxyServerListFloatingToolbar(
     Box(
         modifier = modifier.padding(
             end = 20.dp,
-            bottom = bottomPadding + 16.dp,
+            bottom = bottomPadding + ProxyServerListFloatingToolbarBottomSpacing,
         ),
     ) {
         FloatingToolbar(
@@ -293,7 +303,7 @@ internal fun ProxyServerListFloatingToolbar(
             cornerRadius = 32.dp,
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = ProxyServerListFloatingToolbarVerticalPadding),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -305,7 +315,7 @@ internal fun ProxyServerListFloatingToolbar(
                         shrinkHorizontally(shrinkTowards = Alignment.End),
                 ) {
                     IconButton(
-                        modifier = Modifier.size(52.dp),
+                        modifier = Modifier.size(ProxyServerListFloatingToolbarButtonSize),
                         onClick = onRealConnectionTest,
                     ) {
                         Icon(
@@ -317,7 +327,7 @@ internal fun ProxyServerListFloatingToolbar(
                     }
                 }
                 IconButton(
-                    modifier = Modifier.size(52.dp),
+                    modifier = Modifier.size(ProxyServerListFloatingToolbarButtonSize),
                     onClick = {
                         if (!serviceOperationInProgress) {
                             onToggleRunning()
