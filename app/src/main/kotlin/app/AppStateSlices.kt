@@ -11,6 +11,8 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import data.AndroidAppStateStore
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 data class AppChromeState(
     val colorMode: Int,
@@ -58,6 +60,21 @@ fun AndroidAppStateStore.collectProxyServerListState(): State<ProxyServerListSta
     return remember {
         derivedStateOf { appState.value.toProxyServerListState() }
     }
+}
+
+@Composable
+fun AndroidAppStateStore.collectProxyServerLatency(
+    serverId: Int,
+    initialLatency: String = "",
+): State<String> {
+    val latencyFlow = remember(this, serverId) {
+        state
+            .map { appState ->
+                appState.proxyServers.firstOrNull { server -> server.id == serverId }?.latency.orEmpty()
+            }
+            .distinctUntilChanged()
+    }
+    return latencyFlow.collectAsState(initial = initialLatency)
 }
 
 private fun AppState.toAppChromeState(): AppChromeState {

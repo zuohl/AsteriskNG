@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import app.ProxyServerState
 import app.R
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Card
@@ -148,7 +147,7 @@ internal fun ProxyServerListSearchBar(
 
 @Composable
 internal fun ProxyServerListItemCard(
-    server: ProxyServerState,
+    latency: String,
     displayText: ProxyServerListItemDisplayText,
     selected: Boolean,
     onSelect: () -> Unit,
@@ -160,7 +159,7 @@ internal fun ProxyServerListItemCard(
     isDragging: Boolean = false,
     dragModifier: Modifier = Modifier,
 ) {
-    val latencyText = server.latency.trim()
+    val latencyText = latency.trim()
     val animatedScale by animateFloatAsState(
         targetValue = if (isDragging) 1.025f else 1f,
         animationSpec = folmeSpring(damping = 0.9f, response = 0.38f),

@@ -78,19 +78,22 @@ internal fun rememberReorderableScrollThresholdPadding(
     }
 }
 
-internal fun ReorderableCollectionItemScope.longPressReorderDragModifier(
+internal fun Modifier.longPressReorderDragHandle(
+    scope: ReorderableCollectionItemScope,
     enabled: Boolean,
     state: AsteriskReorderableLazyListState,
 ): Modifier {
-    return Modifier.longPressDraggableHandle(
-        enabled = enabled,
-        onDragStarted = {
-            state.hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-        },
-        onDragStopped = {
-            state.hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureEnd)
-        },
-    )
+    return with(scope) {
+        this@longPressReorderDragHandle.longPressDraggableHandle(
+            enabled = enabled,
+            onDragStarted = {
+                state.hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+            },
+            onDragStopped = {
+                state.hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureEnd)
+            },
+        )
+    }
 }
 
 internal fun <T> List<T>.moveItem(

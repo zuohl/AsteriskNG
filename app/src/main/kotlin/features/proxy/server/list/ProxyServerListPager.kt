@@ -22,8 +22,10 @@ import androidx.compose.ui.unit.Dp
 import app.AppState
 import app.ProxyServerState
 import app.R
+import app.collectProxyServerLatency
 import app.navigation.Navigator
 import app.navigation.Route
+import data.AndroidAppStateStore
 import features.proxy.server.model.getUrlOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -34,7 +36,7 @@ import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import ui.clipboard.setPlainText
-import ui.components.longPressReorderDragModifier
+import ui.components.longPressReorderDragHandle
 import ui.components.moveItem
 import ui.components.rememberAsteriskReorderableLazyListState
 import ui.components.rememberReorderableLazyListContentPaddingWithoutTop
@@ -56,6 +58,7 @@ internal fun ProxyServerListPager(
     listPadding: PaddingValues,
     dragScrollThresholdBottomPadding: Dp,
     contentPadding: PaddingValues,
+    stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     navigator: Navigator,
     clipboard: Clipboard,
@@ -135,6 +138,7 @@ internal fun ProxyServerListPager(
                                 unknownGroupName = unknownGroupName,
                                 itemTextFormatter = itemTextFormatter,
                                 groupState = groupState,
+                                stateStore = stateStore,
                                 updateAppState = updateAppState,
                                 navigator = navigator,
                                 clipboard = clipboard,
@@ -144,7 +148,8 @@ internal fun ProxyServerListPager(
                                 resultKey = resultKey,
                                 onSelectedServerIdChange = onSelectedServerIdChange,
                                 isDragging = isDragging,
-                                dragModifier = longPressReorderDragModifier(
+                                dragModifier = Modifier.longPressReorderDragHandle(
+                                    scope = this,
                                     enabled = pageServers.size > 1,
                                     state = reorderableLazyListState,
                                 ),
@@ -176,6 +181,7 @@ private fun ProxyServerListItem(
     unknownGroupName: String,
     itemTextFormatter: ProxyServerListItemTextFormatter,
     groupState: ProxyServerListGroups,
+    stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     navigator: Navigator,
     clipboard: Clipboard,
@@ -185,11 +191,16 @@ private fun ProxyServerListItem(
     resultKey: String,
     onSelectedServerIdChange: (Int) -> Unit,
     isDragging: Boolean,
-    dragModifier: Modifier,
     modifier: Modifier = Modifier,
+    dragModifier: Modifier,
 ) {
+    val latency = stateStore.collectProxyServerLatency(
+        serverId = server.id,
+        initialLatency = server.latency,
+    ).value
+
     ProxyServerListItemCard(
-        server = server,
+        latency = latency,
         displayText = itemTextFormatter.displayOf(server),
         selected = selectedServerId == server.id,
         modifier = modifier,

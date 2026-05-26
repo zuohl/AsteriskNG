@@ -45,7 +45,7 @@ import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import ui.components.IconDropdownMenu
 import ui.components.IconDropdownMenuEntry
 import ui.components.NavigationIcon
-import ui.components.longPressReorderDragModifier
+import ui.components.longPressReorderDragHandle
 import ui.components.moveItem
 import ui.components.rememberAsteriskReorderableLazyListState
 import ui.components.rememberReorderableLazyListContentPaddingWithoutTop
@@ -199,7 +199,8 @@ fun RoutingPage(
                             rule = rule,
                             outboundLabel = outboundLabels[rule.outboundTag] ?: rule.outboundTag,
                             isDragging = isDragging,
-                            dragModifier = longPressReorderDragModifier(
+                            dragModifier = Modifier.longPressReorderDragHandle(
+                                scope = this,
                                 enabled = rules.size > 1,
                                 state = reorderableLazyListState,
                             ),

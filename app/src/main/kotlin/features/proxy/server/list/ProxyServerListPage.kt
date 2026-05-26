@@ -261,6 +261,7 @@ fun ProxyServerListPage(
                 listPadding = listPadding,
                 dragScrollThresholdBottomPadding = dragScrollThresholdBottomPadding,
                 contentPadding = contentPadding,
+                stateStore = stateStore,
                 updateAppState = updateAppState,
                 navigator = navigator,
                 clipboard = clipboard,

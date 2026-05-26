@@ -82,10 +82,10 @@ internal fun RouteRuleCard(
     outboundLabel: String,
     onToggle: (Boolean) -> Unit,
     isDragging: Boolean,
-    dragModifier: Modifier = Modifier,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    dragModifier: Modifier = Modifier,
 ) {
     val animatedScale by animateFloatAsState(
         targetValue = if (isDragging) 1.025f else 1f,
