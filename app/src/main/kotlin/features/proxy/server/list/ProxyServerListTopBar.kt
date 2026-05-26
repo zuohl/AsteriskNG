@@ -23,6 +23,7 @@ import features.proxy.server.usecase.ProxyServerImportSource
 import features.proxy.server.usecase.createProxyServer
 import features.proxy.server.usecase.deleteDuplicateServersInGroup
 import features.proxy.server.usecase.importProxyServersFromText
+import features.proxy.server.usecase.sortedInGroupByLatencyResult
 import features.proxy.server.usecase.updatableSubscriptionGroups
 import features.proxy.server.usecase.withImportedProxyServers
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
@@ -288,6 +289,16 @@ private fun handleProxyServerListToolAction(
             )
         }
 
+        ProxyServerListToolAction.SortByTestResult -> {
+            sortCurrentGroupByTestResult(
+                servers = groupState.currentGroupServers,
+                updateAppState = updateAppState,
+                tipNotifier = tipNotifier,
+                scope = scope,
+                messages = messages,
+            )
+        }
+
         ProxyServerListToolAction.UpdateSubscriptions -> {
             updateSubscriptionGroups(
                 proxyListState = proxyListState,
@@ -319,6 +330,27 @@ private fun handleProxyServerListToolAction(
                 messages = messages,
             )
         }
+    }
+}
+
+private fun sortCurrentGroupByTestResult(
+    servers: List<ProxyServerState>,
+    updateAppState: ((AppState) -> AppState) -> Unit,
+    tipNotifier: AndroidToastTipNotifier,
+    scope: CoroutineScope,
+    messages: ProxyServerListMessages,
+) {
+    val currentGroupServerIds = servers.map { server -> server.id }.toSet()
+    updateAppState { state ->
+        val sortedServers = state.proxyServers.sortedInGroupByLatencyResult(currentGroupServerIds)
+        if (sortedServers === state.proxyServers) {
+            state
+        } else {
+            state.copy(proxyServers = sortedServers)
+        }
+    }
+    scope.launch {
+        tipNotifier.show(messages.sortDone)
     }
 }
 

@@ -42,6 +42,7 @@
     <string name="common_replace">Replace</string>
     <string name="common_restore">Restore</string>
     <string name="common_unsupported">Unsupported</string>
+    <string name="common_complete">Complete</string>
 
     <!-- Navigation -->
     <string name="nav_proxy">Proxy</string>
@@ -283,6 +284,7 @@
     <string name="proxy_server_list_more">More actions</string>
     <string name="proxy_server_list_latency_test">Latency test</string>
     <string name="proxy_server_list_real_connection_test">Real connection test</string>
+    <string name="proxy_server_list_sort_by_test_result">Sort by test result</string>
     <string name="proxy_server_list_copy_all_urls">Copy all server URLs</string>
     <string name="proxy_server_list_delete_duplicates">Delete duplicate proxy servers</string>
     <string name="proxy_server_list_start_proxy">Start proxy</string>
