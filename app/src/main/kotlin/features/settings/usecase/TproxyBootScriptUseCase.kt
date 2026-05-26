@@ -46,7 +46,7 @@ internal class TproxyBootScriptUseCase(
             return TproxyBootScriptResult.RootUnavailable
         }
         return runCatching {
-            rootRunner.uninstallBootScript()
+            rootRunner.uninstallBootScript(TproxyConfigFactory.runtimePaths(appContext))
         }.fold(
             onSuccess = { TproxyBootScriptResult.Success },
             onFailure = TproxyBootScriptResult::Failed,

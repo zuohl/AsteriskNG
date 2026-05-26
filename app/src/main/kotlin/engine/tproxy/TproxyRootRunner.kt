@@ -26,7 +26,7 @@ internal class TproxyRootRunner(
                 "xray-core started but tproxy-in port ${config.tproxyPort} is not listening"
             )
         }
-        if (!isRunning(config.pidPath, config.xrayCorePath)) {
+        if (!isRunning(config.runtime.pidPath, config.runtime.xrayCorePath)) {
             failStartup(
                 config,
                 "xray-core process exited or did not match the expected TPROXY runtime state"
@@ -38,10 +38,10 @@ internal class TproxyRootRunner(
 
     suspend fun stop(
         config: TproxyStartConfig?,
-        fallbackRuntimeConfig: TproxyRuntimeConfig? = null,
+        fallbackRuntime: TproxyRuntimePaths? = null,
     ) = withContext(Dispatchers.IO) {
         val command = config?.stopCommand()
-            ?: TproxyIptablesConfig().stopCommand(fallbackRuntimeConfig)
+            ?: TproxyIptablesConfig().stopCommand(fallbackRuntime)
         val result = rootAccess.exec(command, ShellExecOptions(logFailure = false))
         if (result.errno != 0) {
             AndroidAppLogger.warn(LogTag, "Failed to stop TPROXY cleanly:\n${result.stderr}")
@@ -61,11 +61,13 @@ internal class TproxyRootRunner(
         runRootCommand(command, "Failed to prepare xray log files")
     }
 
-    suspend fun uninstallBootScript() = withContext(Dispatchers.IO) {
-        runRootCommand(
-            "rm -f ${TproxyBootScriptPath.shellQuote()} 2>/dev/null || true",
-            "Failed to remove TPROXY boot script",
-        )
+    suspend fun uninstallBootScript(runtime: TproxyRuntimePaths) = withContext(Dispatchers.IO) {
+        val command = buildString {
+            appendScript("rm -f ${TproxyBootScriptPath.shellQuote()} 2>/dev/null || true")
+            appendScript("rm -f ${runtime.bootstrapScriptPath.shellQuote()} 2>/dev/null || true")
+            appendScript("rm -f ${runtime.bootLogPath.shellQuote()} 2>/dev/null || true")
+        }
+        runRootCommand(command, "Failed to remove TPROXY boot script")
     }
 
     suspend fun isRunning(
@@ -104,8 +106,8 @@ internal class TproxyRootRunner(
         return buildString {
             appendScript(
                 """
-                rm -f ${pidPath.shellQuote()} 2>/dev/null || true
-                chmod 755 ${xrayCorePath.shellQuote()}
+                rm -f ${runtime.pidPath.shellQuote()} 2>/dev/null || true
+                chmod 755 ${runtime.xrayCorePath.shellQuote()}
                 """,
             )
         }
@@ -117,25 +119,22 @@ internal class TproxyRootRunner(
 
     private fun TproxyStartConfig.stopCommand(): String {
         return iptablesConfig.stopCommand(
-            runtimeConfig = TproxyRuntimeConfig(
-                xrayCorePath = xrayCorePath,
-                pidPath = pidPath,
-            ),
+            runtime = runtime,
         )
     }
 
-    private fun TproxyIptablesConfig.stopCommand(runtimeConfig: TproxyRuntimeConfig?): String {
+    private fun TproxyIptablesConfig.stopCommand(runtime: TproxyRuntimePaths?): String {
         return buildString {
-            runtimeConfig?.let { runtime ->
+            runtime?.let { paths ->
                 appendScript(
                     $$"""
-                    pid="$(cat $${runtime.pidPath.shellQuote()} 2>/dev/null || true)"
-                    if [ -n "$pid" ] && $${processMatchTest(runtime.xrayCorePath, uid, gid).trimEnd()}; then
+                    pid="$(cat $${paths.pidPath.shellQuote()} 2>/dev/null || true)"
+                    if [ -n "$pid" ] && $${processMatchTest(paths.xrayCorePath, uid, gid).trimEnd()}; then
                         kill "$pid" 2>/dev/null || true
                         sleep 0.2
                         kill -9 "$pid" 2>/dev/null || true
                     fi
-                    rm -f $${runtime.pidPath.shellQuote()} 2>/dev/null || true
+                    rm -f $${paths.pidPath.shellQuote()} 2>/dev/null || true
                     """,
                 )
             }
@@ -150,25 +149,57 @@ internal class TproxyRootRunner(
             appendScript(
                 $$"""
                 trap '' HUP
-                cd $${dataDir.shellQuote()} || exit 1
-                export XRAY_LOCATION_ASSET=$${dataDir.shellQuote()}
+                cd $${runtime.dataDir.shellQuote()} || exit 1
+                export XRAY_LOCATION_ASSET=$${runtime.dataDir.shellQuote()}
                 ulimit -SHn 1000000 2>/dev/null || true
                 chmod 755 $${setuidgidPath.shellQuote()}
-                $${setuidgidPath.shellQuote()} $${uid.shellQuote()} $${gid.shellQuote()} $${xrayCorePath.shellQuote()} run -config $${configPath.shellQuote()} >> $${coreLogPaths.errorLogPath.shellQuote()} 2>&1 < /dev/null &
-                echo $! > $${pidPath.shellQuote()}
+                $${setuidgidPath.shellQuote()} $${uid.shellQuote()} $${gid.shellQuote()} $${runtime.xrayCorePath.shellQuote()} run -config $${configPath.shellQuote()} >> $${coreLogPaths.errorLogPath.shellQuote()} 2>&1 < /dev/null &
+                echo $! > $${runtime.pidPath.shellQuote()}
+                """,
+            )
+        }
+    }
+
+    private fun TproxyStartConfig.startDetachedBootCommand(): String {
+        val uid = iptablesConfig.uid.toString()
+        val gid = iptablesConfig.gid.toString()
+        return buildString {
+            appendScript(
+                $$"""
+                trap '' HUP
+                cd $${runtime.dataDir.shellQuote()} || exit 1
+                export XRAY_LOCATION_ASSET=$${runtime.dataDir.shellQuote()}
+                ulimit -SHn 1000000 || true
+                chmod 755 $${setuidgidPath.shellQuote()}
+                echo "+ start xray-core as uid=$$uid gid=$$gid"
+                echo "+ xray stdout/stderr: $${coreLogPaths.errorLogPath.shellQuote()}"
+                $${setuidgidPath.shellQuote()} $${uid.shellQuote()} $${gid.shellQuote()} $${runtime.xrayCorePath.shellQuote()} run -config $${configPath.shellQuote()} >> $${coreLogPaths.errorLogPath.shellQuote()} 2>&1 < /dev/null &
+                echo $! > $${runtime.pidPath.shellQuote()}
+                echo "xray-core pid: $(cat $${runtime.pidPath.shellQuote()})"
                 """,
             )
         }
     }
 
     private fun TproxyStartConfig.installBootScriptCommand(): String {
-        val script = buildBootScript()
+        val bootScript = buildBootScript()
+        val bootstrapScript = buildBootstrapScript()
         return buildString {
             appendScript("mkdir -p ${TproxyBootScriptDir.shellQuote()}")
+            appendScript("mkdir -p ${runtime.dataDir.shellQuote()}")
+            appendScript("mkdir -p ${bootLogDirPath.shellQuote()}")
+            appendHeredoc(
+                targetPath = bootstrapScriptPath,
+                delimiter = "ASTERISKNG_TPROXY_BOOTSTRAP_SCRIPT",
+                content = bootstrapScript,
+            )
+            appendScript("chmod 755 ${bootstrapScriptPath.shellQuote()}")
+            appendScript("touch ${bootLogPath.shellQuote()}")
+            appendScript("chmod 666 ${bootLogPath.shellQuote()}")
             appendHeredoc(
                 targetPath = TproxyBootScriptPath,
                 delimiter = "ASTERISKNG_TPROXY_BOOT_SCRIPT",
-                content = script,
+                content = bootScript,
             )
             appendScript("chmod 755 ${TproxyBootScriptPath.shellQuote()}")
         }
@@ -201,33 +232,106 @@ internal class TproxyRootRunner(
     private fun TproxyStartConfig.buildBootScript(): String {
         return buildString {
             appendScript(
-                """
+                $$"""
                 # Generated by AsteriskNG. This script is executed by Magisk service.d at boot.
 
                 (
                 until [ "$(getprop sys.boot_completed)" = "1" ]; do
                     sleep 1
                 done
-                if [ -n "$(getprop sys.user.0.ce_available)" ]; then
-                    until [ "$(getprop sys.user.0.ce_available)" = "true" ]; do
-                        sleep 1
-                    done
-                fi
+                until [ -x $${bootstrapScriptPath.shellQuote()} ]; do
+                    sleep 1
+                done
 
-                rm -f ${pidPath.shellQuote()} 2>/dev/null || true
-                chmod 755 ${xrayCorePath.shellQuote()}
-
+                $${bootstrapScriptPath.shellQuote()} &> $${bootLogPath.shellQuote()}
+                ) &
                 """,
             )
+        }
+    }
+
+    private fun TproxyStartConfig.buildBootstrapScript(): String {
+        return buildString {
+            appendScript(
+                $$"""
+                #!/system/bin/sh
+                # Generated by AsteriskNG. This script is ASTERISKNG_TPROXY_BOOT_SCRIPT wrapper.
+
+                set -e
+                diagnostics_dumped=0
+
+                timestamp() {
+                    date '+%Y-%m-%d %H:%M:%S %z' || date
+                }
+
+                section() {
+                    echo
+                    echo "[$(timestamp)] ===== $* ====="
+                }
+
+                finish() {
+                    rc=$?
+                    if [ "$rc" != "0" ] && [ "$diagnostics_dumped" != "1" ]; then
+                        dump_failure_diagnostics
+                    fi
+                    echo
+                    if [ "$rc" = "0" ]; then
+                        echo "[$(timestamp)] Bootstrap completed successfully"
+                    else
+                        echo "[$(timestamp)] Bootstrap failed with exit code $rc"
+                    fi
+                }
+
+                dump_failure_diagnostics() {
+                    diagnostics_dumped=1
+                    echo
+                    echo "Recent xray error log:"
+                    tail -n 80 $${coreLogPaths.errorLogPath.shellQuote()} || true
+                    echo
+                    echo "netstat snapshot:"
+                    netstat -an || true
+                    echo
+                    echo "Process snapshot:"
+                    pid="$(cat $${runtime.pidPath.shellQuote()} || true)"
+                    echo "pid=$pid"
+                    if [ -n "$pid" ]; then
+                        echo "cmdline=$(tr '\0' ' ' < /proc/"$pid"/cmdline || true)"
+                        echo "exe=$(readlink /proc/"$pid"/exe || true)"
+                        grep -E '^(Uid|Gid):' /proc/"$pid"/status || true
+                    fi
+                }
+
+                trap finish EXIT
+
+                echo "AsteriskNG TPROXY bootstrap"
+                echo "Started at: $(timestamp)"
+                echo "Data dir: $${runtime.dataDir.shellQuote()}"
+                echo "Config: $${configPath.shellQuote()}"
+                echo "PID file: $${runtime.pidPath.shellQuote()}"
+                echo "TPROXY port: $$tproxyPort"
+                echo "IPv6 enabled: $$enableIpv6"
+                echo "Access log enabled: $$enableAccessLog"
+                echo "Core error log: $${coreLogPaths.errorLogPath.shellQuote()}"
+                echo "Core access log: $${coreLogPaths.accessLogPath.shellQuote()}"
+
+                section "Prepare runtime"
+                rm -f $${runtime.pidPath.shellQuote()} || true
+                chmod 755 $${runtime.xrayCorePath.shellQuote()}
+                """,
+            )
+            appendScript("section \"Prepare core logs\"")
             append(coreLogPaths.prepareWritableCoreLogFilesCommand())
-            append(startDetachedCommand())
+            appendScript("section \"Start xray-core\"")
+            append(startDetachedBootCommand())
             appendScript(
                 $$"""
 
+                section "Wait for tproxy-in port $$tproxyPort"
                 port_ready=0
                 attempt=0
                 while [ "$attempt" -lt $$BootPortListenCheckAttempts ]; do
-                    if netstat -an 2>/dev/null | grep 'LISTEN' | grep "[.:]$$tproxyPort[[:space:]]" >/dev/null 2>&1; then
+                    echo "Attempt $((attempt + 1))/$$BootPortListenCheckAttempts"
+                    if netstat -an | grep 'LISTEN' | grep "[.:]$$tproxyPort[[:space:]]"; then
                         port_ready=1
                         break
                     fi
@@ -235,16 +339,18 @@ internal class TproxyRootRunner(
                     sleep 1
                 done
                 if [ "$port_ready" != "1" ]; then
-                    echo "tproxy-in port $$tproxyPort is not listening" >&2
+                    echo "ERROR: tproxy-in port $$tproxyPort is not listening" >&2
+                    dump_failure_diagnostics
                     exit 1
                 fi
                 """,
             )
             append('\n')
+            appendScript("section \"Install TPROXY rules\"")
             append(installTproxyRulesCommand())
             appendScript(
                 """
-                ) &
+                section "TPROXY boot setup is ready"
                 """,
             )
         }
@@ -293,7 +399,7 @@ internal class TproxyRootRunner(
 
     private suspend fun TproxyStartConfig.processDiagnostics(): String {
         val command = $$"""
-            pid="$(cat $${pidPath.shellQuote()} 2>/dev/null || true)"
+            pid="$(cat $${runtime.pidPath.shellQuote()} 2>/dev/null || true)"
             echo "pid=$pid"
             if [ -n "$pid" ]; then
                 echo "cmdline=$(tr '\0' ' ' < /proc/"$pid"/cmdline 2>/dev/null || true)"
@@ -308,7 +414,7 @@ internal class TproxyRootRunner(
     private suspend fun TproxyStartConfig.portDiagnostics(): String {
         val portHex = tproxyPort.toPortHexMarker()
         val command = $$"""
-            pid="$(cat $${pidPath.shellQuote()} 2>/dev/null || true)"
+            pid="$(cat $${runtime.pidPath.shellQuote()} 2>/dev/null || true)"
             echo "== netstat =="
             netstat -an 2>&1 | head -n 40 || true
             echo "portHex=$$portHex"
@@ -326,6 +432,21 @@ internal class TproxyRootRunner(
     private fun Int.toPortHexMarker(): String {
         return ":${toString(16).uppercase().padStart(4, '0')} "
     }
+
+    private val TproxyStartConfig.bootstrapScriptPath: String
+        get() = runtime.bootstrapScriptPath
+
+    private val TproxyStartConfig.bootLogDirPath: String
+        get() = runtime.logDirPath
+
+    private val TproxyStartConfig.bootLogPath: String
+        get() = File(bootLogDirPath, TproxyBootLogFileName).absolutePath
+
+    private val TproxyRuntimePaths.bootstrapScriptPath: String
+        get() = File(dataDir, TproxyBootstrapScriptFileName).absolutePath
+
+    private val TproxyRuntimePaths.bootLogPath: String
+        get() = File(logDirPath, TproxyBootLogFileName).absolutePath
 
     private fun diagnosticMessage(vararg sections: String): String {
         return sections

@@ -5,6 +5,7 @@ import features.logs.androidCoreLogAccessFile
 import features.logs.androidCoreLogErrorFile
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 
 internal data class XrayCoreLogPaths(
     val accessLogPath: String,
@@ -61,6 +62,12 @@ internal fun Context.prepareXrayCoreLogPaths(): XrayCoreLogPaths {
         accessLogPath = androidCoreLogAccessFile().absolutePath,
         errorLogPath = androidCoreLogErrorFile().absolutePath,
     )
+}
+
+internal fun XrayCoreLogPaths.logDirectoryPath(): String {
+    return File(errorLogPath).parentFile?.absolutePath
+        ?: File(accessLogPath).parentFile?.absolutePath
+        ?: error("xray log directory is unavailable")
 }
 
 internal fun Iterable<String>.toJsonStringArray(): JSONArray {

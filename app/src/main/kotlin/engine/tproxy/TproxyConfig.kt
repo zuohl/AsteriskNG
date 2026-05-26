@@ -4,37 +4,36 @@ import android.content.Context
 import android.os.Process
 import app.AppState
 import app.effectiveFakeDnsEnabled
-import engine.xray.buildXrayOutboundPlan
+import app.modes.ProxyAppListModeBlacklist
+import app.modes.ProxyAppListModeGlobal
+import app.modes.ProxyAppListModeWhitelist
+import engine.network.NetworkLimits
+import engine.proxy.ProxyEngineStartRequest
 import engine.vpn.xrayDnsHosts
 import engine.xray.XrayConfigFactory
 import engine.xray.XrayConfigRequest
 import engine.xray.XrayCoreLogPaths
 import engine.xray.XrayProtocols
 import engine.xray.XrayTags
+import engine.xray.buildXrayOutboundPlan
+import engine.xray.logDirectoryPath
 import engine.xray.prepareXrayCoreLogPaths
 import engine.xray.toJsonStringArray
 import engine.xray.xraySniffingDestOverrides
 import features.resources.runtime.XrayResourceFilePaths
 import features.resources.runtime.prepareXrayResourceFilePaths
-import system.getApplicationInfoCompat
+import org.json.JSONObject
 import system.ANDROID_USER_UID_RANGE
-import app.modes.ProxyAppListModeBlacklist
-import app.modes.ProxyAppListModeGlobal
-import app.modes.ProxyAppListModeWhitelist
+import system.getApplicationInfoCompat
 import system.toAndroidAppId
 import system.toAndroidUserId
-import engine.network.NetworkLimits
-import engine.proxy.ProxyEngineStartRequest
-import org.json.JSONObject
 import java.io.File
 
 internal data class TproxyStartConfig(
     val xrayConfigJson: String,
     val setuidgidPath: String,
-    val xrayCorePath: String,
-    val dataDir: String,
+    val runtime: TproxyRuntimePaths,
     val configPath: String,
-    val pidPath: String,
     val tproxyPort: Int,
     val enableIpv6: Boolean,
     val enableAccessLog: Boolean,
@@ -42,9 +41,11 @@ internal data class TproxyStartConfig(
     val iptablesConfig: TproxyIptablesConfig,
 )
 
-internal data class TproxyRuntimeConfig(
+internal data class TproxyRuntimePaths(
     val xrayCorePath: String,
+    val dataDir: String,
     val pidPath: String,
+    val logDirPath: String,
 )
 
 internal data class TproxyIptablesConfig(
@@ -66,13 +67,10 @@ internal data class TproxyIptablesConfig(
 )
 
 internal object TproxyConfigFactory {
-    fun runtimeConfig(context: Context): TproxyRuntimeConfig {
+    fun runtimePaths(context: Context): TproxyRuntimePaths {
         val resourceFilePaths = context.prepareXrayResourceFilePaths()
-        val runtimeFiles = resourceFilePaths.toTproxyRuntimeFiles()
-        return TproxyRuntimeConfig(
-            xrayCorePath = resourceFilePaths.xrayCorePath,
-            pidPath = runtimeFiles.pidPath,
-        )
+        val coreLogPaths = context.prepareXrayCoreLogPaths()
+        return resourceFilePaths.toTproxyRuntimeFiles(coreLogPaths).runtime
     }
 
     fun create(context: Context, request: ProxyEngineStartRequest): TproxyStartConfig {
@@ -82,7 +80,7 @@ internal object TproxyConfigFactory {
         val tproxyPort = appState.tproxyPortValue()
         val outboundPlan = appState.buildXrayOutboundPlan(request.selectedServer)
         val dnsHosts = appState.xrayDnsHosts(outboundPlan.dnsHostServers)
-        val runtimeFiles = resourceFilePaths.toTproxyRuntimeFiles()
+        val runtimeFiles = resourceFilePaths.toTproxyRuntimeFiles(coreLogPaths)
 
         return TproxyStartConfig(
             xrayConfigJson = XrayConfigFactory.buildXrayConfig(
@@ -96,10 +94,8 @@ internal object TproxyConfigFactory {
                 ),
             ),
             setuidgidPath = resourceFilePaths.setuidgidPath,
-            xrayCorePath = resourceFilePaths.xrayCorePath,
-            dataDir = resourceFilePaths.dataDir,
+            runtime = runtimeFiles.runtime,
             configPath = runtimeFiles.configPath,
-            pidPath = runtimeFiles.pidPath,
             tproxyPort = tproxyPort,
             enableIpv6 = appState.enableIpv6,
             enableAccessLog = appState.enableAccessLog,
@@ -111,14 +107,19 @@ internal object TproxyConfigFactory {
 
 private data class TproxyRuntimeFiles(
     val configPath: String,
-    val pidPath: String,
+    val runtime: TproxyRuntimePaths,
 )
 
-private fun XrayResourceFilePaths.toTproxyRuntimeFiles(): TproxyRuntimeFiles {
+private fun XrayResourceFilePaths.toTproxyRuntimeFiles(coreLogPaths: XrayCoreLogPaths): TproxyRuntimeFiles {
     val dir = File(dataDir)
     return TproxyRuntimeFiles(
         configPath = File(dir, TproxyConfigFileName).absolutePath,
-        pidPath = File(dir, TproxyPidFileName).absolutePath,
+        runtime = TproxyRuntimePaths(
+            xrayCorePath = xrayCorePath,
+            dataDir = dataDir,
+            pidPath = File(dir, TproxyPidFileName).absolutePath,
+            logDirPath = coreLogPaths.logDirectoryPath(),
+        ),
     )
 }
 

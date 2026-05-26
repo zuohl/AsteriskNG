@@ -1,17 +1,17 @@
 package engine.tproxy
 
 import android.content.Context
-import app.modes.RunModeTproxy
 import app.R
-import features.logs.AndroidAppLogger
-import features.logs.CoreLogFileTailer
+import app.modes.RunModeTproxy
+import engine.proxy.ProxyEngineStartRequest
+import engine.proxy.ProxyEngineStatus
 import engine.proxy.mode.AndroidModeProxyEngine
 import engine.xray.clearCoreLogs
 import engine.xray.startCoreLogTailers
+import features.logs.AndroidAppLogger
+import features.logs.CoreLogFileTailer
 import system.AndroidRootShellGateway
 import java.io.File
-import engine.proxy.ProxyEngineStartRequest
-import engine.proxy.ProxyEngineStatus
 
 internal class TproxyEngine(
     private val context: Context,
@@ -28,8 +28,8 @@ internal class TproxyEngine(
         }
         stop()
         val config = TproxyConfigFactory.create(context, request)
-        if (!File(config.xrayCorePath).canExecute()) {
-            File(config.xrayCorePath).setExecutable(true, false)
+        if (!File(config.runtime.xrayCorePath).canExecute()) {
+            File(config.runtime.xrayCorePath).setExecutable(true, false)
         }
         rootRunner.prepareCoreLogFiles(config.coreLogPaths)
         config.coreLogPaths.clearCoreLogs(LogTag)
@@ -39,7 +39,7 @@ internal class TproxyEngine(
             if (request.appState.enableTproxyBootScript) {
                 rootRunner.installBootScript(config)
             } else {
-                rootRunner.uninstallBootScript()
+                rootRunner.uninstallBootScript(config.runtime)
             }
         }.onFailure { error ->
             runCatching { rootRunner.stop(config) }
@@ -62,7 +62,7 @@ internal class TproxyEngine(
         runCatching {
             rootRunner.stop(
                 config = startConfig,
-                fallbackRuntimeConfig = TproxyConfigFactory.runtimeConfig(context),
+                fallbackRuntime = TproxyConfigFactory.runtimePaths(context),
             )
         }.onFailure { error ->
             AndroidAppLogger.warn(LogTag, "Failed to stop TPROXY mode", error)
@@ -72,19 +72,12 @@ internal class TproxyEngine(
     }
 
     override suspend fun status(): ProxyEngineStatus {
-        val runtimeConfig = startConfig?.toRuntimeConfig() ?: TproxyConfigFactory.runtimeConfig(context)
+        val runtime = startConfig?.runtime ?: TproxyConfigFactory.runtimePaths(context)
         val running = rootRunner.isRunning(
-            pidPath = runtimeConfig.pidPath,
-            xrayCorePath = runtimeConfig.xrayCorePath,
+            pidPath = runtime.pidPath,
+            xrayCorePath = runtime.xrayCorePath,
         )
         return ProxyEngineStatus(running = running, runMode = runMode)
-    }
-
-    private fun TproxyStartConfig.toRuntimeConfig(): TproxyRuntimeConfig {
-        return TproxyRuntimeConfig(
-            xrayCorePath = xrayCorePath,
-            pidPath = pidPath,
-        )
     }
 
     private companion object {
