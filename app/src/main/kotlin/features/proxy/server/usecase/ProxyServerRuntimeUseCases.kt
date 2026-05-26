@@ -22,7 +22,7 @@ import ui.text.formatTemplate
 import kotlin.coroutines.cancellation.CancellationException
 
 private const val TcpLatencyTestConcurrency = 16
-private const val RealConnectionLatencyTestConcurrency = 3
+private const val RealConnectionLatencyTestConcurrency = 8
 
 internal fun restartProxyServiceAfterSelection(
     serverId: Int,
