@@ -25,7 +25,9 @@ android {
 val buildSetuidgid by tasks.registering(BuildSetuidgidTask::class) {
     sourceFile.set(layout.projectDirectory.file("src/main/native/setuidgid.c"))
     outputDirectory.set(generatedJniLibsDir)
-    localPropertiesFile.set(rootProject.layout.projectDirectory.file("local.properties"))
+    rootProject.layout.projectDirectory.file("local.properties")
+        .takeIf { it.asFile.exists() }
+        ?.let(localPropertiesFile::set)
     minSdk.set(ProjectConfig.MIN_SDK)
     targetAbis.set(ProjectConfig.SUPPORTED_ANDROID_ABIS)
 }

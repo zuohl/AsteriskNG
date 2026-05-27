@@ -1,0 +1,291 @@
+name: Build Release And Upload To Telegram
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Override output file version name, for example 1.0.1"
+        required: false
+        type: string
+      send_to_telegram:
+        description: "Upload release APKs to Telegram"
+        required: true
+        default: true
+        type: boolean
+  push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
+      TELEGRAM_MAX_DOCUMENT_BYTES: ${{ vars.TELEGRAM_MAX_DOCUMENT_BYTES }}
+      RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+      RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+      RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+      RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+      SEND_TO_TELEGRAM: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.send_to_telegram == 'true' }}
+      REQUESTED_VERSION_NAME: ${{ github.event.inputs.version_name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          set +o pipefail
+          yes | sdkmanager --licenses >/dev/null
+          licenses_status="${PIPESTATUS[1]}"
+          set -o pipefail
+          if [ "$licenses_status" -ne 0 ]; then
+            echo "::error::Failed to accept Android SDK licenses."
+            exit "$licenses_status"
+          fi
+
+          build_tools_package="$(sdkmanager --list | awk '$1 ~ /^build-tools;[0-9]/ { print $1 }' | sort -V | tail -n 1)"
+          ndk_package="$(sdkmanager --list | awk '$1 ~ /^ndk;[0-9]/ { print $1 }' | sort -V | tail -n 1)"
+
+          if [ -z "$build_tools_package" ]; then
+            echo "::error::No Android build-tools package is available from sdkmanager."
+            exit 1
+          fi
+          if [ -z "$ndk_package" ]; then
+            echo "::error::No Android NDK package is available from sdkmanager."
+            exit 1
+          fi
+
+          sdkmanager --install "platforms;android-37.0" "$build_tools_package" "$ndk_package"
+
+          ndk_version="${ndk_package#ndk;}"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ndk_version" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/$ndk_version" >> "$GITHUB_ENV"
+
+      - name: Validate signing secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${RELEASE_KEYSTORE_BASE64:-}" ]; then
+            echo "::error::Missing repository secret RELEASE_KEYSTORE_BASE64."
+            exit 1
+          fi
+          if [ -z "${RELEASE_KEYSTORE_PASSWORD:-}" ]; then
+            echo "::error::Missing repository secret RELEASE_KEYSTORE_PASSWORD."
+            exit 1
+          fi
+          if [ -z "${RELEASE_KEY_ALIAS:-}" ]; then
+            echo "::error::Missing repository secret RELEASE_KEY_ALIAS."
+            exit 1
+          fi
+
+      - name: Build release APKs
+        run: ./gradlew --no-daemon :app:assembleRelease
+
+      - name: Sign release APKs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          keystore_path="$RUNNER_TEMP/release.keystore"
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+
+          key_password="${RELEASE_KEY_PASSWORD:-$RELEASE_KEYSTORE_PASSWORD}"
+          export RELEASE_KEYSTORE_PASSWORD
+          export RELEASE_KEY_PASSWORD="$key_password"
+
+          zipalign="$(find "$ANDROID_HOME/build-tools" -type f -name zipalign | sort -V | tail -n 1)"
+          apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+
+          if [ -z "$zipalign" ]; then
+            echo "::error::zipalign was not found in Android build-tools."
+            exit 1
+          fi
+          if [ -z "$apksigner" ]; then
+            echo "::error::apksigner was not found in Android build-tools."
+            exit 1
+          fi
+
+          mkdir -p signed-apks
+          shopt -s nullglob
+          for apk in app/build/outputs/apk/release/*.apk; do
+            base_name="$(basename "$apk" .apk)"
+            aligned_apk="$RUNNER_TEMP/${base_name}-aligned.apk"
+            signed_apk="signed-apks/${base_name}-signed.apk"
+
+            "$zipalign" -p -f 4 "$apk" "$aligned_apk"
+            "$apksigner" sign \
+              --ks "$keystore_path" \
+              --ks-pass env:RELEASE_KEYSTORE_PASSWORD \
+              --ks-key-alias "$RELEASE_KEY_ALIAS" \
+              --key-pass env:RELEASE_KEY_PASSWORD \
+              --out "$signed_apk" \
+              "$aligned_apk"
+            "$apksigner" verify --verbose "$signed_apk"
+          done
+
+          if ! find signed-apks -type f -name "*.apk" | grep -q .; then
+            echo "::error::No signed release APKs were produced."
+            exit 1
+          fi
+
+      - name: Collect release APKs
+        id: collect
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          config_version_name="$(sed -n 's/.*const val VERSION_NAME = "\([^"]*\)".*/\1/p' buildSrc/src/main/kotlin/BuildConfig.kt | head -n 1)"
+          ref_version_name="${GITHUB_REF_NAME#v}"
+          version_name="${REQUESTED_VERSION_NAME:-}"
+
+          if [ -z "$version_name" ] && [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -n "$ref_version_name" ]; then
+            version_name="$ref_version_name"
+          fi
+          if [ -z "$version_name" ]; then
+            version_name="$config_version_name"
+          fi
+
+          version_code="$(git rev-list --count HEAD)"
+          mkdir -p release-artifacts
+
+          shopt -s nullglob
+          for apk in signed-apks/*.apk; do
+            file_name="$(basename "$apk")"
+            abi="universal"
+            case "$file_name" in
+              *arm64-v8a*) abi="arm64-v8a" ;;
+              *armeabi-v7a*) abi="armeabi-v7a" ;;
+              *x86_64*) abi="x86_64" ;;
+              *x86*) abi="x86" ;;
+              *universal*) abi="universal" ;;
+            esac
+
+            cp "$apk" "release-artifacts/AsteriskNG_${version_name}-${version_code}-${abi}.apk"
+          done
+
+          if ! find release-artifacts -type f -name "*.apk" | grep -q .; then
+            echo "::error::No release APKs were found under app/build/outputs/apk/release."
+            exit 1
+          fi
+
+          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+          ls -lh release-artifacts
+
+      - name: Upload GitHub artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AsteriskNG_${{ steps.collect.outputs.version_name }}-${{ steps.collect.outputs.version_code }}
+          path: release-artifacts/*.apk
+          if-no-files-found: error
+
+      - name: Validate Telegram secrets
+        if: ${{ env.SEND_TO_TELEGRAM == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${TELEGRAM_BOT_TOKEN:-}" ]; then
+            echo "::error::Missing repository secret TELEGRAM_BOT_TOKEN."
+            exit 1
+          fi
+          if [ -z "${TELEGRAM_CHAT_ID:-}" ]; then
+            echo "::error::Missing repository secret TELEGRAM_CHAT_ID."
+            exit 1
+          fi
+
+      - name: Upload release APKs to Telegram
+        if: ${{ env.SEND_TO_TELEGRAM == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -d '' apks < <(find release-artifacts -maxdepth 1 -type f -name '*.apk' -print0 | sort -z)
+          if [ "${#apks[@]}" -eq 0 ]; then
+            echo "::error::No APK files were found in release-artifacts before Telegram upload."
+            find release-artifacts -maxdepth 1 -type f -print || true
+            exit 1
+          fi
+
+          ls -lh release-artifacts
+          max_document_bytes="${TELEGRAM_MAX_DOCUMENT_BYTES:-52428800}"
+          commit_id="$(git rev-parse HEAD)"
+          commit_short_id="$(git rev-parse --short=12 HEAD)"
+          commit_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$commit_id"
+          workflow_run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          commit_message="$(git log -1 --pretty=%B)"
+          commit_message="${commit_message//$'\r'/}"
+          if [ -z "${commit_message//[[:space:]]/}" ]; then
+            commit_message="(empty commit message)"
+          fi
+          if [ "${#commit_message}" -gt 650 ]; then
+            commit_message="${commit_message:0:650}"$'\n...'
+          fi
+          commit_message_html="$(printf '%s' "$commit_message" | python3 -c 'import html, sys; print(html.escape(sys.stdin.read(), quote=False), end="")')"
+
+          for apk in "${apks[@]}"; do
+            apk_path="$(realpath "$apk")"
+            apk_name="$(basename "$apk")"
+            if [ ! -r "$apk_path" ]; then
+              echo "::error::APK is not readable: $apk_path"
+              exit 1
+            fi
+
+            apk_size="$(stat -c '%s' "$apk_path")"
+            if [ "$apk_size" -gt "$max_document_bytes" ]; then
+              echo "::warning::Skipping Telegram upload for $apk_name because it is $apk_size bytes, above the $max_document_bytes byte limit."
+              continue
+            fi
+
+            echo "Uploading $apk_name to Telegram"
+
+            caption="$(printf 'AsteriskNG\n\n%s\n\n%s\n<a href="%s">Commit</a> | <a href="%s">Workflow run</a>' \
+              "$commit_message_html" \
+              "$commit_short_id" \
+              "$commit_url" \
+              "$workflow_run_url")"
+
+            args=(
+              --fail-with-body
+              -sS
+              -X POST
+              "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument"
+              --form-string "chat_id=${TELEGRAM_CHAT_ID}"
+              --form "document=@${apk_path};filename=${apk_name}"
+              --form-string "caption=${caption}"
+              --form-string "parse_mode=HTML"
+            )
+
+            if [ -n "${TELEGRAM_MESSAGE_THREAD_ID:-}" ]; then
+              args+=(--form-string "message_thread_id=${TELEGRAM_MESSAGE_THREAD_ID}")
+            fi
+
+            curl "${args[@]}"
+          done
