@@ -23,7 +23,7 @@ internal class TproxyRootRunner(
         if (!config.waitForTproxyInbound()) {
             failStartup(
                 config,
-                "xray-core started but tproxy-in port ${config.tproxyPort} is not listening"
+                "xray-core started but tproxy-in port ${config.tproxyPort} is not ready"
             )
         }
         if (!isRunning(config.runtime.pidPath, config.runtime.xrayCorePath)) {
@@ -331,7 +331,7 @@ internal class TproxyRootRunner(
                 attempt=0
                 while [ "$attempt" -lt $$BootPortListenCheckAttempts ]; do
                     echo "Attempt $((attempt + 1))/$$BootPortListenCheckAttempts"
-                    if netstat -an | grep 'LISTEN' | grep "[.:]$$tproxyPort[[:space:]]"; then
+                    if netstat -an | grep "[.:]$$tproxyPort[[:space:]]" | grep -E 'LISTEN|UNKNOWN'; then
                         port_ready=1
                         break
                     fi
@@ -339,7 +339,7 @@ internal class TproxyRootRunner(
                     sleep 1
                 done
                 if [ "$port_ready" != "1" ]; then
-                    echo "ERROR: tproxy-in port $$tproxyPort is not listening" >&2
+                    echo "ERROR: tproxy-in port $$tproxyPort is not ready" >&2
                     dump_failure_diagnostics
                     exit 1
                 fi
@@ -372,7 +372,7 @@ internal class TproxyRootRunner(
 
     private fun TproxyStartConfig.checkTproxyInboundCommand(): String {
         return """
-            netstat -an 2>/dev/null | grep 'LISTEN' | grep "[.:]$tproxyPort[[:space:]]" >/dev/null 2>&1
+            netstat -an 2>/dev/null | grep "[.:]$tproxyPort[[:space:]]" | grep -E 'LISTEN|UNKNOWN' >/dev/null 2>&1
         """.trimIndent() + "\n"
     }
 
