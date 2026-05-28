@@ -11,16 +11,17 @@ import features.proxy.server.usecase.withUpdatedSubscriptionServers
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
 
-internal data class V2rayNgInstallConfig(
+internal data class SubscriptionInstallConfig(
     val name: String,
     val url: String,
+    val userAgent: String,
 )
 
 internal class SubscriptionInstallConfigUseCase(
     private val stateStore: AndroidAppStateStore,
     private val subscriptionFetchUseCase: SubscriptionFetchUseCase,
 ) {
-    suspend fun install(config: V2rayNgInstallConfig): ProxyServerListSubscriptionUpdateResult {
+    suspend fun install(config: SubscriptionInstallConfig): ProxyServerListSubscriptionUpdateResult {
         val group = stateStore.addSubscriptionGroup(config)
         val result = updateSubscriptions(
             groups = listOf(group),
@@ -39,29 +40,37 @@ internal class SubscriptionInstallConfigUseCase(
     }
 }
 
-internal fun Intent.toV2rayNgInstallConfigOrNull(): V2rayNgInstallConfig? {
+internal fun Intent.toSubscriptionInstallConfigOrNull(): SubscriptionInstallConfig? {
     if (action != Intent.ACTION_VIEW) return null
-    return data?.toV2rayNgInstallConfigOrNull()
+    return data?.toSubscriptionInstallConfigOrNull()
 }
 
-internal fun Uri.isV2rayNgInstallConfigUri(): Boolean {
-    return scheme.equals(V2rayNgScheme, ignoreCase = true) &&
+internal fun String.toSubscriptionInstallConfigOrNull(): SubscriptionInstallConfig? {
+    val uri = runCatching { trim().toUri() }.getOrNull() ?: return null
+    return uri.toSubscriptionInstallConfigOrNull()
+}
+
+internal fun Uri.isSubscriptionInstallConfigUri(): Boolean {
+    return installConfigSource() != null &&
         isHierarchical &&
-        host.equals(V2rayNgInstallConfigHost, ignoreCase = true)
+        host.equals(InstallConfigHost, ignoreCase = true)
 }
 
-private fun Uri.toV2rayNgInstallConfigOrNull(): V2rayNgInstallConfig? {
-    if (!isV2rayNgInstallConfigUri()) return null
+internal fun Uri.toSubscriptionInstallConfigOrNull(): SubscriptionInstallConfig? {
+    val source = installConfigSource() ?: return null
+    if (!isHierarchical || !host.equals(InstallConfigHost, ignoreCase = true)) return null
     val name = getQueryParameter("name")?.trim().orEmpty()
+        .ifBlank { source.defaultName.orEmpty() }
     val url = getQueryParameter("url")?.trim().orEmpty()
     if (name.isBlank() || !url.isValidSubscriptionUrl()) return null
-    return V2rayNgInstallConfig(
+    return SubscriptionInstallConfig(
         name = name,
         url = url,
+        userAgent = source.userAgent,
     )
 }
 
-private fun AndroidAppStateStore.addSubscriptionGroup(config: V2rayNgInstallConfig): SubscriptionGroupState {
+private fun AndroidAppStateStore.addSubscriptionGroup(config: SubscriptionInstallConfig): SubscriptionGroupState {
     var savedGroup: SubscriptionGroupState? = null
     update { state ->
         val group = state.newSubscriptionGroup(config)
@@ -74,12 +83,12 @@ private fun AndroidAppStateStore.addSubscriptionGroup(config: V2rayNgInstallConf
     return checkNotNull(savedGroup)
 }
 
-private fun AppState.newSubscriptionGroup(config: V2rayNgInstallConfig): SubscriptionGroupState {
+private fun AppState.newSubscriptionGroup(config: SubscriptionInstallConfig): SubscriptionGroupState {
     return SubscriptionGroupState(
         id = nextSubscriptionGroupId,
         name = config.name,
         url = config.url,
-        userAgent = DefaultSubscriptionUserAgent,
+        userAgent = config.userAgent,
         updateInterval = "",
         updateViaProxy = false,
         enabled = true,
@@ -94,6 +103,26 @@ private fun String.isValidSubscriptionUrl(): Boolean {
         uri.host?.isNotBlank() == true
 }
 
-private const val V2rayNgScheme = "v2rayng"
-private const val V2rayNgInstallConfigHost = "install-config"
+private enum class InstallConfigSource(
+    val scheme: String,
+    val userAgent: String,
+    val defaultName: String? = null,
+) {
+    V2rayNg(scheme = "v2rayng", userAgent = DefaultSubscriptionUserAgent),
+    ClashMeta(scheme = "clashmeta", userAgent = ClashMetaSubscriptionUserAgent),
+    FlClashX(
+        scheme = "flclashx",
+        userAgent = FlClashXSubscriptionUserAgent,
+        defaultName = "clashsub",
+    ),
+}
+
+private fun Uri.installConfigSource(): InstallConfigSource? {
+    val uriScheme = scheme ?: return null
+    return InstallConfigSource.entries.firstOrNull { source ->
+        source.scheme.equals(uriScheme, ignoreCase = true)
+    }
+}
+
+private const val InstallConfigHost = "install-config"
 private val SubscriptionUrlSchemes = setOf("http", "https")

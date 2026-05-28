@@ -29,9 +29,11 @@ import features.proxy.server.usecase.withImportedProxyServers
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
 import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.SubscriptionFetchUseCase
+import features.subscription.SubscriptionInstallConfigUseCase
 import features.subscription.usecase.subscriptionUpdateMessage
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
+import features.subscription.toSubscriptionInstallConfigOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -77,10 +79,12 @@ internal fun ProxyServerListTopBar(
                     action = action,
                     groupState = groupState,
                     proxyListState = proxyListState,
+                    stateStore = stateStore,
                     updateAppState = updateAppState,
                     navigator = navigator,
                     qrScanner = qrScanner,
                     proxyServerImportFileUseCase = proxyServerImportFileUseCase,
+                    subscriptionFetchUseCase = subscriptionFetchUseCase,
                     clipboard = clipboard,
                     tipNotifier = tipNotifier,
                     scope = scope,
@@ -134,10 +138,12 @@ private fun handleProxyServerListAddAction(
     action: ProxyServerListAddAction,
     groupState: ProxyServerListGroups,
     proxyListState: ProxyServerListState,
+    stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     navigator: Navigator,
     qrScanner: ProxyServerQrScanUseCase,
     proxyServerImportFileUseCase: ProxyServerImportFileUseCase,
+    subscriptionFetchUseCase: SubscriptionFetchUseCase,
     clipboard: Clipboard,
     tipNotifier: AndroidToastTipNotifier,
     scope: CoroutineScope,
@@ -150,6 +156,17 @@ private fun handleProxyServerListAddAction(
                 runCatching { qrScanner.scan() }
                     .onSuccess { scanText ->
                         if (scanText.isNullOrBlank()) return@onSuccess
+                        if (
+                            installSubscriptionFromQrCode(
+                                text = scanText,
+                                stateStore = stateStore,
+                                subscriptionFetchUseCase = subscriptionFetchUseCase,
+                                tipNotifier = tipNotifier,
+                                messages = messages,
+                            )
+                        ) {
+                            return@onSuccess
+                        }
                         importProxyServers(
                             text = scanText,
                             source = ProxyServerImportSource.QrCode,
@@ -211,6 +228,33 @@ private fun handleProxyServerListAddAction(
             )
         }
     }
+}
+
+private suspend fun installSubscriptionFromQrCode(
+    text: String,
+    stateStore: AndroidAppStateStore,
+    subscriptionFetchUseCase: SubscriptionFetchUseCase,
+    tipNotifier: AndroidToastTipNotifier,
+    messages: ProxyServerListMessages,
+): Boolean {
+    val config = text.toSubscriptionInstallConfigOrNull() ?: return false
+    runCatching {
+        SubscriptionInstallConfigUseCase(
+            stateStore = stateStore,
+            subscriptionFetchUseCase = subscriptionFetchUseCase,
+        ).install(config)
+    }.onSuccess { result ->
+        tipNotifier.show(
+            subscriptionUpdateMessage(
+                result = result,
+                successTemplate = messages.subscriptionUpdateResultTemplate,
+                failedTemplate = messages.subscriptionUpdateResultWithFailedTemplate,
+            ),
+        )
+    }.onFailure { error ->
+        tipNotifier.showError(error)
+    }
+    return true
 }
 
 private suspend fun importProxyServers(

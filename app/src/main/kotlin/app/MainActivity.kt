@@ -20,8 +20,8 @@ import features.proxy.server.qr.AndroidQrCodeScanRequester
 import features.resources.runtime.AndroidResourceFilePicker
 import features.subscription.SubscriptionFetchUseCase
 import features.subscription.SubscriptionInstallConfigUseCase
-import features.subscription.isV2rayNgInstallConfigUri
-import features.subscription.toV2rayNgInstallConfigOrNull
+import features.subscription.isSubscriptionInstallConfigUri
+import features.subscription.toSubscriptionInstallConfigOrNull
 import features.subscription.usecase.subscriptionUpdateMessage
 import kotlinx.coroutines.launch
 import ui.feedback.AndroidToastTipNotifier
@@ -163,8 +163,8 @@ class MainActivity : ComponentActivity() {
 
     private fun handleExternalIntent(intent: Intent?) {
         val data = intent?.data ?: return
-        if (!data.isV2rayNgInstallConfigUri()) return
-        val config = intent.toV2rayNgInstallConfigOrNull()
+        if (!data.isSubscriptionInstallConfigUri()) return
+        val config = intent.toSubscriptionInstallConfigOrNull()
         if (config == null) {
             (application as AsteriskApplication).appScope.launch {
                 tipNotifier.show(getString(R.string.subscription_install_config_invalid))

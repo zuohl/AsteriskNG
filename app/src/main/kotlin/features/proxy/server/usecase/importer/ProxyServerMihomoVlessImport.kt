@@ -202,9 +202,6 @@ private fun JsonObjectBuilder.putXrayRealitySettings(
     fallback: MihomoYamlMap,
 ) {
     val realityOpts = primary.map("reality-opts") ?: fallback.map("reality-opts") ?: emptyMap()
-    if (realityOpts.boolean("support-x25519mlkem768") == true) {
-        unsupported("Reality X25519-MLKEM768 is not supported")
-    }
     putStringIfNotBlank("serverName", primary.string("servername", "sni") ?: fallback.string("servername", "sni"))
     putStringIfNotBlank(
         "fingerprint",

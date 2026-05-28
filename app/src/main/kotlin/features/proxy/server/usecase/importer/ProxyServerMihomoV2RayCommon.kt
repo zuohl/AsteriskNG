@@ -78,10 +78,6 @@ private fun MihomoYamlMap.ensureNoUnsupportedV2RayTlsOptions() {
             unsupported("ECH query-server-name is not supported")
         }
     }
-    val realityOpts = map("reality-opts")
-    if (realityOpts?.boolean("support-x25519mlkem768") == true) {
-        unsupported("Reality X25519-MLKEM768 is not supported")
-    }
 }
 
 private fun MihomoYamlMap.ensureNoUnsupportedWsHeaders() {

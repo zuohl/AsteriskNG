@@ -248,13 +248,13 @@
             ]
         },
         {
-            "uniqueId": "org.yaml:snakeyaml",
-            "artifactVersion": "2.6",
-            "name": "SnakeYAML",
-            "description": "YAML 1.1 parser and emitter for Java",
-            "website": "https://bitbucket.org/snakeyaml/snakeyaml",
+            "uniqueId": "org.snakeyaml:snakeyaml-engine",
+            "artifactVersion": "3.0.1",
+            "name": "SnakeYAML Engine",
+            "description": "Core YAML 1.2 parser and emitter for Java",
+            "website": "https://bitbucket.org/snakeyaml/snakeyaml-engine",
             "scm": {
-                "url": "https://bitbucket.org/snakeyaml/snakeyaml/src"
+                "url": "https://bitbucket.org/snakeyaml/snakeyaml-engine/src"
             },
             "licenses": [
                 "Apache-2.0"

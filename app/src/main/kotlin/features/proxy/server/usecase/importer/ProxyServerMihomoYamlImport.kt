@@ -5,9 +5,8 @@ import features.proxy.server.model.ProxyServer
 import features.proxy.server.usecase.EmptyProxyServerImportResult
 import features.proxy.server.usecase.ProxyServerImportResult
 import features.proxy.server.usecase.ProxyServerImportSource
-import org.yaml.snakeyaml.LoaderOptions
-import org.yaml.snakeyaml.Yaml
-import org.yaml.snakeyaml.constructor.SafeConstructor
+import org.snakeyaml.engine.v2.api.Load
+import org.snakeyaml.engine.v2.api.LoadSettings
 
 private const val LogTag = "ProxyServerMihomoYamlImport"
 
@@ -16,7 +15,13 @@ internal fun parseProxyServersFromMihomoYamlConfig(
     source: ProxyServerImportSource,
 ): ProxyServerImportResult {
     val root = runCatching {
-        newMihomoYamlParser().load<Any?>(text.trimStart(ImportByteOrderMark))
+        newMihomoYamlParser().loadFromString(text.trimStart(ImportByteOrderMark))
+    }.onFailure { error ->
+        AndroidAppLogger.warn(
+            LogTag,
+            "Failed to parse ${source.logName} as mihomo YAML",
+            error,
+        )
     }.getOrNull() ?: return EmptyProxyServerImportResult
     val configs = root.mihomoProxyConfigs()
     if (configs.isEmpty()) {
@@ -129,8 +134,8 @@ private fun skippedMessage(
         "type=${type.ifBlank { "<blank>" }} name=${name.ifBlank { "<blank>" }} reason=$reason"
 }
 
-private fun newMihomoYamlParser(): Yaml {
-    return Yaml(SafeConstructor(LoaderOptions()))
+private fun newMihomoYamlParser(): Load {
+    return Load(LoadSettings.builder().build())
 }
 
 private val SupportedMihomoProxyTypes = setOf(
