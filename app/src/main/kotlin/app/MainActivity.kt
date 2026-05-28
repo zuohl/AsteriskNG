@@ -1,6 +1,7 @@
 package app
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -11,11 +12,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.safeDrawing
+import com.journeyapps.barcodescanner.ScanContract
+import data.AndroidAppStateStore
 import engine.vpn.AndroidVpnPermissionRequester
 import features.logs.AndroidLogFileCreator
-import features.resources.runtime.AndroidResourceFilePicker
 import features.proxy.server.qr.AndroidQrCodeScanRequester
-import com.journeyapps.barcodescanner.ScanContract
+import features.resources.runtime.AndroidResourceFilePicker
+import features.subscription.SubscriptionFetchUseCase
+import features.subscription.SubscriptionInstallConfigUseCase
+import features.subscription.isV2rayNgInstallConfigUri
+import features.subscription.toV2rayNgInstallConfigOrNull
+import features.subscription.usecase.subscriptionUpdateMessage
+import kotlinx.coroutines.launch
+import ui.feedback.AndroidToastTipNotifier
 
 class MainActivity : ComponentActivity() {
     private val vpnPermissionRequester = AndroidVpnPermissionRequester {
@@ -45,6 +54,14 @@ class MainActivity : ComponentActivity() {
             getString(R.string.error_log_export_launcher_missing)
         },
     )
+    private val tipNotifier by lazy { AndroidToastTipNotifier(this) }
+
+    private val subscriptionInstallConfigUseCase by lazy {
+        SubscriptionInstallConfigUseCase(
+            stateStore = AndroidAppStateStore.get(this),
+            subscriptionFetchUseCase = SubscriptionFetchUseCase(),
+        )
+    }
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -97,6 +114,15 @@ class MainActivity : ComponentActivity() {
         }
         showAppContent()
         requestStartupPermissions()
+        if (savedInstanceState == null) {
+            handleExternalIntent(intent)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleExternalIntent(intent)
     }
 
     override fun onDestroy() {
@@ -132,6 +158,33 @@ class MainActivity : ComponentActivity() {
                 logFileCreator = logFileCreator::create,
                 requestVpnPermission = vpnPermissionRequester::request,
             )
+        }
+    }
+
+    private fun handleExternalIntent(intent: Intent?) {
+        val data = intent?.data ?: return
+        if (!data.isV2rayNgInstallConfigUri()) return
+        val config = intent.toV2rayNgInstallConfigOrNull()
+        if (config == null) {
+            (application as AsteriskApplication).appScope.launch {
+                tipNotifier.show(getString(R.string.subscription_install_config_invalid))
+            }
+            return
+        }
+        (application as AsteriskApplication).appScope.launch {
+            runCatching {
+                subscriptionInstallConfigUseCase.install(config)
+            }.onSuccess { result ->
+                tipNotifier.show(
+                    subscriptionUpdateMessage(
+                        result = result,
+                        successTemplate = getString(R.string.proxy_server_list_subscription_update_result),
+                        failedTemplate = getString(R.string.proxy_server_list_subscription_update_result_with_failed),
+                    ),
+                )
+            }.onFailure { error ->
+                tipNotifier.showError(error, getString(R.string.subscription_install_config_failed))
+            }
         }
     }
 }
