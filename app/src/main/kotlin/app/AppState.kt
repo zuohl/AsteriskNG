@@ -20,6 +20,9 @@ import engine.xray.DefaultMuxConcurrency
 import engine.xray.DefaultMuxUdp443Mode
 import engine.xray.DefaultMuxXudpConcurrency
 import features.resources.ResourceFileSourceLoyalsoldierGithub
+import features.resources.ResourceFileLoyalsoldierGeoIpUrl
+import features.resources.ResourceFileLoyalsoldierGeoSiteUrl
+import features.resources.ResourceFileV2FlyGeoIpOnlyCnPrivateUrl
 import features.routing.model.RouteRule
 
 data class AppState(
@@ -59,6 +62,11 @@ data class AppState(
     val coreLogLevel: Int = 3,
     val enableAccessLog: Boolean = false,
     val resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub,
+    val customResourceFileGeoIpUrl: String = ResourceFileLoyalsoldierGeoIpUrl,
+    val customResourceFileGeoSiteUrl: String = ResourceFileLoyalsoldierGeoSiteUrl,
+    val customResourceFileGeoIpOnlyCnPrivateUrl: String = ResourceFileV2FlyGeoIpOnlyCnPrivateUrl,
+    val customResourceFiles: List<CustomResourceFileState> = emptyList(),
+    val nextCustomResourceFileId: Int = 1,
     val enableSniffing: Boolean = true,
     val enableSniffingRouteOnly: Boolean = true,
 

@@ -5,6 +5,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -62,7 +66,7 @@ internal fun SubscriptionGroupForm(
     modifier: Modifier = Modifier,
 ) {
     var showCustomUserAgentDialog by remember { mutableStateOf(false) }
-    var customUserAgentDraft by remember(customUserAgent) { mutableStateOf(customUserAgent) }
+    val customUserAgentDraftState = rememberTextFieldState(initialText = customUserAgent)
     val customSummary = customUserAgent.trim().ifBlank {
         stringResource(R.string.subscription_user_agent_custom_summary)
     }
@@ -101,12 +105,11 @@ internal fun SubscriptionGroupForm(
             summary = resolvedUserAgent,
             items = userAgentItems,
             selectedIndex = selectedUserAgentIndex,
-            dialogButtonString = stringResource(R.string.common_complete),
             modifier = Modifier.padding(bottom = 12.dp),
             onSelectedIndexChange = { index ->
                 val selection = SubscriptionUserAgentSelections[index]
                 if (selection == SubscriptionUserAgentSelection.Custom) {
-                    customUserAgentDraft = customUserAgent.ifBlank { resolvedUserAgent }
+                    customUserAgentDraftState.setTextAndPlaceCursorAtEnd(customUserAgent.ifBlank { resolvedUserAgent })
                     showCustomUserAgentDialog = true
                 } else {
                     onUserAgentSelectionChange(selection)
@@ -115,11 +118,12 @@ internal fun SubscriptionGroupForm(
         )
         CustomUserAgentDialog(
             show = showCustomUserAgentDialog,
-            value = customUserAgentDraft,
-            onValueChange = { customUserAgentDraft = it },
+            state = customUserAgentDraftState,
             onDismissRequest = { showCustomUserAgentDialog = false },
             onSave = {
-                onCustomUserAgentChange(customUserAgentDraft.trim().ifBlank { DefaultSubscriptionUserAgent })
+                onCustomUserAgentChange(
+                    customUserAgentDraftState.text.toString().trim().ifBlank { DefaultSubscriptionUserAgent },
+                )
                 onUserAgentSelectionChange(SubscriptionUserAgentSelection.Custom)
                 showCustomUserAgentDialog = false
             },
@@ -150,8 +154,7 @@ internal fun SubscriptionGroupForm(
 @Composable
 private fun CustomUserAgentDialog(
     show: Boolean,
-    value: String,
-    onValueChange: (String) -> Unit,
+    state: TextFieldState,
     onDismissRequest: () -> Unit,
     onSave: () -> Unit,
 ) {
@@ -161,10 +164,9 @@ private fun CustomUserAgentDialog(
         onDismissRequest = onDismissRequest,
         content = {
             TextField(
-                value = value,
-                onValueChange = onValueChange,
+                state = state,
                 label = stringResource(R.string.subscription_custom_user_agent),
-                singleLine = true,
+                lineLimits = TextFieldLineLimits.SingleLine,
                 modifier = Modifier.padding(bottom = 16.dp),
             )
             Row(

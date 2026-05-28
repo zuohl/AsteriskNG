@@ -1,11 +1,15 @@
 package features.resources.runtime
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import app.CustomResourceFileState
+import app.CustomResourceFileStatus
 import app.ResourceFileKind
 import app.ResourceFileStatus
 import app.ResourceFilesStatus
+import app.sanitizeCustomResourceFileName
 import java.io.File
 import java.io.FileNotFoundException
 import java.util.zip.ZipInputStream
@@ -16,16 +20,23 @@ internal class AndroidResourceFileStore(
     private val appContext = context.applicationContext
     val dataDir: File = appContext.xrayResourceFilesDir()
 
-    fun status(): ResourceFilesStatus {
+    fun status(customResourceFiles: List<CustomResourceFileState> = emptyList()): ResourceFilesStatus {
         ensureBundledFiles()
-        return currentStatus()
+        return currentStatus(customResourceFiles)
     }
 
-    fun currentStatus(): ResourceFilesStatus {
+    fun currentStatus(customResourceFiles: List<CustomResourceFileState> = emptyList()): ResourceFilesStatus {
         return ResourceFilesStatus(
             geoIp = file(ResourceFileKind.GeoIp).toStatus(),
             geoSite = file(ResourceFileKind.GeoSite).toStatus(),
+            geoIpOnlyCnPrivate = file(ResourceFileKind.GeoIpOnlyCnPrivate).toStatus(),
             xrayCore = file(ResourceFileKind.XrayCore).toStatus(),
+            customResourceFiles = customResourceFiles.map { customFile ->
+                CustomResourceFileStatus(
+                    file = customFile,
+                    status = file(customFile).toStatus(),
+                )
+            },
         )
     }
 
@@ -33,10 +44,21 @@ internal class AndroidResourceFileStore(
         return File(dataDir, kind.fileName)
     }
 
+    fun file(customFile: CustomResourceFileState): File {
+        return File(
+            dataDir,
+            sanitizeCustomResourceFileName(
+                value = customFile.name,
+                fallback = "custom-resource-${customFile.id}.dat",
+            ),
+        )
+    }
+
     fun ensureBundledFiles() {
+        val bundledUpdatedAtMillis = appContext.packageUpdatedAtMillis()
         ResourceFileKind.entries.forEach { kind ->
             val target = file(kind)
-            if (target.exists() && target.length() > 0) return@forEach
+            if (!target.needsBundledRestore(bundledUpdatedAtMillis)) return@forEach
             if (kind == ResourceFileKind.XrayCore && bundledXrayCoreFileOrNull() == null) return@forEach
             runCatching { restoreBundled(kind) }
                 .onFailure { error ->
@@ -95,8 +117,45 @@ internal class AndroidResourceFileStore(
         kind.applyPermissions(file(kind))
     }
 
+    fun replaceCustom(customFile: CustomResourceFileState, uri: Uri) {
+        val target = file(customFile)
+        if (ResourceFileKind.entries.any { kind -> kind.fileName == target.name }) return
+        dataDir.mkdirs()
+        val replaceTempFile = target.resolveSibling("${target.name}.replace.tmp")
+        appContext.contentResolver.openInputStream(uri)?.use { input ->
+            replaceTempFile.outputStream().use { output -> input.copyTo(output) }
+        } ?: throw FileNotFoundException(uri.toString())
+
+        replaceFile(replaceTempFile, target)
+    }
+
     fun applyPermissions(kind: ResourceFileKind) {
         kind.applyPermissions(file(kind))
+    }
+
+    fun deleteCustom(customFile: CustomResourceFileState) {
+        val target = file(customFile)
+        if (ResourceFileKind.entries.any { kind -> kind.fileName == target.name }) return
+        target.delete()
+    }
+
+    fun renameCustom(previousFile: CustomResourceFileState, customFile: CustomResourceFileState) {
+        val source = file(previousFile)
+        val target = file(customFile)
+        if (ResourceFileKind.entries.any { kind -> kind.fileName == source.name || kind.fileName == target.name }) return
+        if (source.absolutePath == target.absolutePath) return
+        if (!source.isFile) return
+
+        dataDir.mkdirs()
+        if (target.exists()) {
+            target.delete()
+        }
+        if (!source.renameTo(target)) {
+            source.inputStream().use { input ->
+                writeAtomically(target) { output -> input.copyTo(output) }
+            }
+            source.delete()
+        }
     }
 
     fun preparePaths(): XrayResourceFilePaths {
@@ -108,6 +167,11 @@ internal class AndroidResourceFileStore(
             xrayCorePath = file(ResourceFileKind.XrayCore).absolutePath,
         )
     }
+}
+
+private fun File.needsBundledRestore(bundledUpdatedAtMillis: Long): Boolean {
+    if (!exists() || length() <= 0) return true
+    return bundledUpdatedAtMillis > 0 && lastModified() < bundledUpdatedAtMillis
 }
 
 internal data class XrayResourceFilePaths(
@@ -128,6 +192,7 @@ private fun ResourceFileKind.bundledAssetPath(): String {
     return when (this) {
         ResourceFileKind.GeoIp -> fileName
         ResourceFileKind.GeoSite -> fileName
+        ResourceFileKind.GeoIpOnlyCnPrivate -> fileName
         ResourceFileKind.XrayCore -> error("xray-core is restored from native libraries")
     }
 }
@@ -135,6 +200,19 @@ private fun ResourceFileKind.bundledAssetPath(): String {
 private fun currentRuntimeAbi(): String {
     return Build.SUPPORTED_ABIS.firstOrNull { abi -> abi in SupportedAndroidAbis }
         ?: error("Unsupported CPU ABI: ${Build.SUPPORTED_ABIS.joinToString()}")
+}
+
+private fun Context.packageUpdatedAtMillis(): Long {
+    return runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            packageManager
+                .getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+                .lastUpdateTime
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getPackageInfo(packageName, 0).lastUpdateTime
+        }
+    }.getOrDefault(0L)
 }
 
 private const val Arm64Abi = "arm64-v8a"
@@ -154,13 +232,14 @@ private fun File.toStatus(): ResourceFileStatus {
 private fun File.extractZipEntry(entryName: String, target: File): Boolean {
     return runCatching {
         ZipInputStream(inputStream()).use { zip ->
-            while (true) {
-                val entry = zip.nextEntry ?: return@runCatching false
+            var entry = zip.nextEntry
+            while (entry != null) {
                 if (!entry.isDirectory && entry.name.substringAfterLast('/') == entryName) {
                     writeAtomically(target) { output -> zip.copyTo(output) }
                     return@runCatching true
                 }
                 zip.closeEntry()
+                entry = zip.nextEntry
             }
             false
         }

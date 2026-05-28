@@ -3,6 +3,7 @@ package data
 import android.content.Context
 import android.content.SharedPreferences
 import app.AppState
+import app.CustomResourceFileState
 import androidx.core.content.edit
 
 internal class AppSettingsPreferences(
@@ -12,6 +13,14 @@ internal class AppSettingsPreferences(
 
     fun load(): AppState {
         val defaults = AppState()
+        val customResourceFiles = preferences.getCustomResourceFileList(
+            KeyCustomResourceFiles,
+            defaults.customResourceFiles,
+        )
+        val nextCustomResourceFileId = maxOf(
+            preferences.getInt(KeyNextCustomResourceFileId, defaults.nextCustomResourceFileId),
+            (customResourceFiles.maxOfOrNull { file -> file.id } ?: 0) + 1,
+        )
         return defaults.copy(
             colorMode = preferences.getInt(KeyColorMode, defaults.colorMode),
             languageMode = preferences.getInt(KeyLanguageMode, defaults.languageMode),
@@ -63,6 +72,20 @@ internal class AppSettingsPreferences(
             coreLogLevel = preferences.getInt(KeyCoreLogLevel, defaults.coreLogLevel),
             enableAccessLog = preferences.getBoolean(KeyEnableAccessLog, defaults.enableAccessLog),
             resourceFileSource = preferences.getInt(KeyResourceFileSource, defaults.resourceFileSource),
+            customResourceFileGeoIpUrl = preferences.getString(
+                KeyCustomResourceFileGeoIpUrl,
+                defaults.customResourceFileGeoIpUrl,
+            ) ?: defaults.customResourceFileGeoIpUrl,
+            customResourceFileGeoSiteUrl = preferences.getString(
+                KeyCustomResourceFileGeoSiteUrl,
+                defaults.customResourceFileGeoSiteUrl,
+            ) ?: defaults.customResourceFileGeoSiteUrl,
+            customResourceFileGeoIpOnlyCnPrivateUrl = preferences.getString(
+                KeyCustomResourceFileGeoIpOnlyCnPrivateUrl,
+                defaults.customResourceFileGeoIpOnlyCnPrivateUrl,
+            ) ?: defaults.customResourceFileGeoIpOnlyCnPrivateUrl,
+            customResourceFiles = customResourceFiles,
+            nextCustomResourceFileId = nextCustomResourceFileId,
             enableSniffing = preferences.getBoolean(KeyEnableSniffing, defaults.enableSniffing),
             enableSniffingRouteOnly = preferences.getBoolean(
                 KeyEnableSniffingRouteOnly,
@@ -152,6 +175,11 @@ internal class AppSettingsPreferences(
             .putInt(KeyCoreLogLevel, state.coreLogLevel)
             .putBoolean(KeyEnableAccessLog, state.enableAccessLog)
             .putInt(KeyResourceFileSource, state.resourceFileSource)
+            .putString(KeyCustomResourceFileGeoIpUrl, state.customResourceFileGeoIpUrl)
+            .putString(KeyCustomResourceFileGeoSiteUrl, state.customResourceFileGeoSiteUrl)
+            .putString(KeyCustomResourceFileGeoIpOnlyCnPrivateUrl, state.customResourceFileGeoIpOnlyCnPrivateUrl)
+            .putCustomResourceFileList(KeyCustomResourceFiles, state.customResourceFiles)
+            .putInt(KeyNextCustomResourceFileId, state.nextCustomResourceFileId)
             .putBoolean(KeyEnableSniffing, state.enableSniffing)
             .putBoolean(KeyEnableSniffingRouteOnly, state.enableSniffingRouteOnly)
             .putBoolean(KeyEnableMux, state.enableMux)
@@ -192,6 +220,20 @@ internal class AppSettingsPreferences(
     ): SharedPreferences.Editor {
         return putString(key, StringListJson.encode(values))
     }
+
+    private fun SharedPreferences.getCustomResourceFileList(
+        key: String,
+        defaultValue: List<CustomResourceFileState>,
+    ): List<CustomResourceFileState> {
+        return getString(key, null)?.let(CustomResourceFileListJson::decode) ?: defaultValue
+    }
+
+    private fun SharedPreferences.Editor.putCustomResourceFileList(
+        key: String,
+        values: List<CustomResourceFileState>,
+    ): SharedPreferences.Editor {
+        return putString(key, CustomResourceFileListJson.encode(values))
+    }
 }
 
 private const val PreferencesName = "asteriskng_settings"
@@ -221,6 +263,11 @@ private const val KeyNextRouteRuleId = "next_route_rule_id"
 private const val KeyCoreLogLevel = "core_log_level"
 private const val KeyEnableAccessLog = "enable_access_log"
 private const val KeyResourceFileSource = "resource_file_source"
+private const val KeyCustomResourceFileGeoIpUrl = "custom_resource_file_geoip_url"
+private const val KeyCustomResourceFileGeoSiteUrl = "custom_resource_file_geosite_url"
+private const val KeyCustomResourceFileGeoIpOnlyCnPrivateUrl = "custom_resource_file_geoip_only_cn_private_url"
+private const val KeyCustomResourceFiles = "custom_resource_files"
+private const val KeyNextCustomResourceFileId = "next_custom_resource_file_id"
 private const val KeyEnableSniffing = "enable_sniffing"
 private const val KeyEnableSniffingRouteOnly = "enable_sniffing_route_only"
 private const val KeyEnableMux = "enable_mux"

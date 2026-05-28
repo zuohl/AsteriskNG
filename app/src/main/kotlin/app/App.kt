@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import app.effects.ProxyStatusSynchronizer
+import app.effects.ResourceFileSynchronizer
 import app.effects.SubscriptionAutoUpdater
 import app.effects.TproxyBootScriptSynchronizer
 import features.logs.AndroidAccessLogRepository
@@ -165,6 +166,9 @@ fun App(
         stateStore = stateStore,
         proxyEngine = proxyEngine,
         updateAppState = updateAppState,
+    )
+    ResourceFileSynchronizer(
+        resourceFileUseCase = resourceFileUseCase,
     )
     SubscriptionAutoUpdater(
         stateStore = stateStore,

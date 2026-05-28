@@ -7,13 +7,16 @@ import androidx.compose.runtime.Stable
 import features.resources.ResourceFileChocolate4UGeoIpUrl
 import features.resources.ResourceFileChocolate4UGeoSiteUrl
 import features.resources.ResourceFileGeoIpName
+import features.resources.ResourceFileGeoIpOnlyCnPrivateName
 import features.resources.ResourceFileGeoSiteName
 import features.resources.ResourceFileLoyalsoldierGeoIpUrl
 import features.resources.ResourceFileLoyalsoldierGeoSiteUrl
 import features.resources.ResourceFileSourceChocolate4UGithub
+import features.resources.ResourceFileSourceCustom
 import features.resources.ResourceFileSourceLoyalsoldierGithub
 import features.resources.ResourceFileSourceV2FlyGithub
 import features.resources.ResourceFileV2FlyGeoIpUrl
+import features.resources.ResourceFileV2FlyGeoIpOnlyCnPrivateUrl
 import features.resources.ResourceFileV2FlyGeoSiteUrl
 import features.resources.ResourceFileXrayCoreName
 import features.resources.XrayCoreVersion
@@ -48,13 +51,15 @@ enum class ResourceFileKind(
 ) {
     GeoIp(ResourceFileGeoIpName),
     GeoSite(ResourceFileGeoSiteName),
+    GeoIpOnlyCnPrivate(ResourceFileGeoIpOnlyCnPrivateName),
     XrayCore(ResourceFileXrayCoreName),
     ;
 
     val displayName: String
         get() = when (this) {
             GeoIp,
-            GeoSite -> fileName
+            GeoSite,
+            GeoIpOnlyCnPrivate -> fileName
             XrayCore -> "xray-core $XrayCoreVersion"
         }
 }
@@ -67,16 +72,32 @@ data class ResourceFileStatus(
 )
 
 @Stable
+data class CustomResourceFileState(
+    val id: Int,
+    val name: String,
+    val url: String,
+)
+
+@Stable
+data class CustomResourceFileStatus(
+    val file: CustomResourceFileState,
+    val status: ResourceFileStatus = ResourceFileStatus(),
+)
+
+@Stable
 data class ResourceFilesStatus(
     val geoIp: ResourceFileStatus = ResourceFileStatus(),
     val geoSite: ResourceFileStatus = ResourceFileStatus(),
+    val geoIpOnlyCnPrivate: ResourceFileStatus = ResourceFileStatus(),
     val xrayCore: ResourceFileStatus = ResourceFileStatus(),
+    val customResourceFiles: List<CustomResourceFileStatus> = emptyList(),
 )
 
 data class ResourceFileUpdateSource(
     val id: Int,
     val geoIpUrl: String,
     val geoSiteUrl: String,
+    val geoIpOnlyCnPrivateUrl: String,
 )
 
 val ResourceFileUpdateSources = listOf(
@@ -84,16 +105,19 @@ val ResourceFileUpdateSources = listOf(
         id = ResourceFileSourceLoyalsoldierGithub,
         geoIpUrl = ResourceFileLoyalsoldierGeoIpUrl,
         geoSiteUrl = ResourceFileLoyalsoldierGeoSiteUrl,
+        geoIpOnlyCnPrivateUrl = ResourceFileV2FlyGeoIpOnlyCnPrivateUrl,
     ),
     ResourceFileUpdateSource(
         id = ResourceFileSourceV2FlyGithub,
         geoIpUrl = ResourceFileV2FlyGeoIpUrl,
         geoSiteUrl = ResourceFileV2FlyGeoSiteUrl,
+        geoIpOnlyCnPrivateUrl = ResourceFileV2FlyGeoIpOnlyCnPrivateUrl,
     ),
     ResourceFileUpdateSource(
         id = ResourceFileSourceChocolate4UGithub,
         geoIpUrl = ResourceFileChocolate4UGeoIpUrl,
         geoSiteUrl = ResourceFileChocolate4UGeoSiteUrl,
+        geoIpOnlyCnPrivateUrl = ResourceFileV2FlyGeoIpOnlyCnPrivateUrl,
     ),
 )
 
@@ -101,10 +125,62 @@ fun resourceFileUpdateSourceAt(index: Int): ResourceFileUpdateSource {
     return ResourceFileUpdateSources.getOrElse(index) { ResourceFileUpdateSources.first() }
 }
 
+fun AppState.resourceFileUpdateSource(): ResourceFileUpdateSource {
+    if (resourceFileSource != ResourceFileSourceCustom) {
+        return resourceFileUpdateSourceAt(resourceFileSource)
+    }
+    val fallback = ResourceFileUpdateSources.first()
+    return ResourceFileUpdateSource(
+        id = ResourceFileSourceCustom,
+        geoIpUrl = customResourceFileGeoIpUrl.trim().ifBlank { fallback.geoIpUrl },
+        geoSiteUrl = customResourceFileGeoSiteUrl.trim().ifBlank { fallback.geoSiteUrl },
+        geoIpOnlyCnPrivateUrl = customResourceFileGeoIpOnlyCnPrivateUrl.trim().ifBlank {
+            fallback.geoIpOnlyCnPrivateUrl
+        },
+    )
+}
+
 fun ResourceFilesStatus.statusOf(kind: ResourceFileKind): ResourceFileStatus {
     return when (kind) {
         ResourceFileKind.GeoIp -> geoIp
         ResourceFileKind.GeoSite -> geoSite
+        ResourceFileKind.GeoIpOnlyCnPrivate -> geoIpOnlyCnPrivate
         ResourceFileKind.XrayCore -> xrayCore
     }
+}
+
+fun sanitizeCustomResourceFileName(value: String, fallback: String): String {
+    val candidate = value
+        .trim()
+        .replace('\\', '/')
+        .substringAfterLast('/')
+        .map { char -> if (char.isResourceFileNameChar()) char else '_' }
+        .joinToString("")
+        .trim()
+    return candidate
+        .takeUnless { it.isBlank() || it == "." || it == ".." }
+        ?: fallback
+}
+
+fun uniqueCustomResourceFileName(
+    value: String,
+    reservedNames: Set<String>,
+    fallback: String,
+): String {
+    val sanitized = sanitizeCustomResourceFileName(value, fallback)
+    if (sanitized !in reservedNames) return sanitized
+
+    val extensionStart = sanitized.lastIndexOf('.').takeIf { index -> index > 0 } ?: sanitized.length
+    val baseName = sanitized.substring(0, extensionStart).ifBlank { fallback.substringBeforeLast('.') }
+    val extension = sanitized.substring(extensionStart)
+    var counter = 1
+    while (true) {
+        val candidate = "$baseName-$counter$extension"
+        if (candidate !in reservedNames) return candidate
+        counter += 1
+    }
+}
+
+private fun Char.isResourceFileNameChar(): Boolean {
+    return code >= 32 && this != '/' && this != '\\'
 }

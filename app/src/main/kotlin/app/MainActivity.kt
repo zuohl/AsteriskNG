@@ -11,7 +11,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import com.journeyapps.barcodescanner.ScanContract
 import data.AndroidAppStateStore
 import engine.vpn.AndroidVpnPermissionRequester
@@ -152,7 +154,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             App(
-                padding = WindowInsets.safeDrawing.asPaddingValues(),
+                padding = WindowInsets.systemBars.union(WindowInsets.displayCutout).asPaddingValues(),
                 qrCodeScanner = qrCodeScanRequester::scan,
                 resourceFilePicker = resourceFilePicker::pick,
                 logFileCreator = logFileCreator::create,

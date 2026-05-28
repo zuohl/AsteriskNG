@@ -82,12 +82,11 @@ internal class AndroidResourceFileDownloadNotifier(
         if (!canNotify()) return
         notificationManager.notify(
             ResourceFileDownloadNotificationId,
-            baseBuilder(
+            terminalBuilder(
                 icon = android.R.drawable.stat_sys_download_done,
                 title = appContext.getString(R.string.resource_file_download_notification_title),
                 text = appContext.getString(R.string.resource_file_download_notification_complete),
             )
-                .setAutoCancel(true)
                 .build(),
         )
     }
@@ -96,12 +95,11 @@ internal class AndroidResourceFileDownloadNotifier(
         if (!canNotify()) return
         notificationManager.notify(
             ResourceFileDownloadNotificationId,
-            baseBuilder(
+            terminalBuilder(
                 icon = android.R.drawable.stat_notify_error,
                 title = appContext.getString(R.string.resource_file_download_notification_title),
                 text = appContext.getString(R.string.resource_file_download_notification_cancelled),
             )
-                .setAutoCancel(true)
                 .build(),
         )
     }
@@ -110,12 +108,11 @@ internal class AndroidResourceFileDownloadNotifier(
         if (!canNotify()) return
         notificationManager.notify(
             ResourceFileDownloadNotificationId,
-            baseBuilder(
+            terminalBuilder(
                 icon = android.R.drawable.stat_notify_error,
                 title = appContext.getString(R.string.resource_file_download_notification_title),
                 text = appContext.getString(R.string.resource_file_download_notification_failed, message),
             )
-                .setAutoCancel(true)
                 .build(),
         )
     }
@@ -137,6 +134,19 @@ internal class AndroidResourceFileDownloadNotifier(
             .setContentText(text)
             .setContentIntent(contentIntent)
             .setLocalOnly(true)
+    }
+
+    private fun terminalBuilder(
+        icon: Int,
+        title: String,
+        text: String,
+    ): Notification.Builder {
+        return baseBuilder(icon, title, text)
+            .setOngoing(false)
+            .setOnlyAlertOnce(false)
+            .setAutoCancel(true)
+            .setCategory(Notification.CATEGORY_STATUS)
+            .setProgress(0, 0, false)
     }
 
     private fun canNotify(): Boolean {
