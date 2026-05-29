@@ -100,40 +100,42 @@ internal fun SubscriptionGroupForm(
             singleLine = true,
             modifier = Modifier.padding(bottom = 12.dp),
         )
-        OverlaySpinnerPreference(
-            title = stringResource(R.string.subscription_user_agent),
-            summary = resolvedUserAgent,
-            items = userAgentItems,
-            selectedIndex = selectedUserAgentIndex,
-            modifier = Modifier.padding(bottom = 12.dp),
-            onSelectedIndexChange = { index ->
-                val selection = SubscriptionUserAgentSelections[index]
-                if (selection == SubscriptionUserAgentSelection.Custom) {
-                    customUserAgentDraftState.setTextAndPlaceCursorAtEnd(customUserAgent.ifBlank { resolvedUserAgent })
-                    showCustomUserAgentDialog = true
-                } else {
-                    onUserAgentSelectionChange(selection)
-                }
-            },
-        )
-        CustomUserAgentDialog(
-            show = showCustomUserAgentDialog,
-            state = customUserAgentDraftState,
-            onDismissRequest = { showCustomUserAgentDialog = false },
-            onSave = {
-                onCustomUserAgentChange(
-                    customUserAgentDraftState.text.toString().trim().ifBlank { DefaultSubscriptionUserAgent },
-                )
-                onUserAgentSelectionChange(SubscriptionUserAgentSelection.Custom)
-                showCustomUserAgentDialog = false
-            },
-        )
         AnimatedVisibility(
             visible = url.isNotBlank(),
             enter = fadeIn() + expandVertically(),
             exit = shrinkVertically(),
         ) {
             Column {
+                OverlaySpinnerPreference(
+                    title = stringResource(R.string.subscription_user_agent),
+                    summary = resolvedUserAgent,
+                    items = userAgentItems,
+                    selectedIndex = selectedUserAgentIndex,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    onSelectedIndexChange = { index ->
+                        val selection = SubscriptionUserAgentSelections[index]
+                        if (selection == SubscriptionUserAgentSelection.Custom) {
+                            customUserAgentDraftState.setTextAndPlaceCursorAtEnd(
+                                customUserAgent.ifBlank { resolvedUserAgent },
+                            )
+                            showCustomUserAgentDialog = true
+                        } else {
+                            onUserAgentSelectionChange(selection)
+                        }
+                    },
+                )
+                CustomUserAgentDialog(
+                    show = showCustomUserAgentDialog,
+                    state = customUserAgentDraftState,
+                    onDismissRequest = { showCustomUserAgentDialog = false },
+                    onSave = {
+                        onCustomUserAgentChange(
+                            customUserAgentDraftState.text.toString().trim().ifBlank { DefaultSubscriptionUserAgent },
+                        )
+                        onUserAgentSelectionChange(SubscriptionUserAgentSelection.Custom)
+                        showCustomUserAgentDialog = false
+                    },
+                )
                 SwitchPreference(
                     title = stringResource(R.string.subscription_update_via_proxy),
                     summary = stringResource(R.string.subscription_update_via_proxy_summary),
