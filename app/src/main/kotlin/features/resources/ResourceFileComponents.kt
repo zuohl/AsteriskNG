@@ -285,14 +285,14 @@ private fun ResourceFileCardSurface(
                     }
                     if (status.exists) {
                         Text(
-                            text = status.updatedAtText(),
+                            text = status.sizeText(),
                             style = MiuixTheme.textStyles.body2,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
-                            text = status.sizeText(),
+                            text = status.updatedAtText(),
                             style = MiuixTheme.textStyles.body2,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             maxLines = 1,
