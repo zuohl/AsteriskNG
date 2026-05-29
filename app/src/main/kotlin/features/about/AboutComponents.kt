@@ -1,16 +1,24 @@
 package features.about
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import app.R
 import app.ProjectInfo
@@ -25,6 +33,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val ProjectSourceUri = "https://github.com/Asterisk4Magisk/AsteriskNG"
 private const val TelegramChannelUri = "https://t.me/AsteriskFactory"
+private const val AboutIconForegroundScale = 1.25f
 
 @Composable
 internal fun AboutHeader(
@@ -37,11 +46,7 @@ internal fun AboutHeader(
             .padding(top = 20.dp, bottom = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Image(
-            painter = painterResource(R.mipmap.ic_launcher),
-            contentDescription = ProjectInfo.PROJECT_NAME,
-            modifier = Modifier.size(88.dp),
-        )
+        AboutAppIcon()
         Spacer(Modifier.height(12.dp))
         Text(
             text = ProjectInfo.PROJECT_NAME,
@@ -51,6 +56,28 @@ internal fun AboutHeader(
         Text(
             text = "v${ProjectInfo.VERSION_NAME} (${ProjectInfo.VERSION_CODE})",
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+    }
+}
+
+@Composable
+private fun AboutAppIcon(
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(88.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(colorResource(R.color.ic_launcher_background)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            painter = painterResource(R.mipmap.ic_launcher_foreground),
+            contentDescription = ProjectInfo.PROJECT_NAME,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .fillMaxSize()
+                .scale(AboutIconForegroundScale),
         )
     }
 }
