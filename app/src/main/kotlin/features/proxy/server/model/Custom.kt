@@ -13,7 +13,7 @@ import kotlinx.serialization.json.contentOrNull
 data class Custom(
     var remarks: String = "",
     var overrideAsteriskInboundAndDns: Boolean = true,
-    var configJson: String = DefaultCustomXrayConfigJson,
+    var configJson: String = "",
 ) : ProxyServer<Custom> {
     override fun getInfo(): ProxyServerInfo {
         return ProxyServerInfo(remarks, customXrayConfigSummary(configJson), "Custom")
@@ -242,17 +242,6 @@ private val CustomXrayConfigPrettyJson = Json {
     prettyPrint = true
     prettyPrintIndent = "  "
 }
-
-private const val DefaultCustomXrayConfigJson = """
-{
-  "outbounds": [
-    {
-      "tag": "proxy",
-      "protocol": "freedom"
-    }
-  ]
-}
-"""
 
 private const val CustomProxyOutboundTag = "proxy"
 private val CustomFixedOutboundTags = setOf(
