@@ -326,60 +326,12 @@ private fun ResourceFileCardSurface(
 }
 
 @Composable
-internal fun AddCustomResourceFileDialog(
+internal fun CustomResourceFileEditorDialog(
     show: Boolean,
     nameState: TextFieldState,
     urlState: TextFieldState,
-    onAdd: (name: String, url: String) -> Unit,
     onDismissRequest: () -> Unit,
-) {
-    CustomResourceFileDialog(
-        show = show,
-        nameState = nameState,
-        urlState = urlState,
-        onDismissRequest = onDismissRequest,
-        onSave = {
-            val name = nameState.text.toString()
-            val url = urlState.text.toString()
-            if (name.isNotBlank()) {
-                onAdd(name, url)
-                onDismissRequest()
-            }
-        },
-    )
-}
-
-@Composable
-internal fun EditCustomResourceFileDialog(
-    show: Boolean,
-    nameState: TextFieldState,
-    urlState: TextFieldState,
     onSave: (name: String, url: String) -> Unit,
-    onDismissRequest: () -> Unit,
-) {
-    CustomResourceFileDialog(
-        show = show,
-        nameState = nameState,
-        urlState = urlState,
-        onDismissRequest = onDismissRequest,
-        onSave = {
-            val name = nameState.text.toString()
-            val url = urlState.text.toString()
-            if (name.isNotBlank()) {
-                onSave(name, url)
-                onDismissRequest()
-            }
-        },
-    )
-}
-
-@Composable
-private fun CustomResourceFileDialog(
-    show: Boolean,
-    nameState: TextFieldState,
-    urlState: TextFieldState,
-    onDismissRequest: () -> Unit,
-    onSave: () -> Unit,
 ) {
     WindowDialog(
         show = show,
@@ -415,7 +367,14 @@ private fun CustomResourceFileDialog(
                     Spacer(Modifier.width(20.dp))
                     TextButton(
                         text = stringResource(R.string.common_save),
-                        onClick = onSave,
+                        onClick = {
+                            val name = nameState.text.toString()
+                            val url = urlState.text.toString()
+                            if (name.isNotBlank()) {
+                                onSave(name, url)
+                                onDismissRequest()
+                            }
+                        },
                         modifier = Modifier.weight(1f),
                     )
                 }

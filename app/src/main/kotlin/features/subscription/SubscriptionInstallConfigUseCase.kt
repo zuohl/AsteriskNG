@@ -8,6 +8,7 @@ import app.SubscriptionGroupState
 import data.AndroidAppStateStore
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdateResult
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
+import features.subscription.runtime.AndroidSubscriptionFetcher
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
 
@@ -19,13 +20,13 @@ internal data class SubscriptionInstallConfig(
 
 internal class SubscriptionInstallConfigUseCase(
     private val stateStore: AndroidAppStateStore,
-    private val subscriptionFetchUseCase: SubscriptionFetchUseCase,
+    private val subscriptionFetcher: AndroidSubscriptionFetcher,
 ) {
     suspend fun install(config: SubscriptionInstallConfig): ProxyServerListSubscriptionUpdateResult {
         val group = stateStore.addSubscriptionGroup(config)
         val result = updateSubscriptions(
             groups = listOf(group),
-            subscriptionFetchUseCase = subscriptionFetchUseCase,
+            subscriptionFetcher = subscriptionFetcher,
             fetchOptions = { stateStore.state.value.toSubscriptionFetchOptions(it) },
         )
         if (result.updates.isNotEmpty()) {

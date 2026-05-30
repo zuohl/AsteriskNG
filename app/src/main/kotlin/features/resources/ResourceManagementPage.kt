@@ -356,21 +356,21 @@ fun ResourceManagementPage(
                 trackPadding = contentPadding,
             )
         }
-        AddCustomResourceFileDialog(
+        CustomResourceFileEditorDialog(
             show = showCustomResourceFileDialog.value,
             nameState = customResourceFileNameState,
             urlState = customResourceFileUrlState,
-            onAdd = ::addCustomResourceFile,
             onDismissRequest = { showCustomResourceFileDialog.value = false },
+            onSave = ::addCustomResourceFile,
         )
-        EditCustomResourceFileDialog(
+        CustomResourceFileEditorDialog(
             show = editingCustomResourceFile != null,
             nameState = editCustomResourceFileNameState,
             urlState = editCustomResourceFileUrlState,
+            onDismissRequest = { editingCustomResourceFile = null },
             onSave = { name, url ->
                 editingCustomResourceFile?.let { file -> editCustomResourceFile(file, name, url) }
             },
-            onDismissRequest = { editingCustomResourceFile = null },
         )
     }
 }

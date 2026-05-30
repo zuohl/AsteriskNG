@@ -5,6 +5,8 @@ import features.subscription.DefaultSubscriptionUserAgent
 import engine.vpn.LocalProxyLoopbackAddress
 import engine.vpn.VpnLocalProxyRuntime
 import engine.network.NetworkLimits
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.net.Authenticator
 import java.net.HttpURLConnection
 import java.net.IDN
@@ -15,13 +17,13 @@ import java.net.URI
 import java.net.URL
 
 internal class AndroidSubscriptionFetcher {
-    fun fetch(
+    suspend fun fetch(
         url: String,
         userAgent: String,
         options: AndroidSubscriptionFetchOptions,
-    ): String {
+    ): String = withContext(Dispatchers.IO) {
         val proxy = options.toProxy()
-        return proxy.withAuthenticator {
+        proxy.withAuthenticator {
             fetchWithRedirects(
                 url = url.toIdnUrl(),
                 userAgent = userAgent.ifBlank { DefaultSubscriptionUserAgent },
@@ -32,10 +34,10 @@ internal class AndroidSubscriptionFetcher {
 }
 
 internal data class AndroidSubscriptionFetchOptions(
-    val useRunningProxy: Boolean,
-    val fallbackProxyPort: Int?,
-    val fallbackProxyUsername: String,
-    val fallbackProxyPassword: String,
+    val useRunningProxy: Boolean = false,
+    val fallbackProxyPort: Int? = null,
+    val fallbackProxyUsername: String = "",
+    val fallbackProxyPassword: String = "",
 )
 
 private data class AndroidSubscriptionProxy(

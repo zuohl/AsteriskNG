@@ -11,7 +11,7 @@ import features.proxy.server.usecase.dueSubscriptionGroups
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
 import features.subscription.AutoSubscriptionCheckIntervalMillis
 import features.subscription.AutoSubscriptionRetryDelayMillis
-import features.subscription.SubscriptionFetchUseCase
+import features.subscription.runtime.AndroidSubscriptionFetcher
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
 import kotlinx.coroutines.delay
@@ -20,10 +20,10 @@ import kotlin.time.Clock
 @Composable
 internal fun SubscriptionAutoUpdater(
     stateStore: AndroidAppStateStore,
-    subscriptionFetchUseCase: SubscriptionFetchUseCase,
+    subscriptionFetcher: AndroidSubscriptionFetcher,
     updateAppState: ((AppState) -> AppState) -> Unit,
 ) {
-    LaunchedEffect(stateStore, subscriptionFetchUseCase) {
+    LaunchedEffect(stateStore, subscriptionFetcher) {
         val lastAttemptMillisByGroupId = mutableMapOf<Int, Long>()
         while (true) {
             val currentState = stateStore.state.value
@@ -37,7 +37,7 @@ internal fun SubscriptionAutoUpdater(
                 dueGroups.forEach { group -> lastAttemptMillisByGroupId[group.id] = nowMillis }
                 val result = updateSubscriptions(
                     groups = dueGroups,
-                    subscriptionFetchUseCase = subscriptionFetchUseCase,
+                    subscriptionFetcher = subscriptionFetcher,
                     fetchOptions = { group -> currentState.toSubscriptionFetchOptions(group) },
                 )
                 if (result.updates.isNotEmpty()) {

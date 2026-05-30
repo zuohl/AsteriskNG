@@ -45,6 +45,7 @@ import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
+import ui.KeyColors
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
@@ -104,10 +105,33 @@ private fun SettingsContent(
     val listPadding = pageListPadding(contentPadding)
 
     val isThemeColorMode = appState.colorMode in ColorModeThemeSystem..ColorModeThemeDark
-    val colorModeOptions = settingsColorModeOptions()
-    val languageOptions = settingsLanguageOptions()
-    val runModeOptions = settingsRunModeOptions()
-    val keyColorOptions = settingsKeyColorOptions()
+    val colorModeOptions = listOf(
+        stringResource(R.string.option_follow_system),
+        stringResource(R.string.option_light),
+        stringResource(R.string.option_dark),
+        stringResource(R.string.option_theme_system),
+        stringResource(R.string.option_theme_light),
+        stringResource(R.string.option_theme_dark),
+    )
+    val languageOptions = listOf(
+        stringResource(R.string.option_follow_system),
+        stringResource(R.string.option_english),
+        stringResource(R.string.option_simplified_chinese),
+    )
+    val runModeOptions = listOf(
+        stringResource(R.string.settings_run_mode_vpn_service),
+        stringResource(R.string.settings_run_mode_tproxy),
+    )
+    val keyColorOptions = listOf(
+        stringResource(R.string.theme_color_default),
+        stringResource(R.string.theme_color_blue),
+        stringResource(R.string.theme_color_green),
+        stringResource(R.string.theme_color_violet),
+        stringResource(R.string.theme_color_yellow),
+        stringResource(R.string.theme_color_orange),
+        stringResource(R.string.theme_color_rose),
+        stringResource(R.string.theme_color_cyan),
+    ).take(KeyColors.size + 1)
     val tproxyRootRequiredMessage = stringResource(R.string.settings_tproxy_root_required)
     val tproxyBootScriptFailedMessage = stringResource(R.string.settings_tproxy_boot_script_failed)
     val serviceStoppedMessage = stringResource(R.string.proxy_server_list_service_stopped)

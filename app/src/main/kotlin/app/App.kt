@@ -19,18 +19,16 @@ import app.effects.TproxyBootScriptSynchronizer
 import features.logs.AndroidAccessLogRepository
 import features.logs.AndroidCoreLogRepository
 import features.logs.AndroidLogcatRepository
-import features.logs.CoreLogClearUseCase
 import data.AndroidAppStateStore
 import engine.proxy.AndroidProxyEngine
 import engine.proxy.latency.AndroidProxyLatencyTester
-import features.proxy.server.qr.ProxyServerQrScanUseCase
 import features.proxy.server.usecase.ProxyServerImportFileUseCase
 import features.proxy.server.usecase.ProxyServiceUseCase
 import features.resources.ResourceFileUseCase
 import features.settings.locale.ProvideAppLanguage
 import features.settings.usecase.SwitchRunModeUseCase
 import features.settings.usecase.TproxyBootScriptUseCase
-import features.subscription.SubscriptionFetchUseCase
+import features.subscription.runtime.AndroidSubscriptionFetcher
 import system.AndroidNetworkInterfaceProvider
 import system.AndroidPackageProvider
 import system.AndroidRootShellGateway
@@ -72,10 +70,8 @@ fun App(
             resourceFilePicker = resourceFilePicker,
         )
     }
-    val subscriptionFetchUseCase = remember { SubscriptionFetchUseCase() }
-    val qrScanner = remember(qrCodeScanner) {
-        ProxyServerQrScanUseCase(qrCodeScanner)
-    }
+    val subscriptionFetcher = remember { AndroidSubscriptionFetcher() }
+    val qrScanner = remember(qrCodeScanner) { qrCodeScanner }
     val proxyServerImportFileUseCase = remember(appContext, resourceFilePicker) {
         ProxyServerImportFileUseCase(
             context = appContext,
@@ -110,11 +106,6 @@ fun App(
     }
     val stateStore = remember(appContext) { AndroidAppStateStore.get(appContext) }
     val tipNotifier = remember(appContext) { AndroidToastTipNotifier(appContext) }
-    val coreLogClearUseCase = remember(appContext) {
-        CoreLogClearUseCase(
-            context = appContext,
-        )
-    }
     val services = remember(
         appScope,
         proxyEngine,
@@ -123,7 +114,7 @@ fun App(
         packageCatalog,
         networkInterfaces,
         resourceFileUseCase,
-        subscriptionFetchUseCase,
+        subscriptionFetcher,
         qrScanner,
         proxyServerImportFileUseCase,
         proxyLatencyTester,
@@ -131,7 +122,6 @@ fun App(
         switchRunModeUseCase,
         tproxyBootScriptUseCase,
         tipNotifier,
-        coreLogClearUseCase,
         logFileCreator,
     ) {
         AppServices(
@@ -142,7 +132,7 @@ fun App(
             packageCatalog = packageCatalog,
             networkInterfaces = networkInterfaces,
             resourceFileUseCase = resourceFileUseCase,
-            subscriptionFetchUseCase = subscriptionFetchUseCase,
+            subscriptionFetcher = subscriptionFetcher,
             qrScanner = qrScanner,
             proxyServerImportFileUseCase = proxyServerImportFileUseCase,
             proxyLatencyTester = proxyLatencyTester,
@@ -150,7 +140,6 @@ fun App(
             switchRunModeUseCase = switchRunModeUseCase,
             tproxyBootScriptUseCase = tproxyBootScriptUseCase,
             tipNotifier = tipNotifier,
-            coreLogClearUseCase = coreLogClearUseCase,
             logFileCreator = logFileCreator,
             coreLogRepository = AndroidCoreLogRepository,
             accessLogRepository = AndroidAccessLogRepository,
@@ -172,7 +161,7 @@ fun App(
     )
     SubscriptionAutoUpdater(
         stateStore = stateStore,
-        subscriptionFetchUseCase = subscriptionFetchUseCase,
+        subscriptionFetcher = subscriptionFetcher,
         updateAppState = updateAppState,
     )
     TproxyBootScriptSynchronizer(

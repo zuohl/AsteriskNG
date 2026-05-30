@@ -9,7 +9,6 @@ import androidx.compose.ui.unit.dp
 import app.R
 import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.Card
-import ui.KeyColors
 import ui.text.formatTemplate
 
 internal val SettingsLogLevelOptions = listOf("debug", "info", "warning", "error", "none")
@@ -29,41 +28,6 @@ internal fun SettingsSectionCard(
         content()
     }
 }
-
-@Composable
-internal fun settingsColorModeOptions() = listOf(
-    stringResource(R.string.option_follow_system),
-    stringResource(R.string.option_light),
-    stringResource(R.string.option_dark),
-    stringResource(R.string.option_theme_system),
-    stringResource(R.string.option_theme_light),
-    stringResource(R.string.option_theme_dark),
-)
-
-@Composable
-internal fun settingsLanguageOptions() = listOf(
-    stringResource(R.string.option_follow_system),
-    stringResource(R.string.option_english),
-    stringResource(R.string.option_simplified_chinese),
-)
-
-@Composable
-internal fun settingsRunModeOptions() = listOf(
-    stringResource(R.string.settings_run_mode_vpn_service),
-    stringResource(R.string.settings_run_mode_tproxy),
-)
-
-@Composable
-internal fun settingsKeyColorOptions() = listOf(
-    stringResource(R.string.theme_color_default),
-    stringResource(R.string.theme_color_blue),
-    stringResource(R.string.theme_color_green),
-    stringResource(R.string.theme_color_violet),
-    stringResource(R.string.theme_color_yellow),
-    stringResource(R.string.theme_color_orange),
-    stringResource(R.string.theme_color_rose),
-    stringResource(R.string.theme_color_cyan),
-).take(KeyColors.size + 1)
 
 @Composable
 internal fun inboundProxySummary(

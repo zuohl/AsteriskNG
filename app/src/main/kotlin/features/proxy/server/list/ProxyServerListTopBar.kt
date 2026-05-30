@@ -15,7 +15,6 @@ import app.navigation.Route
 import data.AndroidAppStateStore
 import engine.proxy.latency.ProxyServerLatencyTestMode
 import features.proxy.server.model.getUrlOrNull
-import features.proxy.server.qr.ProxyServerQrScanUseCase
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
 import features.proxy.server.usecase.ProxyServerImportFileUseCase
@@ -28,8 +27,8 @@ import features.proxy.server.usecase.updatableSubscriptionGroups
 import features.proxy.server.usecase.withImportedProxyServers
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
 import features.subscription.DefaultSubscriptionGroupId
-import features.subscription.SubscriptionFetchUseCase
 import features.subscription.SubscriptionInstallConfigUseCase
+import features.subscription.runtime.AndroidSubscriptionFetcher
 import features.subscription.usecase.subscriptionUpdateMessage
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
@@ -55,9 +54,9 @@ internal fun ProxyServerListTopBar(
     stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     navigator: Navigator,
-    qrScanner: ProxyServerQrScanUseCase,
+    qrScanner: suspend () -> String?,
     proxyServerImportFileUseCase: ProxyServerImportFileUseCase,
-    subscriptionFetchUseCase: SubscriptionFetchUseCase,
+    subscriptionFetcher: AndroidSubscriptionFetcher,
     proxyServiceUseCase: ProxyServiceUseCase,
     clipboard: Clipboard,
     tipNotifier: AndroidToastTipNotifier,
@@ -84,7 +83,7 @@ internal fun ProxyServerListTopBar(
                     navigator = navigator,
                     qrScanner = qrScanner,
                     proxyServerImportFileUseCase = proxyServerImportFileUseCase,
-                    subscriptionFetchUseCase = subscriptionFetchUseCase,
+                    subscriptionFetcher = subscriptionFetcher,
                     clipboard = clipboard,
                     tipNotifier = tipNotifier,
                     scope = scope,
@@ -100,7 +99,7 @@ internal fun ProxyServerListTopBar(
                     proxyListState = proxyListState,
                     stateStore = stateStore,
                     updateAppState = updateAppState,
-                    subscriptionFetchUseCase = subscriptionFetchUseCase,
+                    subscriptionFetcher = subscriptionFetcher,
                     proxyServiceUseCase = proxyServiceUseCase,
                     clipboard = clipboard,
                     tipNotifier = tipNotifier,
@@ -141,9 +140,9 @@ private fun handleProxyServerListAddAction(
     stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     navigator: Navigator,
-    qrScanner: ProxyServerQrScanUseCase,
+    qrScanner: suspend () -> String?,
     proxyServerImportFileUseCase: ProxyServerImportFileUseCase,
-    subscriptionFetchUseCase: SubscriptionFetchUseCase,
+    subscriptionFetcher: AndroidSubscriptionFetcher,
     clipboard: Clipboard,
     tipNotifier: AndroidToastTipNotifier,
     scope: CoroutineScope,
@@ -153,14 +152,14 @@ private fun handleProxyServerListAddAction(
     when (action) {
         ProxyServerListAddAction.ScanQrCode -> {
             scope.launch {
-                runCatching { qrScanner.scan() }
+                runCatching { qrScanner() }
                     .onSuccess { scanText ->
                         if (scanText.isNullOrBlank()) return@onSuccess
                         if (
                             installSubscriptionFromQrCode(
                                 text = scanText,
                                 stateStore = stateStore,
-                                subscriptionFetchUseCase = subscriptionFetchUseCase,
+                                subscriptionFetcher = subscriptionFetcher,
                                 tipNotifier = tipNotifier,
                                 messages = messages,
                             )
@@ -233,7 +232,7 @@ private fun handleProxyServerListAddAction(
 private suspend fun installSubscriptionFromQrCode(
     text: String,
     stateStore: AndroidAppStateStore,
-    subscriptionFetchUseCase: SubscriptionFetchUseCase,
+    subscriptionFetcher: AndroidSubscriptionFetcher,
     tipNotifier: AndroidToastTipNotifier,
     messages: ProxyServerListMessages,
 ): Boolean {
@@ -241,7 +240,7 @@ private suspend fun installSubscriptionFromQrCode(
     runCatching {
         SubscriptionInstallConfigUseCase(
             stateStore = stateStore,
-            subscriptionFetchUseCase = subscriptionFetchUseCase,
+            subscriptionFetcher = subscriptionFetcher,
         ).install(config)
     }.onSuccess { result ->
         tipNotifier.show(
@@ -291,7 +290,7 @@ private fun handleProxyServerListToolAction(
     proxyListState: ProxyServerListState,
     stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
-    subscriptionFetchUseCase: SubscriptionFetchUseCase,
+    subscriptionFetcher: AndroidSubscriptionFetcher,
     proxyServiceUseCase: ProxyServiceUseCase,
     clipboard: Clipboard,
     tipNotifier: AndroidToastTipNotifier,
@@ -348,7 +347,7 @@ private fun handleProxyServerListToolAction(
                 proxyListState = proxyListState,
                 stateStore = stateStore,
                 updateAppState = updateAppState,
-                subscriptionFetchUseCase = subscriptionFetchUseCase,
+                subscriptionFetcher = subscriptionFetcher,
                 tipNotifier = tipNotifier,
                 scope = scope,
                 messages = messages,
@@ -437,7 +436,7 @@ private fun updateSubscriptionGroups(
     proxyListState: ProxyServerListState,
     stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
-    subscriptionFetchUseCase: SubscriptionFetchUseCase,
+    subscriptionFetcher: AndroidSubscriptionFetcher,
     tipNotifier: AndroidToastTipNotifier,
     scope: CoroutineScope,
     messages: ProxyServerListMessages,
@@ -450,7 +449,7 @@ private fun updateSubscriptionGroups(
         }
         val result = updateSubscriptions(
             groups = subscriptionGroups,
-            subscriptionFetchUseCase = subscriptionFetchUseCase,
+            subscriptionFetcher = subscriptionFetcher,
             fetchOptions = { group -> stateStore.state.value.toSubscriptionFetchOptions(group) },
         )
         if (result.updates.isNotEmpty()) {

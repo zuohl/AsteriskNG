@@ -56,11 +56,11 @@ internal fun DnsSettingsBottomSheet(
     onDismissRequest: () -> Unit,
     onSave: (Boolean, Boolean, Boolean, List<String>, List<String>, List<String>, Boolean, List<String>) -> Unit,
 ) {
-    val proxyDnsEntries = proxyDns.sanitizeDnsServerEntries()
-    val directDnsEntries = directDns.sanitizeDnsServerEntries()
-    val directDnsDomainEntries = directDnsDomains.sanitizeDnsDomainEntries()
+    val proxyDnsEntries = proxyDns.sanitizeStringListItems()
+    val directDnsEntries = directDns.sanitizeStringListItems()
+    val directDnsDomainEntries = directDnsDomains.sanitizeStringListItems()
     val dnsHostsInvalidMessage = stringResource(R.string.settings_dns_hosts_invalid)
-    val dnsHostEntries = dnsHosts.sanitizeDnsHostEntries()
+    val dnsHostEntries = dnsHosts.sanitizeStringListItems()
     val dnsServerInvalidMessage = stringResource(R.string.settings_dns_server_invalid)
     val dnsDomainInvalidMessage = stringResource(R.string.settings_dns_domain_invalid)
     val effectiveLocalDnsEnabled = forceEnableLocalDns || enableVpnLocalDns
@@ -134,7 +134,7 @@ internal fun DnsSettingsBottomSheet(
                 title = stringResource(R.string.settings_direct_dns),
                 inputLabel = stringResource(R.string.settings_direct_dns_input),
                 values = directDnsEntries,
-                onValuesChange = { onDirectDnsChange(it.sanitizeDnsServerEntries()) },
+                onValuesChange = { onDirectDnsChange(it.sanitizeStringListItems()) },
                 emptyText = stringResource(R.string.settings_direct_dns_empty),
                 duplicateText = stringResource(R.string.settings_dns_hosts_duplicate),
                 validateInput = { dnsServerInputError(it, dnsServerInvalidMessage) },
@@ -146,7 +146,7 @@ internal fun DnsSettingsBottomSheet(
                 title = stringResource(R.string.settings_direct_dns_domains),
                 inputLabel = stringResource(R.string.settings_direct_dns_domains_input),
                 values = directDnsDomainEntries,
-                onValuesChange = { onDirectDnsDomainsChange(it.sanitizeDnsDomainEntries()) },
+                onValuesChange = { onDirectDnsDomainsChange(it.sanitizeStringListItems()) },
                 emptyText = stringResource(R.string.settings_direct_dns_domains_empty),
                 duplicateText = stringResource(R.string.settings_dns_hosts_duplicate),
                 validateInput = { dnsDomainInputError(it, dnsDomainInvalidMessage) },
@@ -158,7 +158,7 @@ internal fun DnsSettingsBottomSheet(
                 title = stringResource(R.string.settings_proxy_dns),
                 inputLabel = stringResource(R.string.settings_proxy_dns_input),
                 values = proxyDnsEntries,
-                onValuesChange = { onProxyDnsChange(it.sanitizeDnsServerEntries()) },
+                onValuesChange = { onProxyDnsChange(it.sanitizeStringListItems()) },
                 emptyText = stringResource(R.string.settings_proxy_dns_empty),
                 duplicateText = stringResource(R.string.settings_dns_hosts_duplicate),
                 validateInput = { dnsServerInputError(it, dnsServerInvalidMessage) },
@@ -171,7 +171,7 @@ internal fun DnsSettingsBottomSheet(
                 description = stringResource(R.string.settings_dns_hosts_format),
                 inputLabel = stringResource(R.string.settings_dns_hosts_input),
                 values = dnsHostEntries,
-                onValuesChange = { onDnsHostsChange(it.sanitizeDnsHostEntries()) },
+                onValuesChange = { onDnsHostsChange(it.sanitizeStringListItems()) },
                 emptyText = stringResource(R.string.settings_dns_hosts_empty),
                 duplicateText = stringResource(R.string.settings_dns_hosts_duplicate),
                 validateInput = { dnsHostInputError(it, dnsHostsInvalidMessage) },
@@ -179,18 +179,6 @@ internal fun DnsSettingsBottomSheet(
             )
         }
     }
-}
-
-private fun List<String>.sanitizeDnsServerEntries(): List<String> {
-    return sanitizeStringListItems()
-}
-
-private fun List<String>.sanitizeDnsHostEntries(): List<String> {
-    return sanitizeStringListItems()
-}
-
-private fun List<String>.sanitizeDnsDomainEntries(): List<String> {
-    return sanitizeStringListItems()
 }
 
 private fun dnsServerInputError(input: String, invalidMessage: String): String? {

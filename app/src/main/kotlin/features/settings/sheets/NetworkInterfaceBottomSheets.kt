@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.state.ToggleableState
@@ -201,77 +199,40 @@ internal fun IgnoredInterfacesBottomSheet(
     onDismissRequest: () -> Unit,
     onSave: (List<String>) -> Unit,
 ) {
-    InterfaceSelectionBottomSheet(
-        show = show,
-        title = stringResource(R.string.settings_ignored_interfaces),
-        description = stringResource(R.string.settings_ignored_interfaces_summary),
-        interfaces = interfaces,
-        selectedInterfaces = selectedInterfaces,
-        loading = loading,
-        loadingMessage = stringResource(R.string.settings_ignored_interfaces_loading),
-        errorMessage = errorMessage?.let { message ->
-            stringResource(R.string.settings_ignored_interfaces_error).formatTemplate("message" to message)
-        },
-        emptyMessage = stringResource(R.string.settings_ignored_interfaces_empty),
-        onSelectedInterfacesChange = onSelectedInterfacesChange,
-        onDismissRequest = onDismissRequest,
-        onSave = onSave,
-    )
-}
-
-@Composable
-private fun InterfaceSelectionBottomSheet(
-    show: Boolean,
-    title: String,
-    description: String,
-    interfaces: List<String>,
-    selectedInterfaces: List<String>,
-    loading: Boolean,
-    loadingMessage: String? = null,
-    errorMessage: String?,
-    emptyMessage: String?,
-    onSelectedInterfacesChange: (List<String>) -> Unit,
-    onDismissRequest: () -> Unit,
-    onSave: (List<String>) -> Unit,
-) {
-    val latestInterfaces by rememberUpdatedState(interfaces)
-    val latestSelectedInterfaces by rememberUpdatedState(selectedInterfaces)
-    val latestLoading by rememberUpdatedState(loading)
-    val latestErrorMessage by rememberUpdatedState(errorMessage)
-    val latestOnSelectedInterfacesChange by rememberUpdatedState(onSelectedInterfacesChange)
-    val latestOnDismissRequest by rememberUpdatedState(onDismissRequest)
-    val latestOnSave by rememberUpdatedState(onSave)
+    val formattedErrorMessage = errorMessage?.let { message ->
+        stringResource(R.string.settings_ignored_interfaces_error).formatTemplate("message" to message)
+    }
 
     WindowBottomSheet(
         show = show,
-        title = title,
+        title = stringResource(R.string.settings_ignored_interfaces),
         startAction = {
             TextButton(
                 text = stringResource(R.string.common_cancel),
-                onClick = latestOnDismissRequest,
+                onClick = onDismissRequest,
             )
         },
         endAction = {
             TextButton(
                 text = stringResource(R.string.common_save),
-                onClick = { latestOnSave(latestSelectedInterfaces) },
+                onClick = { onSave(selectedInterfaces) },
             )
         },
-        onDismissRequest = latestOnDismissRequest,
+        onDismissRequest = onDismissRequest,
     ) {
         SettingsSheetContent {
-            SheetStatusText(description)
-            if (latestLoading && loadingMessage != null) {
-                SheetStatusText(loadingMessage)
+            SheetStatusText(stringResource(R.string.settings_ignored_interfaces_summary))
+            if (loading) {
+                SheetStatusText(stringResource(R.string.settings_ignored_interfaces_loading))
             }
-            latestErrorMessage?.takeIf(String::isNotBlank)?.let { SheetStatusText(it) }
-            if (!latestLoading && latestErrorMessage == null && latestInterfaces.isEmpty() && emptyMessage != null) {
-                SheetStatusText(emptyMessage)
+            formattedErrorMessage?.takeIf(String::isNotBlank)?.let { SheetStatusText(it) }
+            if (!loading && formattedErrorMessage == null && interfaces.isEmpty()) {
+                SheetStatusText(stringResource(R.string.settings_ignored_interfaces_empty))
             }
             InterfaceOptionGrid(
-                interfaces = latestInterfaces,
-                selectedInterfaces = latestSelectedInterfaces,
-                onSelectedInterfacesChange = latestOnSelectedInterfacesChange,
+                interfaces = interfaces,
+                selectedInterfaces = selectedInterfaces,
+                onSelectedInterfacesChange = onSelectedInterfacesChange,
             )
         }
     }

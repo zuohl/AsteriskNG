@@ -58,14 +58,13 @@ fun CoreLogsPage(
     padding: PaddingValues,
 ) {
     val services = LocalAppServices.current
+    val context = LocalContext.current
     LogViewerPage(
         padding = padding,
         title = stringResource(R.string.core_logs_title),
         repository = services.coreLogRepository,
         onClear = {
-            services.coreLogClearUseCase.clear(
-                logFile = XrayLogFile.Error,
-            )
+            context.clearCoreLogFile(XrayLogFile.Error)
         },
     )
 }
@@ -75,14 +74,13 @@ fun AccessLogsPage(
     padding: PaddingValues,
 ) {
     val services = LocalAppServices.current
+    val context = LocalContext.current
     LogViewerPage(
         padding = padding,
         title = stringResource(R.string.access_logs_title),
         repository = services.accessLogRepository,
         onClear = {
-            services.coreLogClearUseCase.clear(
-                logFile = XrayLogFile.Access,
-            )
+            context.clearCoreLogFile(XrayLogFile.Access)
         },
     )
 }

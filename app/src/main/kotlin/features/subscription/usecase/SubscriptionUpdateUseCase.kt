@@ -8,8 +8,8 @@ import features.proxy.server.usecase.ProxyServerImportSource
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdate
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdateResult
 import features.proxy.server.usecase.importProxyServersFromText
-import features.subscription.SubscriptionFetchOptions
-import features.subscription.SubscriptionFetchUseCase
+import features.subscription.runtime.AndroidSubscriptionFetchOptions
+import features.subscription.runtime.AndroidSubscriptionFetcher
 import java.net.URI
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -21,14 +21,14 @@ private const val LogTag = "SubscriptionUpdateUseCase"
 
 internal suspend fun updateSubscriptions(
     groups: List<SubscriptionGroupState>,
-    subscriptionFetchUseCase: SubscriptionFetchUseCase,
-    fetchOptions: (SubscriptionGroupState) -> SubscriptionFetchOptions,
+    subscriptionFetcher: AndroidSubscriptionFetcher,
+    fetchOptions: (SubscriptionGroupState) -> AndroidSubscriptionFetchOptions,
 ): ProxyServerListSubscriptionUpdateResult = supervisorScope {
     val results = groups.map { group ->
         async {
             updateSubscriptionGroup(
                 group = group,
-                subscriptionFetchUseCase = subscriptionFetchUseCase,
+                subscriptionFetcher = subscriptionFetcher,
                 fetchOptions = fetchOptions(group),
             )
         }
@@ -45,11 +45,11 @@ internal suspend fun updateSubscriptions(
 
 private suspend fun updateSubscriptionGroup(
     group: SubscriptionGroupState,
-    subscriptionFetchUseCase: SubscriptionFetchUseCase,
-    fetchOptions: SubscriptionFetchOptions,
+    subscriptionFetcher: AndroidSubscriptionFetcher,
+    fetchOptions: AndroidSubscriptionFetchOptions,
 ): ProxyServerListSubscriptionUpdate? {
     return runCatching {
-        val text = subscriptionFetchUseCase.fetch(
+        val text = subscriptionFetcher.fetch(
             url = group.url,
             userAgent = group.userAgent,
             options = fetchOptions,
@@ -80,8 +80,8 @@ private suspend fun updateSubscriptionGroup(
     }.getOrNull()
 }
 
-internal fun AppState.toSubscriptionFetchOptions(group: SubscriptionGroupState): SubscriptionFetchOptions {
-    return SubscriptionFetchOptions(
+internal fun AppState.toSubscriptionFetchOptions(group: SubscriptionGroupState): AndroidSubscriptionFetchOptions {
+    return AndroidSubscriptionFetchOptions(
         useRunningProxy = group.updateViaProxy && proxyRunning && runMode == RunModeVpnService,
         fallbackProxyPort = localProxyPort.toIntOrNull(),
         fallbackProxyUsername = localProxyUsername,

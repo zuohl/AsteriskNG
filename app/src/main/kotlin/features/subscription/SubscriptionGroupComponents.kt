@@ -51,112 +51,6 @@ import features.proxy.server.display.displayName
 import ui.text.formatTemplate
 
 @Composable
-internal fun SubscriptionGroupForm(
-    name: String,
-    url: String,
-    userAgentSelection: SubscriptionUserAgentSelection,
-    customUserAgent: String,
-    interval: String,
-    updateViaProxy: Boolean,
-    builtIn: Boolean,
-    onNameChange: (String) -> Unit,
-    onUrlChange: (String) -> Unit,
-    onUserAgentSelectionChange: (SubscriptionUserAgentSelection) -> Unit,
-    onCustomUserAgentChange: (String) -> Unit,
-    onIntervalChange: (String) -> Unit,
-    onUpdateViaProxyChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-) {
-    var showCustomUserAgentDialog by remember { mutableStateOf(false) }
-    val customUserAgentDraftState = rememberTextFieldState(initialText = customUserAgent)
-    val customSummary = customUserAgent.trim().ifBlank {
-        stringResource(R.string.subscription_user_agent_custom_summary)
-    }
-    val userAgentItems = SubscriptionUserAgentSelections.map { selection ->
-        DropdownItem(
-            text = stringResource(selection.labelResId()),
-            summary = selection.userAgentOrNull() ?: customSummary,
-        )
-    }
-    val selectedUserAgentIndex = SubscriptionUserAgentSelections
-        .indexOf(userAgentSelection)
-        .coerceAtLeast(0)
-    val resolvedUserAgent = userAgentSelection.resolveUserAgent(customUserAgent)
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(contentPadding),
-    ) {
-        TextField(
-            value = name,
-            onValueChange = { if (!builtIn) onNameChange(it) },
-            label = stringResource(R.string.subscription_group_name),
-            singleLine = true,
-            modifier = Modifier.padding(bottom = 12.dp),
-        )
-        TextField(
-            value = url,
-            onValueChange = onUrlChange,
-            label = stringResource(R.string.subscription_url),
-            singleLine = true,
-            modifier = Modifier.padding(bottom = 12.dp),
-        )
-        AnimatedVisibility(
-            visible = url.isNotBlank(),
-            enter = fadeIn() + expandVertically(),
-            exit = shrinkVertically(),
-        ) {
-            Column {
-                WindowSpinnerPreference(
-                    title = stringResource(R.string.subscription_user_agent),
-                    summary = resolvedUserAgent,
-                    items = userAgentItems,
-                    selectedIndex = selectedUserAgentIndex,
-                    modifier = Modifier.padding(bottom = 12.dp),
-                    onSelectedIndexChange = { index ->
-                        val selection = SubscriptionUserAgentSelections[index]
-                        if (selection == SubscriptionUserAgentSelection.Custom) {
-                            customUserAgentDraftState.setTextAndPlaceCursorAtEnd(
-                                customUserAgent.ifBlank { resolvedUserAgent },
-                            )
-                            showCustomUserAgentDialog = true
-                        } else {
-                            onUserAgentSelectionChange(selection)
-                        }
-                    },
-                )
-                CustomUserAgentDialog(
-                    show = showCustomUserAgentDialog,
-                    state = customUserAgentDraftState,
-                    onDismissRequest = { showCustomUserAgentDialog = false },
-                    onSave = {
-                        onCustomUserAgentChange(
-                            customUserAgentDraftState.text.toString().trim().ifBlank { DefaultSubscriptionUserAgent },
-                        )
-                        onUserAgentSelectionChange(SubscriptionUserAgentSelection.Custom)
-                        showCustomUserAgentDialog = false
-                    },
-                )
-                SwitchPreference(
-                    title = stringResource(R.string.subscription_update_via_proxy),
-                    summary = stringResource(R.string.subscription_update_via_proxy_summary),
-                    checked = updateViaProxy,
-                    onCheckedChange = onUpdateViaProxyChange,
-                )
-                TextField(
-                    value = interval,
-                    onValueChange = { onIntervalChange(it.filter(Char::isDigit)) },
-                    label = stringResource(R.string.subscription_auto_update_interval),
-                    singleLine = true,
-                )
-            }
-        }
-    }
-}
-
-@Composable
 internal fun SubscriptionGroupEditorDialog(
     show: Boolean,
     group: SubscriptionGroupState?,
@@ -197,6 +91,21 @@ internal fun SubscriptionGroupEditorDialog(
     var updateViaProxy by remember(show, group?.id) {
         mutableStateOf(group?.updateViaProxy ?: false)
     }
+    var showCustomUserAgentDialog by remember { mutableStateOf(false) }
+    val customUserAgentDraftState = rememberTextFieldState(initialText = customUserAgent)
+    val customSummary = customUserAgent.trim().ifBlank {
+        stringResource(R.string.subscription_user_agent_custom_summary)
+    }
+    val userAgentItems = SubscriptionUserAgentSelections.map { selection ->
+        DropdownItem(
+            text = stringResource(selection.labelResId()),
+            summary = selection.userAgentOrNull() ?: customSummary,
+        )
+    }
+    val selectedUserAgentIndex = SubscriptionUserAgentSelections
+        .indexOf(userAgentSelection)
+        .coerceAtLeast(0)
+    val resolvedUserAgent = userAgentSelection.resolveUserAgent(customUserAgent)
 
     WindowDialog(
         show = show,
@@ -209,27 +118,75 @@ internal fun SubscriptionGroupEditorDialog(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState()),
         ) {
-            SubscriptionGroupForm(
-                name = name,
-                url = url,
-                userAgentSelection = userAgentSelection,
-                customUserAgent = customUserAgent,
-                interval = interval,
-                updateViaProxy = updateViaProxy,
-                builtIn = builtIn,
-                onNameChange = { name = it },
-                onUrlChange = { url = it },
-                onUserAgentSelectionChange = { selection ->
-                    if (selection == SubscriptionUserAgentSelection.Custom && customUserAgent.isBlank()) {
-                        customUserAgent = userAgentSelection.resolveUserAgent(customUserAgent)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+            ) {
+                TextField(
+                    value = name,
+                    onValueChange = { if (!builtIn) name = it },
+                    label = stringResource(R.string.subscription_group_name),
+                    singleLine = true,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+                TextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    label = stringResource(R.string.subscription_url),
+                    singleLine = true,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+                AnimatedVisibility(
+                    visible = url.isNotBlank(),
+                    enter = fadeIn() + expandVertically(),
+                    exit = shrinkVertically(),
+                ) {
+                    Column {
+                        WindowSpinnerPreference(
+                            title = stringResource(R.string.subscription_user_agent),
+                            summary = resolvedUserAgent,
+                            items = userAgentItems,
+                            selectedIndex = selectedUserAgentIndex,
+                            modifier = Modifier.padding(bottom = 12.dp),
+                            onSelectedIndexChange = { index ->
+                                val selection = SubscriptionUserAgentSelections[index]
+                                if (selection == SubscriptionUserAgentSelection.Custom) {
+                                    customUserAgentDraftState.setTextAndPlaceCursorAtEnd(
+                                        customUserAgent.ifBlank { resolvedUserAgent },
+                                    )
+                                    showCustomUserAgentDialog = true
+                                } else {
+                                    userAgentSelection = selection
+                                }
+                            },
+                        )
+                        CustomUserAgentDialog(
+                            show = showCustomUserAgentDialog,
+                            state = customUserAgentDraftState,
+                            onDismissRequest = { showCustomUserAgentDialog = false },
+                            onSave = {
+                                customUserAgent = customUserAgentDraftState.text.toString().trim()
+                                    .ifBlank { DefaultSubscriptionUserAgent }
+                                userAgentSelection = SubscriptionUserAgentSelection.Custom
+                                showCustomUserAgentDialog = false
+                            },
+                        )
+                        SwitchPreference(
+                            title = stringResource(R.string.subscription_update_via_proxy),
+                            summary = stringResource(R.string.subscription_update_via_proxy_summary),
+                            checked = updateViaProxy,
+                            onCheckedChange = { updateViaProxy = it },
+                        )
+                        TextField(
+                            value = interval,
+                            onValueChange = { interval = it.filter(Char::isDigit) },
+                            label = stringResource(R.string.subscription_auto_update_interval),
+                            singleLine = true,
+                        )
                     }
-                    userAgentSelection = selection
-                },
-                onCustomUserAgentChange = { customUserAgent = it },
-                onIntervalChange = { interval = it },
-                onUpdateViaProxyChange = { updateViaProxy = it },
-                contentPadding = PaddingValues(bottom = 16.dp),
-            )
+                }
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

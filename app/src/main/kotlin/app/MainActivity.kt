@@ -20,9 +20,9 @@ import engine.vpn.AndroidVpnPermissionRequester
 import features.logs.AndroidLogFileCreator
 import features.proxy.server.qr.AndroidQrCodeScanRequester
 import features.resources.runtime.AndroidResourceFilePicker
-import features.subscription.SubscriptionFetchUseCase
 import features.subscription.SubscriptionInstallConfigUseCase
 import features.subscription.isSubscriptionInstallConfigUri
+import features.subscription.runtime.AndroidSubscriptionFetcher
 import features.subscription.toSubscriptionInstallConfigOrNull
 import features.subscription.usecase.subscriptionUpdateMessage
 import kotlinx.coroutines.launch
@@ -61,7 +61,7 @@ class MainActivity : ComponentActivity() {
     private val subscriptionInstallConfigUseCase by lazy {
         SubscriptionInstallConfigUseCase(
             stateStore = AndroidAppStateStore.get(this),
-            subscriptionFetchUseCase = SubscriptionFetchUseCase(),
+            subscriptionFetcher = AndroidSubscriptionFetcher(),
         )
     }
 
