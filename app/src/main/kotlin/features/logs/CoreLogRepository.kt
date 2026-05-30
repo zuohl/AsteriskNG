@@ -3,14 +3,11 @@
 
 package features.logs
 
+import java.time.LocalDateTime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.number
-import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Clock
 
 data class CoreLogEntry(
     val id: Long,
@@ -88,13 +85,13 @@ private fun String.normalizedLogLevel(): String {
 }
 
 fun currentLogTime(): String {
-    val dateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+    val dateTime = LocalDateTime.now()
     return buildString {
         append(dateTime.year)
         append('-')
-        append(dateTime.month.number.twoDigits())
+        append(dateTime.monthValue.twoDigits())
         append('-')
-        append(dateTime.day.twoDigits())
+        append(dateTime.dayOfMonth.twoDigits())
         append(' ')
         append(dateTime.hour.twoDigits())
         append(':')

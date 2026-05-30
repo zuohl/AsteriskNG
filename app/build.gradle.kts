@@ -108,7 +108,6 @@ dependencies {
     implementation("com.github.2dust:libv2ray:${ProjectConfig.ANDROID_LIB_XRAY_LITE_VERSION}@aar")
     implementation(project(":setuidgid"))
     implementation(libs.ktor.http)
-    implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.libsu.core)
     implementation(libs.miuix.ui)

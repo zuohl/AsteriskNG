@@ -105,19 +105,6 @@
             ]
         },
         {
-            "uniqueId": "org.jetbrains.kotlinx:kotlinx-datetime",
-            "artifactVersion": "0.8.0",
-            "name": "kotlinx-datetime",
-            "description": "Kotlin Datetime Library",
-            "website": "https://github.com/Kotlin/kotlinx-datetime",
-            "scm": {
-                "url": "https://github.com/Kotlin/kotlinx-datetime"
-            },
-            "licenses": [
-                "Apache-2.0"
-            ]
-        },
-        {
             "uniqueId": "org.jetbrains.kotlinx:kotlinx-serialization-json",
             "artifactVersion": "1.11.0",
             "name": "kotlinx-serialization-json",
