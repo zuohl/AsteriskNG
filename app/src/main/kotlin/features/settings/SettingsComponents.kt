@@ -35,18 +35,23 @@ internal fun inboundProxySummary(
     enableSocks5Proxy: Boolean,
     enableHttpProxy: Boolean,
 ): String {
-    val enabledInbounds = mutableListOf(
-        stringResource(R.string.settings_inbound_tproxy_port)
-            .formatTemplate("port" to transparentProxyPort),
-    )
+    val tproxyPort = stringResource(R.string.settings_inbound_tproxy_port)
+        .formatTemplate("port" to transparentProxyPort)
+    val enabledInbounds = mutableListOf<String>()
     if (enableSocks5Proxy) {
         enabledInbounds += stringResource(R.string.settings_socks5_proxy)
     }
     if (enableHttpProxy) {
         enabledInbounds += stringResource(R.string.settings_http_proxy)
     }
-    return stringResource(R.string.settings_inbound_selected)
-        .formatTemplate("inbounds" to enabledInbounds.joinToString())
+    if (enabledInbounds.isEmpty()) {
+        return tproxyPort
+    }
+    return listOf(
+        tproxyPort,
+        stringResource(R.string.settings_inbound_selected)
+            .formatTemplate("inbounds" to enabledInbounds.joinToString()),
+    ).joinToString()
 }
 
 @Composable
