@@ -1,28 +1,46 @@
-name: Create GitHub Release
+name: Build Release APKs
 
 on:
   workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Override output file version name, for example 1.0.1"
+        required: false
+        type: string
+      send_to_telegram:
+        description: "Upload release APKs to Telegram"
+        required: true
+        default: true
+        type: boolean
   push:
     branches:
-      - main
+      - "**"
+    tags:
+      - "v*"
 
 permissions:
   contents: write
 
 concurrency:
-  group: github-release-${{ github.ref }}
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   release:
-    name: Build APKs And Create Release
+    name: Build, Publish, And Notify
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
+      TELEGRAM_MAX_DOCUMENT_BYTES: ${{ vars.TELEGRAM_MAX_DOCUMENT_BYTES }}
       RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
       RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
       RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
       RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+      SEND_TO_TELEGRAM: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.send_to_telegram == 'true' }}
+      REQUESTED_VERSION_NAME: ${{ github.event.inputs.version_name }}
 
     steps:
       - name: Checkout
@@ -42,42 +60,40 @@ jobs:
             exit 1
           fi
 
-          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
-          echo "tag_name=v$version_name" >> "$GITHUB_OUTPUT"
-
+          is_release=false
           if [[ "$version_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "is_release=true" >> "$GITHUB_OUTPUT"
+            is_release=true
             echo "Detected formal release version: $version_name"
           else
-            echo "is_release=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::ProjectConfig.VERSION_NAME is '$version_name', not strict x.y.z. Skipping tag and release creation."
+            echo "::notice::ProjectConfig.VERSION_NAME is '$version_name', not strict x.y.z. GitHub Release creation will be skipped."
           fi
 
-      - name: Skip non-release version
-        if: steps.version.outputs.is_release != 'true'
-        run: echo "No GitHub Release will be created for version '${{ steps.version.outputs.version_name }}'."
+          create_github_release=false
+          if [ "$is_release" = "true" ] && { [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] || [ "$GITHUB_REF" = "refs/heads/main" ]; }; then
+            create_github_release=true
+          fi
+
+          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "tag_name=v$version_name" >> "$GITHUB_OUTPUT"
+          echo "is_release=$is_release" >> "$GITHUB_OUTPUT"
+          echo "create_github_release=$create_github_release" >> "$GITHUB_OUTPUT"
 
       - name: Make Gradle wrapper executable
-        if: steps.version.outputs.is_release == 'true'
         run: chmod +x ./gradlew
 
       - name: Set up JDK
-        if: steps.version.outputs.is_release == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "25"
 
       - name: Set up Gradle
-        if: steps.version.outputs.is_release == 'true'
         uses: gradle/actions/setup-gradle@v4
 
       - name: Set up Android SDK
-        if: steps.version.outputs.is_release == 'true'
         uses: android-actions/setup-android@v3
 
       - name: Install Android SDK packages
-        if: steps.version.outputs.is_release == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -127,7 +143,6 @@ jobs:
           echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/$ndk_version" >> "$GITHUB_ENV"
 
       - name: Validate signing secrets
-        if: steps.version.outputs.is_release == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -145,11 +160,9 @@ jobs:
           fi
 
       - name: Build release APKs
-        if: steps.version.outputs.is_release == 'true'
         run: ./gradlew --no-daemon :app:assembleRelease
 
       - name: Sign release APKs
-        if: steps.version.outputs.is_release == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -197,13 +210,23 @@ jobs:
           fi
 
       - name: Collect release APKs
-        if: steps.version.outputs.is_release == 'true'
         id: collect
         shell: bash
         env:
-          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          CONFIG_VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          CREATE_GITHUB_RELEASE: ${{ steps.version.outputs.create_github_release }}
         run: |
           set -euo pipefail
+
+          ref_version_name="${GITHUB_REF_NAME#v}"
+          version_name="${REQUESTED_VERSION_NAME:-}"
+
+          if [ -z "$version_name" ] && [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ "$ref_version_name" != "$GITHUB_REF_NAME" ]; then
+            version_name="$ref_version_name"
+          fi
+          if [ -z "$version_name" ]; then
+            version_name="$CONFIG_VERSION_NAME"
+          fi
 
           version_code="$(git rev-list --count HEAD)"
           mkdir -p release-artifacts
@@ -220,7 +243,7 @@ jobs:
               *universal*) abi="universal" ;;
             esac
 
-            cp "$apk" "release-artifacts/AsteriskNG_${VERSION_NAME}-${version_code}-${abi}.apk"
+            cp "$apk" "release-artifacts/AsteriskNG_${version_name}-${version_code}-${abi}.apk"
           done
 
           if ! find release-artifacts -type f -name "*.apk" | grep -q .; then
@@ -228,25 +251,19 @@ jobs:
             exit 1
           fi
 
-          if ! find release-artifacts -type f -name "*-universal.apk" | grep -q .; then
-            echo "::error::The universal APK was not produced."
-            find release-artifacts -maxdepth 1 -type f -name "*.apk" -print
-            exit 1
-          fi
-
+          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
           echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
           ls -lh release-artifacts
 
       - name: Upload GitHub artifact
-        if: steps.version.outputs.is_release == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: AsteriskNG_${{ steps.version.outputs.version_name }}-${{ steps.collect.outputs.version_code }}
+          name: AsteriskNG_${{ steps.collect.outputs.version_name }}-${{ steps.collect.outputs.version_code }}
           path: release-artifacts/*.apk
           if-no-files-found: error
 
       - name: Create tag and release notes
-        if: steps.version.outputs.is_release == 'true'
+        if: steps.version.outputs.create_github_release == 'true'
         id: release_info
         shell: bash
         env:
@@ -338,12 +355,11 @@ jobs:
           cat release-notes.md
 
       - name: Create GitHub Release
-        if: steps.version.outputs.is_release == 'true'
+        if: steps.version.outputs.create_github_release == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ steps.version.outputs.tag_name }}
-          VERSION_NAME: ${{ steps.version.outputs.version_name }}
         run: |
           set -euo pipefail
 
@@ -359,3 +375,86 @@ jobs:
               --notes-file release-notes.md \
               --latest
           fi
+
+      - name: Validate Telegram secrets
+        if: env.SEND_TO_TELEGRAM == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${TELEGRAM_BOT_TOKEN:-}" ]; then
+            echo "::error::Missing repository secret TELEGRAM_BOT_TOKEN."
+            exit 1
+          fi
+          if [ -z "${TELEGRAM_CHAT_ID:-}" ]; then
+            echo "::error::Missing repository secret TELEGRAM_CHAT_ID."
+            exit 1
+          fi
+
+      - name: Upload release APKs to Telegram
+        if: env.SEND_TO_TELEGRAM == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -d '' apks < <(find release-artifacts -maxdepth 1 -type f -name '*.apk' -print0 | sort -z)
+          if [ "${#apks[@]}" -eq 0 ]; then
+            echo "::error::No APK files were found in release-artifacts before Telegram upload."
+            find release-artifacts -maxdepth 1 -type f -print || true
+            exit 1
+          fi
+
+          ls -lh release-artifacts
+          max_document_bytes="${TELEGRAM_MAX_DOCUMENT_BYTES:-52428800}"
+          commit_id="$(git rev-parse HEAD)"
+          commit_short_id="$(git rev-parse --short=12 HEAD)"
+          commit_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$commit_id"
+          workflow_run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          commit_message="$(git log -1 --pretty=%B)"
+          commit_message="${commit_message//$'\r'/}"
+          if [ -z "${commit_message//[[:space:]]/}" ]; then
+            commit_message="(empty commit message)"
+          fi
+          if [ "${#commit_message}" -gt 650 ]; then
+            commit_message="${commit_message:0:650}"$'\n...'
+          fi
+          commit_message_html="$(printf '%s' "$commit_message" | python3 -c 'import html, sys; print(html.escape(sys.stdin.read(), quote=False), end="")')"
+
+          for apk in "${apks[@]}"; do
+            apk_path="$(realpath "$apk")"
+            apk_name="$(basename "$apk")"
+            if [ ! -r "$apk_path" ]; then
+              echo "::error::APK is not readable: $apk_path"
+              exit 1
+            fi
+
+            apk_size="$(stat -c '%s' "$apk_path")"
+            if [ "$apk_size" -gt "$max_document_bytes" ]; then
+              echo "::warning::Skipping Telegram upload for $apk_name because it is $apk_size bytes, above the $max_document_bytes byte limit."
+              continue
+            fi
+
+            echo "Uploading $apk_name to Telegram"
+
+            caption="$(printf 'AsteriskNG\n\n%s\n\n%s\n<a href="%s">Commit</a> | <a href="%s">Workflow run</a>' \
+              "$commit_message_html" \
+              "$commit_short_id" \
+              "$commit_url" \
+              "$workflow_run_url")"
+
+            args=(
+              --fail-with-body
+              -sS
+              -X POST
+              "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument"
+              --form-string "chat_id=${TELEGRAM_CHAT_ID}"
+              --form "document=@${apk_path};filename=${apk_name}"
+              --form-string "caption=${caption}"
+              --form-string "parse_mode=HTML"
+            )
+
+            if [ -n "${TELEGRAM_MESSAGE_THREAD_ID:-}" ]; then
+              args+=(--form-string "message_thread_id=${TELEGRAM_MESSAGE_THREAD_ID}")
+            fi
+
+            curl "${args[@]}"
+          done
