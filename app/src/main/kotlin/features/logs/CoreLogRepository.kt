@@ -3,7 +3,7 @@
 
 package features.logs
 
-import java.time.LocalDateTime
+import java.util.Calendar
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -85,19 +85,19 @@ private fun String.normalizedLogLevel(): String {
 }
 
 fun currentLogTime(): String {
-    val dateTime = LocalDateTime.now()
+    val calendar = Calendar.getInstance()
     return buildString {
-        append(dateTime.year)
+        append(calendar.get(Calendar.YEAR))
         append('-')
-        append(dateTime.monthValue.twoDigits())
+        append((calendar.get(Calendar.MONTH) + 1).twoDigits())
         append('-')
-        append(dateTime.dayOfMonth.twoDigits())
+        append(calendar.get(Calendar.DAY_OF_MONTH).twoDigits())
         append(' ')
-        append(dateTime.hour.twoDigits())
+        append(calendar.get(Calendar.HOUR_OF_DAY).twoDigits())
         append(':')
-        append(dateTime.minute.twoDigits())
+        append(calendar.get(Calendar.MINUTE).twoDigits())
         append(':')
-        append(dateTime.second.twoDigits())
+        append(calendar.get(Calendar.SECOND).twoDigits())
     }
 }
 

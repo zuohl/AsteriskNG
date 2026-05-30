@@ -3,13 +3,19 @@
 
 package features.settings.locale
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.os.LocaleList
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import app.modes.LanguageModeEnglish
@@ -49,6 +55,20 @@ fun ProvideAppLanguage(
     )
 }
 
+@Composable
+fun RecreateActivityOnAppLanguageChange(languageMode: Int) {
+    val activity = LocalContext.current.findActivity()
+    var previousLanguageMode by remember { mutableIntStateOf(languageMode) }
+
+    LaunchedEffect(activity, languageMode) {
+        if (previousLanguageMode == languageMode) {
+            return@LaunchedEffect
+        }
+        previousLanguageMode = languageMode
+        activity?.recreate()
+    }
+}
+
 private fun String?.toAppLocale(systemLocale: Locale): Locale {
     return this?.let(Locale::forLanguageTag) ?: systemLocale
 }
@@ -66,5 +86,13 @@ private fun Context.localizedConfiguration(locale: Locale): Configuration {
     return Configuration(resources.configuration).apply {
         setLocales(LocaleList(locale))
         setLayoutDirection(locale)
+    }
+}
+
+private tailrec fun Context.findActivity(): Activity? {
+    return when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
     }
 }

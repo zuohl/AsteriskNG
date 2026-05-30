@@ -4,6 +4,7 @@
 package app
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -19,10 +20,12 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import com.journeyapps.barcodescanner.ScanContract
 import data.AndroidAppStateStore
+import data.AppSettingsPreferences
 import engine.vpn.AndroidVpnPermissionRequester
 import features.logs.AndroidLogFileCreator
 import features.proxy.server.qr.AndroidQrCodeScanRequester
 import features.resources.runtime.AndroidResourceFilePicker
+import features.settings.locale.localizedAppContext
 import features.subscription.SubscriptionInstallConfigUseCase
 import features.subscription.isSubscriptionInstallConfigUri
 import features.subscription.runtime.AndroidSubscriptionFetcher
@@ -98,6 +101,11 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.CreateDocument("*/*"),
     ) { uri ->
         logFileCreator.complete(uri)
+    }
+
+    override fun attachBaseContext(newBase: Context) {
+        val languageMode = AppSettingsPreferences(newBase).load().languageMode
+        super.attachBaseContext(newBase.localizedAppContext(languageMode))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
