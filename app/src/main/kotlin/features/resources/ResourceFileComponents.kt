@@ -48,7 +48,6 @@ import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.Replace
 import top.yukonga.miuix.kmp.icon.extended.Reset
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlaySpinnerPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -155,44 +154,50 @@ private fun CustomResourceFileSourceDialog(
     onDismissRequest: () -> Unit,
     onSave: () -> Unit,
 ) {
-    OverlayDialog(
+    WindowDialog(
         show = show,
         title = stringResource(R.string.settings_resource_files_source_custom_title),
         onDismissRequest = onDismissRequest,
         content = {
-            TextField(
-                state = geoIpUrlState,
-                label = ResourceFileGeoIpName,
-                lineLimits = TextFieldLineLimits.SingleLine,
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
-            TextField(
-                state = geoSiteUrlState,
-                label = ResourceFileGeoSiteName,
-                lineLimits = TextFieldLineLimits.SingleLine,
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
-            TextField(
-                state = geoIpOnlyCnPrivateUrlState,
-                label = ResourceFileGeoIpOnlyCnPrivateName,
-                lineLimits = TextFieldLineLimits.SingleLine,
-                modifier = Modifier.padding(bottom = 16.dp),
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
             ) {
-                TextButton(
-                    text = stringResource(R.string.common_cancel),
-                    onClick = onDismissRequest,
-                    modifier = Modifier.weight(1f),
+                TextField(
+                    state = geoIpUrlState,
+                    label = ResourceFileGeoIpName,
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 )
-                Spacer(Modifier.width(20.dp))
-                TextButton(
-                    text = stringResource(R.string.common_save),
-                    onClick = onSave,
-                    modifier = Modifier.weight(1f),
+                TextField(
+                    state = geoSiteUrlState,
+                    label = ResourceFileGeoSiteName,
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 )
+                TextField(
+                    state = geoIpOnlyCnPrivateUrlState,
+                    label = ResourceFileGeoIpOnlyCnPrivateName,
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    TextButton(
+                        text = stringResource(R.string.common_cancel),
+                        onClick = onDismissRequest,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(20.dp))
+                    TextButton(
+                        text = stringResource(R.string.common_save),
+                        onClick = onSave,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         },
     )
