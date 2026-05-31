@@ -14,6 +14,7 @@ import system.AndroidPackageProvider
 import system.AndroidUser
 import system.InstalledPackageInfo
 import system.user.AndroidUserSpace
+import utils.toTrimmedNonEmptyDistinctList
 
 @Immutable
 data class ProxyAppIconRequest(
@@ -111,7 +112,7 @@ internal suspend fun prepareProxyAppListData(
     val visibleItemsByUser = if (keyword.isEmpty()) {
         allItemsByUser
     } else {
-        LinkedHashMap<Int, List<ProxyAppListItem>>(appsByUser.size)
+        LinkedHashMap(appsByUser.size)
     }
 
     appsByUser.forEach { (userId, apps) ->
@@ -222,10 +223,7 @@ internal fun List<AppPackageEntry>.sortedForProxyAppListRefresh(
 }
 
 private fun List<String>.normalizedPackageNames(): List<String> {
-    return map(String::trim)
-        .filter(String::isNotEmpty)
-        .distinct()
-        .sorted()
+    return toTrimmedNonEmptyDistinctList().sorted()
 }
 
 private fun InstalledPackageInfo.toAppPackageEntry(

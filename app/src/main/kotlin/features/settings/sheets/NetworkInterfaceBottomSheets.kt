@@ -26,6 +26,7 @@ import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.text.formatTemplate
+import utils.toTrimmedNonEmptyDistinctList
 
 private data class ExternalInterfaceGroup(
     val key: String,
@@ -96,7 +97,7 @@ internal fun externalInterfacesSummary(interfaces: List<String>): String {
 }
 
 internal fun List<String>.sanitizeExternalInterfaces(): List<String> {
-    val selectedPrefixes = map(String::trim).toSet()
+    val selectedPrefixes = toTrimmedNonEmptyDistinctList().toSet()
     return ExternalInterfaceGroups.flatMap { group ->
         if (group.prefixes.any { it in selectedPrefixes }) group.prefixes else emptyList()
     }
@@ -113,13 +114,11 @@ internal fun ignoredInterfacesSummary(interfaces: List<String>): String {
 
 internal fun outletInterfaceOptions(interfaces: List<String>): List<String> {
     return interfaces
+        .toTrimmedNonEmptyDistinctList()
         .asSequence()
-        .map(String::trim)
-        .filter(String::isNotEmpty)
         .filter { interfaceName ->
             IgnoredInterfaceBlockedPrefixes.none(interfaceName::startsWith)
         }
-        .distinct()
         .sortedWith(
             compareBy<String> { interfaceName ->
                 IgnoredInterfaceAllowedPrefixes.indexOfFirst(interfaceName::startsWith)

@@ -21,7 +21,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import ui.components.StringListEditor
-import ui.components.sanitizeStringListItems
+import utils.toTrimmedNonEmptyDistinctList
 
 
 private const val DnsHostSeparator = ':'
@@ -59,11 +59,11 @@ internal fun DnsSettingsBottomSheet(
     onDismissRequest: () -> Unit,
     onSave: (Boolean, Boolean, Boolean, List<String>, List<String>, List<String>, Boolean, List<String>) -> Unit,
 ) {
-    val proxyDnsEntries = proxyDns.sanitizeStringListItems()
-    val directDnsEntries = directDns.sanitizeStringListItems()
-    val directDnsDomainEntries = directDnsDomains.sanitizeStringListItems()
+    val proxyDnsEntries = proxyDns.toTrimmedNonEmptyDistinctList()
+    val directDnsEntries = directDns.toTrimmedNonEmptyDistinctList()
+    val directDnsDomainEntries = directDnsDomains.toTrimmedNonEmptyDistinctList()
     val dnsHostsInvalidMessage = stringResource(R.string.settings_dns_hosts_invalid)
-    val dnsHostEntries = dnsHosts.sanitizeStringListItems()
+    val dnsHostEntries = dnsHosts.toTrimmedNonEmptyDistinctList()
     val dnsServerInvalidMessage = stringResource(R.string.settings_dns_server_invalid)
     val dnsDomainInvalidMessage = stringResource(R.string.settings_dns_domain_invalid)
     val effectiveLocalDnsEnabled = forceEnableLocalDns || enableVpnLocalDns
@@ -137,7 +137,7 @@ internal fun DnsSettingsBottomSheet(
                 title = stringResource(R.string.settings_direct_dns),
                 inputLabel = stringResource(R.string.settings_direct_dns_input),
                 values = directDnsEntries,
-                onValuesChange = { onDirectDnsChange(it.sanitizeStringListItems()) },
+                onValuesChange = { onDirectDnsChange(it.toTrimmedNonEmptyDistinctList()) },
                 emptyText = stringResource(R.string.settings_direct_dns_empty),
                 duplicateText = stringResource(R.string.settings_dns_hosts_duplicate),
                 validateInput = { dnsServerInputError(it, dnsServerInvalidMessage) },
@@ -149,7 +149,7 @@ internal fun DnsSettingsBottomSheet(
                 title = stringResource(R.string.settings_direct_dns_domains),
                 inputLabel = stringResource(R.string.settings_direct_dns_domains_input),
                 values = directDnsDomainEntries,
-                onValuesChange = { onDirectDnsDomainsChange(it.sanitizeStringListItems()) },
+                onValuesChange = { onDirectDnsDomainsChange(it.toTrimmedNonEmptyDistinctList()) },
                 emptyText = stringResource(R.string.settings_direct_dns_domains_empty),
                 duplicateText = stringResource(R.string.settings_dns_hosts_duplicate),
                 validateInput = { dnsDomainInputError(it, dnsDomainInvalidMessage) },
@@ -161,7 +161,7 @@ internal fun DnsSettingsBottomSheet(
                 title = stringResource(R.string.settings_proxy_dns),
                 inputLabel = stringResource(R.string.settings_proxy_dns_input),
                 values = proxyDnsEntries,
-                onValuesChange = { onProxyDnsChange(it.sanitizeStringListItems()) },
+                onValuesChange = { onProxyDnsChange(it.toTrimmedNonEmptyDistinctList()) },
                 emptyText = stringResource(R.string.settings_proxy_dns_empty),
                 duplicateText = stringResource(R.string.settings_dns_hosts_duplicate),
                 validateInput = { dnsServerInputError(it, dnsServerInvalidMessage) },
@@ -174,7 +174,7 @@ internal fun DnsSettingsBottomSheet(
                 description = stringResource(R.string.settings_dns_hosts_format),
                 inputLabel = stringResource(R.string.settings_dns_hosts_input),
                 values = dnsHostEntries,
-                onValuesChange = { onDnsHostsChange(it.sanitizeStringListItems()) },
+                onValuesChange = { onDnsHostsChange(it.toTrimmedNonEmptyDistinctList()) },
                 emptyText = stringResource(R.string.settings_dns_hosts_empty),
                 duplicateText = stringResource(R.string.settings_dns_hosts_duplicate),
                 validateInput = { dnsHostInputError(it, dnsHostsInvalidMessage) },

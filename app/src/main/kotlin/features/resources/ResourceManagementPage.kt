@@ -54,6 +54,7 @@ import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import engine.network.toPortOrNull
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 
 @Composable
@@ -233,7 +234,7 @@ fun ResourceManagementPage(
                         fileName = kind.displayName,
                         status = status.statusOf(kind),
                         updating = updating,
-                        description = stringResource(R.string.settings_resource_files_tproxy_only),
+                        description = stringResource(R.string.settings_resource_files_root_only),
                         onReplace = {
                             runResourceFileAction(
                                 action = { resourceFileUseCase.replace(kind) },
@@ -381,7 +382,7 @@ fun ResourceManagementPage(
 private fun AppState.resourceFileUpdateOptions(): ResourceFileUpdateOptions {
     return ResourceFileUpdateOptions(
         useRunningProxy = proxyRunning && runMode == RunModeVpnService,
-        fallbackProxyPort = localProxyPort.toIntOrNull(),
+        fallbackProxyPort = localProxyPort.toPortOrNull(),
         fallbackProxyUsername = localProxyUsername,
         fallbackProxyPassword = localProxyPassword,
     )

@@ -97,8 +97,16 @@ internal fun AboutRuntimeCard(
             .padding(bottom = 12.dp),
     ) {
         BasicComponent(
-            title = stringResource(R.string.about_core),
-            summary = "AndroidLibXrayLite ${ProjectInfo.ANDROID_LIB_XRAY_LITE_VERSION} / xray-core ${ProjectInfo.XRAY_CORE_VERSION}",
+            title = "AndroidLibXrayLite",
+            summary = ProjectInfo.ANDROID_LIB_XRAY_LITE_VERSION,
+        )
+        BasicComponent(
+            title = "xray-core",
+            summary = ProjectInfo.XRAY_CORE_VERSION,
+        )
+        BasicComponent(
+            title = "hev-socks5-tunnel",
+            summary = ProjectInfo.HEV_SOCKS5_TUNNEL_VERSION,
         )
     }
 }

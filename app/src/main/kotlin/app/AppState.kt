@@ -6,11 +6,12 @@ package app
 import app.modes.ColorModeSystem
 import app.modes.LanguageModeSystem
 import app.modes.ProxyAppListModeGlobal
+import app.modes.RunModeTun2Socks
 import app.modes.RunModeTproxy
 import app.modes.RunModeVpnService
-import engine.tproxy.DefaultTproxyHttpPort
+import engine.root.DefaultRootHttpProxyPort
+import engine.tun2socks.DefaultTun2SocksProxyPort
 import engine.tproxy.DefaultTproxyPort
-import engine.tproxy.DefaultTproxySocks5Port
 import engine.vpn.VpnDefaults
 import engine.xray.DefaultDirectDnsDomains
 import engine.xray.DefaultFragmentInterval
@@ -44,10 +45,10 @@ data class AppState(
     val localProxyUsername: String = "",
     val localProxyPassword: String = "",
     val enableVpnAppendHttpProxy: Boolean = false,
-    val vpnMtu: String = VpnDefaults.MTU.toString(),
-    val vpnDefaultDns: String = VpnDefaults.IPV4_DNS,
-    val vpnIpv4Cidr: String = VpnDefaults.IPV4_CIDR,
-    val vpnIpv6Cidr: String = VpnDefaults.IPV6_CIDR,
+    val tunMtu: String = VpnDefaults.MTU.toString(),
+    val tunDefaultDns: String = VpnDefaults.IPV4_DNS,
+    val tunIpv4Cidr: String = VpnDefaults.IPV4_CIDR,
+    val tunIpv6Cidr: String = VpnDefaults.IPV6_CIDR,
 
     val proxyServers: List<ProxyServerState> = emptyList(),
     val nextProxyServerId: Int = 10,
@@ -90,11 +91,11 @@ data class AppState(
     val dnsHosts: List<String> = emptyList(),
 
     val transparentProxyPort: String = DefaultTproxyPort.toString(),
-    val enableTproxyBootScript: Boolean = false,
+    val enableRootBootScript: Boolean = false,
     val enableSocks5Proxy: Boolean = false,
-    val socks5ProxyPort: String = DefaultTproxySocks5Port.toString(),
+    val socks5ProxyPort: String = DefaultTun2SocksProxyPort.toString(),
     val enableHttpProxy: Boolean = false,
-    val httpProxyPort: String = DefaultTproxyHttpPort.toString(),
+    val httpProxyPort: String = DefaultRootHttpProxyPort.toString(),
 
     val externalInterfaces: List<String> = emptyList(),
     val ignoredInterfaces: List<String> = emptyList(),
@@ -105,7 +106,7 @@ data class AppState(
 )
 
 val AppState.effectiveLocalDnsEnabled: Boolean
-    get() = runMode == RunModeTproxy || enableVpnLocalDns
+    get() = runMode == RunModeTproxy || runMode == RunModeTun2Socks || enableVpnLocalDns
 
 val AppState.effectiveFakeDnsEnabled: Boolean
     get() = effectiveLocalDnsEnabled && enableFakeDns

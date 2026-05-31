@@ -1,7 +1,7 @@
 // Copyright 2026, AsteriskNG contributors
 // SPDX-License-Identifier: GPL-3.0
 
-package engine.tproxy
+package engine.root
 
 import java.net.Inet4Address
 import java.net.Inet6Address
@@ -9,23 +9,25 @@ import java.net.InetAddress
 import java.net.NetworkInterface
 import java.util.Enumeration
 
-internal fun collectTproxyLocalInterfaceCidrs(): List<String> {
+internal fun collectRootLocalInterfaceCidrs(
+    ignoredInterfaceNames: Set<String> = emptySet(),
+): List<String> {
     val networkInterfaces = runCatching { NetworkInterface.getNetworkInterfaces() }.getOrNull()
         ?: return emptyList()
     return networkInterfaces.asSequence()
-        .filter(NetworkInterface::isUsableForTproxyLocalAddress)
+        .filter { networkInterface -> networkInterface.isUsableForRootLocalAddress(ignoredInterfaceNames) }
         .flatMap { networkInterface -> networkInterface.inetAddresses.asSequence() }
-        .mapNotNull(InetAddress::toTproxyLocalAddressCidr)
+        .mapNotNull(InetAddress::toRootLocalAddressCidr)
         .distinct()
         .toList()
 }
 
-private fun NetworkInterface.isUsableForTproxyLocalAddress(): Boolean {
-    if (name == TproxyDummyDevice) return false
+private fun NetworkInterface.isUsableForRootLocalAddress(ignoredInterfaceNames: Set<String>): Boolean {
+    if (name in ignoredInterfaceNames) return false
     return runCatching { isUp }.getOrDefault(false)
 }
 
-private fun InetAddress.toTproxyLocalAddressCidr(): String? {
+private fun InetAddress.toRootLocalAddressCidr(): String? {
     if (isAnyLocalAddress || isMulticastAddress) return null
     val hostAddress = hostAddress?.substringBefore('%')?.takeIf(String::isNotEmpty) ?: return null
     return when (this) {

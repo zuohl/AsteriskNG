@@ -29,6 +29,7 @@ import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import ui.text.formatTemplate
+import utils.toIntInRangeOrNull
 
 @Composable
 internal fun fragmentSettingsSummary(
@@ -222,9 +223,10 @@ private fun parseFragmentRange(
         return null
     }
 
-    val start = parts[0].toIntOrNull() ?: return null
-    val end = if (parts.size == 2) parts[1].toIntOrNull() ?: return null else start
-    if (start < min || end < min || start > end) {
+    val range = min..Int.MAX_VALUE
+    val start = parts[0].toIntInRangeOrNull(range) ?: return null
+    val end = if (parts.size == 2) parts[1].toIntInRangeOrNull(range) ?: return null else start
+    if (start > end) {
         return null
     }
 

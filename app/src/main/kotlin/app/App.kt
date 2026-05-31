@@ -15,7 +15,8 @@ import androidx.compose.ui.unit.dp
 import app.effects.ProxyStatusSynchronizer
 import app.effects.ResourceFileSynchronizer
 import app.effects.SubscriptionAutoUpdater
-import app.effects.TproxyBootScriptSynchronizer
+import app.effects.RootBootScriptSynchronizer
+import app.effects.Tun2SocksRuntimeFileSynchronizer
 import features.logs.AndroidAccessLogRepository
 import features.logs.AndroidCoreLogRepository
 import features.logs.AndroidLogcatRepository
@@ -28,7 +29,7 @@ import features.resources.ResourceFileUseCase
 import features.settings.locale.ProvideAppLanguage
 import features.settings.locale.RecreateActivityOnAppLanguageChange
 import features.settings.usecase.SwitchRunModeUseCase
-import features.settings.usecase.TproxyBootScriptUseCase
+import features.settings.usecase.RootBootScriptUseCase
 import features.subscription.runtime.AndroidSubscriptionFetcher
 import system.AndroidNetworkInterfaceProvider
 import system.AndroidPackageProvider
@@ -89,17 +90,18 @@ fun App(
             requestVpnPermission = requestVpnPermission,
         )
     }
-    val tproxyBootScriptUseCase = remember(appContext, rootAccess) {
-        TproxyBootScriptUseCase(
+    val rootBootScriptUseCase = remember(appContext, rootAccess) {
+        RootBootScriptUseCase(
             context = appContext,
             rootAccess = rootAccess,
         )
     }
-    val switchRunModeUseCase = remember(proxyEngine, rootAccess, tproxyBootScriptUseCase) {
+    val switchRunModeUseCase = remember(proxyEngine, rootAccess, rootBootScriptUseCase) {
         SwitchRunModeUseCase(
+            context = appContext,
             proxyEngine = proxyEngine,
             rootAccess = rootAccess,
-            tproxyBootScriptUseCase = tproxyBootScriptUseCase,
+            rootBootScriptUseCase = rootBootScriptUseCase,
         )
     }
     val proxyServiceUseCase = remember(proxyEngine) {
@@ -121,7 +123,7 @@ fun App(
         proxyLatencyTester,
         proxyServiceUseCase,
         switchRunModeUseCase,
-        tproxyBootScriptUseCase,
+        rootBootScriptUseCase,
         tipNotifier,
         logFileCreator,
     ) {
@@ -139,7 +141,7 @@ fun App(
             proxyLatencyTester = proxyLatencyTester,
             proxyServiceUseCase = proxyServiceUseCase,
             switchRunModeUseCase = switchRunModeUseCase,
-            tproxyBootScriptUseCase = tproxyBootScriptUseCase,
+            rootBootScriptUseCase = rootBootScriptUseCase,
             tipNotifier = tipNotifier,
             logFileCreator = logFileCreator,
             coreLogRepository = AndroidCoreLogRepository,
@@ -166,9 +168,13 @@ fun App(
         subscriptionFetcher = subscriptionFetcher,
         updateAppState = updateAppState,
     )
-    TproxyBootScriptSynchronizer(
+    RootBootScriptSynchronizer(
         stateStore = stateStore,
-        tproxyBootScriptUseCase = tproxyBootScriptUseCase,
+        rootBootScriptUseCase = rootBootScriptUseCase,
+    )
+    Tun2SocksRuntimeFileSynchronizer(
+        context = appContext,
+        stateStore = stateStore,
     )
 
     ProvideAppLanguage(languageMode = chromeState.languageMode) {

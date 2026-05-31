@@ -12,6 +12,8 @@ import features.proxy.server.model.normalizedServerHost
 import features.proxy.server.model.serverHost
 import org.json.JSONArray
 import org.json.JSONObject
+import utils.toCsvValues
+import utils.toTrimmedNonEmptyDistinctList
 
 internal fun buildXrayDnsConfig(
     appState: AppState,
@@ -100,15 +102,15 @@ internal fun AppState.xrayProxyDnsServers(
     directDnsServers: List<String>,
     directDnsDomains: List<String>? = null,
 ): List<String> {
-    val sanitizedProxyDns = proxyDnsServers.toSanitizedDnsServers()
+    val sanitizedProxyDns = proxyDnsServers.toTrimmedNonEmptyDistinctList()
     if (sanitizedProxyDns.isNotEmpty()) {
         return sanitizedProxyDns
     }
-    val hasDirectDns = directDnsServers.toSanitizedDnsServers().isNotEmpty() &&
+    val hasDirectDns = directDnsServers.toTrimmedNonEmptyDistinctList().isNotEmpty() &&
         (directDnsDomains == null || directDnsDomains.isNotEmpty())
     return if (!hasDirectDns) {
         listOf(
-            vpnDefaultDns.trim()
+            tunDefaultDns.trim()
                 .takeIf(::isIpv4Address)
                 ?: VpnDefaults.IPV4_DNS,
         )
@@ -118,14 +120,14 @@ internal fun AppState.xrayProxyDnsServers(
 }
 
 internal fun AppState.xrayDirectDnsServers(directDnsServers: List<String>): List<String> {
-    return directDnsServers.toSanitizedDnsServers()
+    return directDnsServers.toTrimmedNonEmptyDistinctList()
 }
 
 internal fun AppState.xrayDirectDnsDomains(
     directDnsDomains: List<String>,
     startupProxyServerDomains: List<String> = emptyList(),
 ): List<String> {
-    return (directDnsDomains.toSanitizedDnsServers() + startupProxyServerDomains).distinct()
+    return (directDnsDomains.toTrimmedNonEmptyDistinctList() + startupProxyServerDomains).distinct()
 }
 
 internal fun Iterable<XrayProxyOutboundServer>.startupProxyServerDnsDomains(): List<String> {
@@ -175,12 +177,6 @@ private fun String.toXrayDnsDomainRule(): String? {
     return "domain:$host"
 }
 
-private fun List<String>.toSanitizedDnsServers(): List<String> {
-    return map(String::trim)
-        .filter(String::isNotEmpty)
-        .distinct()
-}
-
 private fun List<String>.toDnsHostsJson(): JSONObject {
     return JSONObject().also { hosts ->
         forEach { entry ->
@@ -190,9 +186,8 @@ private fun List<String>.toDnsHostsJson(): JSONObject {
             }
             val domain = entry.substring(0, separatorIndex).trim()
             val addresses = entry.substring(separatorIndex + 1)
-                .split(",")
-                .map { address -> address.trim().trim('[', ']') }
-                .filter(String::isNotEmpty)
+                .toCsvValues()
+                .mapNotNull { address -> address.trim('[', ']').takeIf(String::isNotEmpty) }
             if (domain.isNotEmpty() && addresses.isNotEmpty()) {
                 hosts.put(
                     domain,

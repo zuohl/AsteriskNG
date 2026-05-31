@@ -13,16 +13,21 @@ import engine.vpn.VpnDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import ui.text.formatTemplate
+import utils.toIntInRangeOrNull
 
 
 @Composable
-internal fun vpnSettingsSummary(
+internal fun tunSettingsSummary(
     mtu: String,
     defaultDns: String,
     ipv4Cidr: String,
     ipv6Cidr: String,
+    showDefaultDns: Boolean,
 ): String {
-    return stringResource(R.string.settings_vpn_summary).formatTemplate(
+    val template = stringResource(
+        if (showDefaultDns) R.string.settings_tun_summary else R.string.settings_tun_summary_without_dns,
+    )
+    return template.formatTemplate(
         "mtu" to mtu,
         "dns" to defaultDns,
         "ipv4" to ipv4Cidr,
@@ -31,12 +36,13 @@ internal fun vpnSettingsSummary(
 }
 
 @Composable
-internal fun VpnSettingsBottomSheet(
+internal fun TunSettingsBottomSheet(
     show: Boolean,
     mtu: String,
     defaultDns: String,
     ipv4Cidr: String,
     ipv6Cidr: String,
+    showDefaultDns: Boolean,
     onMtuChange: (String) -> Unit,
     onDefaultDnsChange: (String) -> Unit,
     onIpv4CidrChange: (String) -> Unit,
@@ -44,23 +50,27 @@ internal fun VpnSettingsBottomSheet(
     onDismissRequest: () -> Unit,
     onSave: (String, String, String, String) -> Unit,
 ) {
-    val mtuError = if (isVpnMtu(mtu)) null else stringResource(R.string.settings_vpn_mtu_invalid)
-    val defaultDnsError = if (isVpnDefaultDns(defaultDns)) null else stringResource(R.string.settings_vpn_dns_invalid)
-    val ipv4CidrError = if (isVpnIpv4Cidr(ipv4Cidr)) {
+    val mtuError = if (isTunMtu(mtu)) null else stringResource(R.string.settings_tun_mtu_invalid)
+    val defaultDnsError = if (!showDefaultDns || isTunDefaultDns(defaultDns)) {
         null
     } else {
-        stringResource(R.string.settings_vpn_ipv4_cidr_invalid)
+        stringResource(R.string.settings_tun_dns_invalid)
     }
-    val ipv6CidrError = if (isVpnIpv6Cidr(ipv6Cidr)) {
+    val ipv4CidrError = if (isTunIpv4Cidr(ipv4Cidr)) {
         null
     } else {
-        stringResource(R.string.settings_vpn_ipv6_cidr_invalid)
+        stringResource(R.string.settings_tun_ipv4_cidr_invalid)
+    }
+    val ipv6CidrError = if (isTunIpv6Cidr(ipv6Cidr)) {
+        null
+    } else {
+        stringResource(R.string.settings_tun_ipv6_cidr_invalid)
     }
     val canSave = listOf(mtuError, defaultDnsError, ipv4CidrError, ipv6CidrError).all { it == null }
 
     WindowBottomSheet(
         show = show,
-        title = stringResource(R.string.settings_vpn),
+        title = stringResource(R.string.settings_tun),
         startAction = {
             TextButton(
                 text = stringResource(R.string.common_cancel),
@@ -89,27 +99,29 @@ internal fun VpnSettingsBottomSheet(
                 SettingsTextField(
                     value = mtu,
                     onValueChange = onMtuChange,
-                    label = stringResource(R.string.settings_vpn_mtu),
+                    label = stringResource(R.string.settings_tun_mtu),
                     errorText = mtuError,
                     keyboardOptions = fiveDigitKeyboardOptions(),
                     sanitizeInput = ::sanitizeFiveDigitInput,
                 )
-                SettingsTextField(
-                    value = defaultDns,
-                    onValueChange = onDefaultDnsChange,
-                    label = stringResource(R.string.settings_vpn_default_dns),
-                    errorText = defaultDnsError,
-                )
+                if (showDefaultDns) {
+                    SettingsTextField(
+                        value = defaultDns,
+                        onValueChange = onDefaultDnsChange,
+                        label = stringResource(R.string.settings_tun_default_dns),
+                        errorText = defaultDnsError,
+                    )
+                }
                 SettingsTextField(
                     value = ipv4Cidr,
                     onValueChange = onIpv4CidrChange,
-                    label = stringResource(R.string.settings_vpn_ipv4_cidr),
+                    label = stringResource(R.string.settings_tun_ipv4_cidr),
                     errorText = ipv4CidrError,
                 )
                 SettingsTextField(
                     value = ipv6Cidr,
                     onValueChange = onIpv6CidrChange,
-                    label = stringResource(R.string.settings_vpn_ipv6_cidr),
+                    label = stringResource(R.string.settings_tun_ipv6_cidr),
                     errorText = ipv6CidrError,
                 )
             }
@@ -118,19 +130,19 @@ internal fun VpnSettingsBottomSheet(
 }
 
 
-private fun isVpnMtu(value: String): Boolean {
-    return value.toIntOrNull()?.let { it in VpnDefaults.MTU_MIN..VpnDefaults.MTU_MAX } == true
+private fun isTunMtu(value: String): Boolean {
+    return value.toIntInRangeOrNull(VpnDefaults.MTU_MIN..VpnDefaults.MTU_MAX) != null
 }
 
-private fun isVpnDefaultDns(value: String): Boolean {
+private fun isTunDefaultDns(value: String): Boolean {
     val trimmed = value.trim()
     return trimmed.contains(".") && !trimmed.contains(":") && isIpAddress(trimmed)
 }
 
-private fun isVpnIpv4Cidr(value: String): Boolean {
+private fun isTunIpv4Cidr(value: String): Boolean {
     return value.contains(".") && !value.contains(":") && isCidrAddress(value)
 }
 
-private fun isVpnIpv6Cidr(value: String): Boolean {
+private fun isTunIpv6Cidr(value: String): Boolean {
     return value.contains(":") && isCidrAddress(value)
 }

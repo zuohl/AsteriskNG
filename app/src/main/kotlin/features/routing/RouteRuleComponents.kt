@@ -51,7 +51,7 @@ import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import ui.components.StringListEditor
 import ui.components.StringListStatusText
 import ui.components.draggedCardShadow
-import ui.components.sanitizeStringListItems
+import utils.toTrimmedNonEmptyDistinctList
 
 internal data class RouteRuleOutboundOption(
     val tag: String,
@@ -219,10 +219,10 @@ internal fun RouteRuleEditorBottomSheet(
                     id = initialRule?.id ?: nextRuleId,
                     remarks = remarks.ifBlank { unnamedRuleName },
                     outboundTag = effectiveOutboundOptions[selectedOutboundIndex].tag,
-                    domain = domains.sanitizeStringListItems(),
-                    ip = ips.sanitizeStringListItems(),
+                    domain = domains.toTrimmedNonEmptyDistinctList(),
+                    ip = ips.toTrimmedNonEmptyDistinctList(),
                     port = ports.trim(),
-                    process = process.sanitizeStringListItems(),
+                    process = process.toTrimmedNonEmptyDistinctList(),
                     protocol = protocol.trim(),
                     network = network.trim(),
                     enabled = initialRule?.enabled ?: true,
@@ -306,7 +306,7 @@ private fun RouteRuleLine(
     label: String,
     values: List<String>,
 ) {
-    RouteRuleLine(label, values.sanitizeStringListItems().joinToString(", "))
+    RouteRuleLine(label, values.toTrimmedNonEmptyDistinctList().joinToString(", "))
 }
 
 @Composable

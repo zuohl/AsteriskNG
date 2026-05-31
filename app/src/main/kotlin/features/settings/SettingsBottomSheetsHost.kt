@@ -13,12 +13,14 @@ import features.settings.sheets.LocalProxySettingsBottomSheet
 import features.settings.sheets.MuxSettingsBottomSheet
 import features.settings.sheets.PrivateAddressBottomSheet
 import features.settings.sheets.ProxySettingsBottomSheet
-import features.settings.sheets.VpnSettingsBottomSheet
+import features.settings.sheets.TunSettingsBottomSheet
 import features.settings.sheets.orderedBy
 import features.settings.sheets.sanitizeExternalInterfaces
 import features.settings.sheets.sanitizeMuxUdp443Index
 import features.settings.sheets.sanitizePrivateAddressCidrs
+import app.modes.RunModeTun2Socks
 import app.modes.RunModeTproxy
+import app.modes.RunModeVpnService
 
 @Composable
 internal fun SettingsBottomSheetsHost(
@@ -28,6 +30,8 @@ internal fun SettingsBottomSheetsHost(
 ) {
     ProxySettingsBottomSheet(
         show = sheetState.showProxySettings,
+        useTun2SocksProxyPort = appState.runMode == RunModeTun2Socks,
+        lockInboundSettings = (appState.runMode == RunModeTproxy || appState.runMode == RunModeTun2Socks) && appState.proxyRunning,
         transparentProxyPort = sheetState.proxySettingsDraft.transparentProxyPort,
         enableSocks5Proxy = sheetState.proxySettingsDraft.enableSocks5Proxy,
         socks5ProxyPort = sheetState.proxySettingsDraft.socks5ProxyPort,
@@ -57,12 +61,22 @@ internal fun SettingsBottomSheetsHost(
         onDismissRequest = { sheetState.showProxySettings = false },
         onSave = { transparentProxyPort, enableSocks5Proxy, socks5ProxyPort, enableHttpProxy, httpProxyPort ->
             updateAppState { state ->
+                val lockInboundSettings = (state.runMode == RunModeTproxy || state.runMode == RunModeTun2Socks) && state.proxyRunning
+                val useTun2SocksProxyPort = state.runMode == RunModeTun2Socks
                 state.copy(
-                    transparentProxyPort = transparentProxyPort,
-                    enableSocks5Proxy = enableSocks5Proxy,
-                    socks5ProxyPort = socks5ProxyPort,
-                    enableHttpProxy = enableHttpProxy,
-                    httpProxyPort = httpProxyPort,
+                    transparentProxyPort = if (lockInboundSettings) {
+                        state.transparentProxyPort
+                    } else {
+                        transparentProxyPort
+                    },
+                    enableSocks5Proxy = when {
+                        lockInboundSettings -> state.enableSocks5Proxy
+                        useTun2SocksProxyPort -> state.enableSocks5Proxy
+                        else -> enableSocks5Proxy
+                    },
+                    socks5ProxyPort = if (lockInboundSettings) state.socks5ProxyPort else socks5ProxyPort,
+                    enableHttpProxy = if (lockInboundSettings) state.enableHttpProxy else enableHttpProxy,
+                    httpProxyPort = if (lockInboundSettings) state.httpProxyPort else httpProxyPort,
                 )
             }
             sheetState.showProxySettings = false
@@ -106,35 +120,36 @@ internal fun SettingsBottomSheetsHost(
             sheetState.showLocalProxySettings = false
         },
     )
-    VpnSettingsBottomSheet(
-        show = sheetState.showVpnSettings,
-        mtu = sheetState.vpnSettingsDraft.mtu,
-        defaultDns = sheetState.vpnSettingsDraft.defaultDns,
-        ipv4Cidr = sheetState.vpnSettingsDraft.ipv4Cidr,
-        ipv6Cidr = sheetState.vpnSettingsDraft.ipv6Cidr,
+    TunSettingsBottomSheet(
+        show = sheetState.showTunSettings,
+        mtu = sheetState.tunSettingsDraft.mtu,
+        defaultDns = sheetState.tunSettingsDraft.defaultDns,
+        ipv4Cidr = sheetState.tunSettingsDraft.ipv4Cidr,
+        ipv6Cidr = sheetState.tunSettingsDraft.ipv6Cidr,
+        showDefaultDns = appState.runMode == RunModeVpnService,
         onMtuChange = {
-            sheetState.vpnSettingsDraft = sheetState.vpnSettingsDraft.copy(mtu = it)
+            sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(mtu = it)
         },
-        onDefaultDnsChange = { sheetState.vpnSettingsDraft = sheetState.vpnSettingsDraft.copy(defaultDns = it) },
-        onIpv4CidrChange = { sheetState.vpnSettingsDraft = sheetState.vpnSettingsDraft.copy(ipv4Cidr = it) },
-        onIpv6CidrChange = { sheetState.vpnSettingsDraft = sheetState.vpnSettingsDraft.copy(ipv6Cidr = it) },
-        onDismissRequest = { sheetState.showVpnSettings = false },
+        onDefaultDnsChange = { sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(defaultDns = it) },
+        onIpv4CidrChange = { sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(ipv4Cidr = it) },
+        onIpv6CidrChange = { sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(ipv6Cidr = it) },
+        onDismissRequest = { sheetState.showTunSettings = false },
         onSave = { mtu, defaultDns, ipv4Cidr, ipv6Cidr ->
             updateAppState { state ->
                 state.copy(
-                    vpnMtu = mtu,
-                    vpnDefaultDns = defaultDns,
-                    vpnIpv4Cidr = ipv4Cidr,
-                    vpnIpv6Cidr = ipv6Cidr,
+                    tunMtu = mtu,
+                    tunDefaultDns = if (state.runMode == RunModeVpnService) defaultDns else state.tunDefaultDns,
+                    tunIpv4Cidr = ipv4Cidr,
+                    tunIpv6Cidr = ipv6Cidr,
                 )
             }
-            sheetState.showVpnSettings = false
+            sheetState.showTunSettings = false
         },
     )
     DnsSettingsBottomSheet(
         show = sheetState.showDnsSettings,
         enableVpnLocalDns = sheetState.dnsSettingsDraft.enableVpnLocalDns,
-        forceEnableLocalDns = appState.runMode == RunModeTproxy,
+        forceEnableLocalDns = appState.runMode == RunModeTproxy || appState.runMode == RunModeTun2Socks,
         enableFakeDns = sheetState.dnsSettingsDraft.enableFakeDns,
         enableResolveProxyServerDomain = sheetState.dnsSettingsDraft.enableResolveProxyServerDomain,
         proxyDns = sheetState.dnsSettingsDraft.proxyDns,

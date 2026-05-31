@@ -3,15 +3,19 @@
 
 package engine.tproxy
 
+import engine.root.RootIp6Command
+import engine.root.RootIp6tablesCommand
+import engine.root.RootIpCommand
+import engine.root.RootIptablesConfig
+import engine.root.RootIptablesCommand
 
-internal fun TproxyIptablesConfig.ipv4Family(): TproxyIptablesFamily {
-    return TproxyIptablesFamily(
-        command = TproxyIptablesCommand,
-        ipCommand = TproxyIpCommand,
+internal fun RootIptablesConfig.ipv4IptablesVariant(): TproxyIptablesVariant {
+    return TproxyIptablesVariant(
+        command = RootIptablesCommand,
+        ipCommand = RootIpCommand,
         routeTable = ipv4Table,
         routeDestination = "default",
-        legacyPreroutingChain = TproxyPreroutingChain,
-        preroutingTargetChain = TproxyPreroutingTargetChain,
+        preroutingChain = TproxyPreroutingChain,
         outputChain = TproxyOutputChain,
         dnsOutputChain = TproxyDnsOutputChain,
         tproxyOnIp = "0.0.0.0",
@@ -21,45 +25,43 @@ internal fun TproxyIptablesConfig.ipv4Family(): TproxyIptablesFamily {
     )
 }
 
-internal fun TproxyIptablesConfig.ipv6Family(dummy: Boolean): TproxyIptablesFamily {
-    return TproxyIptablesFamily(
-        command = TproxyIp6tablesCommand,
-        ipCommand = TproxyIp6Command,
+internal fun RootIptablesConfig.ipv6IptablesVariant(useDummyInterface: Boolean): TproxyIptablesVariant {
+    return TproxyIptablesVariant(
+        command = RootIp6tablesCommand,
+        ipCommand = RootIp6Command,
         routeTable = ipv6Table,
         routeDestination = "default",
-        legacyPreroutingChain = TproxyPrerouting6Chain,
-        preroutingTargetChain = TproxyPrerouting6TargetChain,
+        preroutingChain = TproxyPrerouting6Chain,
         outputChain = TproxyOutput6Chain,
         dnsOutputChain = TproxyDnsOutput6Chain,
         tproxyOnIp = "::",
         localInterfaceCidrs = localInterfaceIpv6Cidrs,
         proxyPrivateCidrs = proxyPrivateIpv6Cidrs,
         bypassPrivateCidrs = bypassPrivateIpv6Cidrs,
-        dummy = DummyIptablesConfig.takeIf { dummy },
+        dummyInterface = DummyInterfaceConfig.takeIf { useDummyInterface },
     )
 }
 
-internal fun hasGlobalIpv6AddressTest(): String {
-    return "$TproxyIp6Command addr show scope global 2>/dev/null | grep -q 'inet6 '"
+internal fun buildGlobalIpv6AddressCheckCommand(): String {
+    return "$RootIp6Command addr show scope global 2>/dev/null | grep -q 'inet6 '"
 }
 
-internal data class TproxyIptablesFamily(
+internal data class TproxyIptablesVariant(
     val command: String,
     val ipCommand: String,
     val routeTable: String,
     val routeDestination: String,
-    val legacyPreroutingChain: String,
-    val preroutingTargetChain: String,
+    val preroutingChain: String,
     val outputChain: String,
     val dnsOutputChain: String,
     val tproxyOnIp: String,
     val localInterfaceCidrs: List<String>,
     val proxyPrivateCidrs: List<String>,
     val bypassPrivateCidrs: List<String>,
-    val dummy: TproxyDummyIptablesConfig? = null,
+    val dummyInterface: TproxyDummyInterfaceConfig? = null,
 )
 
-internal data class TproxyDummyIptablesConfig(
+internal data class TproxyDummyInterfaceConfig(
     val device: String,
     val address: String,
     val mark: String,
@@ -68,11 +70,11 @@ internal data class TproxyDummyIptablesConfig(
     val preroutingChain: String,
 )
 
-private val DummyIptablesConfig = TproxyDummyIptablesConfig(
+private val DummyInterfaceConfig = TproxyDummyInterfaceConfig(
     device = TproxyDummyDevice,
     address = TproxyDummyAddress,
     mark = TproxyDummyFwmark,
     routeTable = TproxyDummyRouteTable,
     outputChain = "ASTERISK_TPROXY6_DUMMY",
-    preroutingChain = "ASTERISK_TPROXY6_DUMMY_TARGET",
+    preroutingChain = "ASTERISK_TPROXY6_DUMMY_PRE",
 )

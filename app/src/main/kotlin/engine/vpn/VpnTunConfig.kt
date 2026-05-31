@@ -10,28 +10,25 @@ import engine.xray.XrayProtocols
 import engine.xray.XrayTags
 import engine.xray.toJsonStringArray
 import engine.xray.xraySniffingDestOverrides
+import engine.network.NetworkCidrAddress
 import engine.network.isIpv4Address
 import engine.network.parseCidrAddressOrNull
 import org.json.JSONObject
+import utils.toIntInRangeOrDefault
 
-internal val defaultIpv4TunAddress = VpnDefaults.IPV4_CIDR.toVpnCidrAddress()
-internal val defaultIpv6TunAddress = VpnDefaults.IPV6_CIDR.toVpnCidrAddress()
+internal val defaultIpv4TunAddress = VpnDefaults.IPV4_CIDR.toNetworkCidrAddress()
+internal val defaultIpv6TunAddress = VpnDefaults.IPV6_CIDR.toNetworkCidrAddress()
 
-internal data class VpnCidrAddress(
-    val address: String,
-    val prefixLength: Int,
-)
-
-internal data class VpnTunOptions(
+internal data class TunOptions(
     val mtu: Int,
-    val ipv4Address: VpnCidrAddress,
-    val ipv6Address: VpnCidrAddress,
+    val ipv4Address: NetworkCidrAddress,
+    val ipv6Address: NetworkCidrAddress,
     val dnsServers: List<String>,
 )
 
 internal fun buildVpnTunInbound(
     appState: AppState,
-    tunOptions: VpnTunOptions,
+    tunOptions: TunOptions,
 ): JSONObject {
     val gateway = buildList {
         add(tunOptions.ipv4Address.toCidrString())
@@ -49,7 +46,7 @@ internal fun buildVpnTunInbound(
     }
 
     return JSONObject()
-        .put("tag", XrayTags.TUN_INBOUND)
+        .put("tag", XrayTags.VPN_TUN_INBOUND)
         .put("protocol", XrayProtocols.TUN)
         .put("settings", settings)
         .put(
@@ -61,48 +58,39 @@ internal fun buildVpnTunInbound(
         )
 }
 
-internal fun AppState.toVpnTunOptions(): VpnTunOptions {
-    return VpnTunOptions(
-        mtu = vpnMtuValue(),
-        ipv4Address = vpnIpv4TunAddress(),
-        ipv6Address = vpnIpv6TunAddress(),
+internal fun AppState.toTunOptions(): TunOptions {
+    return TunOptions(
+        mtu = tunMtuValue(),
+        ipv4Address = tunIpv4Address(),
+        ipv6Address = tunIpv6Address(),
         dnsServers = listOf(
-            vpnDefaultDns.trim()
+            tunDefaultDns.trim()
                 .takeIf(::isIpv4Address)
                 ?: VpnDefaults.IPV4_DNS,
         ),
     )
 }
 
-private fun AppState.vpnMtuValue(): Int {
-    return vpnMtu.toIntOrNull()?.takeIf { it in VpnDefaults.MTU_MIN..VpnDefaults.MTU_MAX } ?: VpnDefaults.MTU
+private fun AppState.tunMtuValue(): Int {
+    return tunMtu.toIntInRangeOrDefault(VpnDefaults.MTU_MIN..VpnDefaults.MTU_MAX, default = VpnDefaults.MTU)
 }
 
-private fun AppState.vpnIpv4TunAddress(): VpnCidrAddress {
-    return vpnIpv4Cidr.toVpnCidrAddressOrNull()
+private fun AppState.tunIpv4Address(): NetworkCidrAddress {
+    return parseCidrAddressOrNull(tunIpv4Cidr)
         ?.takeIf { address -> !address.address.contains(":") }
         ?: defaultIpv4TunAddress
 }
 
-private fun AppState.vpnIpv6TunAddress(): VpnCidrAddress {
-    return vpnIpv6Cidr.toVpnCidrAddressOrNull()
+private fun AppState.tunIpv6Address(): NetworkCidrAddress {
+    return parseCidrAddressOrNull(tunIpv6Cidr)
         ?.takeIf { address -> address.address.contains(":") }
         ?: defaultIpv6TunAddress
 }
 
-private fun String.toVpnCidrAddress(): VpnCidrAddress {
-    return toVpnCidrAddressOrNull() ?: error("Invalid VPN CIDR: $this")
+private fun String.toNetworkCidrAddress(): NetworkCidrAddress {
+    return parseCidrAddressOrNull(this) ?: error("Invalid VPN CIDR: $this")
 }
 
-private fun String.toVpnCidrAddressOrNull(): VpnCidrAddress? {
-    return parseCidrAddressOrNull(this)?.let { cidr ->
-        VpnCidrAddress(
-            address = cidr.address,
-            prefixLength = cidr.prefixLength,
-        )
-    }
-}
-
-private fun VpnCidrAddress.toCidrString(): String {
+private fun NetworkCidrAddress.toCidrString(): String {
     return "$address/$prefixLength"
 }

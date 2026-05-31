@@ -6,9 +6,12 @@ package features.proxy.server.usecase
 import android.content.Context
 import app.AppState
 import app.ProxyServerState
+import app.modes.RunModeTun2Socks
 import app.modes.RunModeTproxy
 import engine.proxy.ProxyEngineStartRequest
-import engine.tproxy.TproxyConfigFactory
+import engine.root.prepareRootConfigBuildContext
+import engine.tproxy.buildTproxyStartConfig
+import engine.tun2socks.buildTun2SocksStartConfig
 import engine.vpn.VpnXrayConfigFactory
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.ProxyServer
@@ -58,8 +61,22 @@ private fun Context.generatedProxyServerXrayConfig(
         selectedServer = selectedServer,
     )
     return when (copyState.runMode) {
-        RunModeTproxy -> TproxyConfigFactory.create(applicationContext, request).xrayConfigJson
+        RunModeTproxy,
+        RunModeTun2Socks -> generatedRootProxyServerXrayConfig(copyState.runMode, request)
+
         else -> VpnXrayConfigFactory.create(applicationContext, request).xrayConfigJson
+    }
+}
+
+private fun Context.generatedRootProxyServerXrayConfig(
+    runMode: Int,
+    request: ProxyEngineStartRequest,
+): String {
+    val rootContext = applicationContext.prepareRootConfigBuildContext(request)
+    return when (runMode) {
+        RunModeTproxy -> rootContext.buildTproxyStartConfig().root.xrayConfigJson
+        RunModeTun2Socks -> rootContext.buildTun2SocksStartConfig().root.xrayConfigJson
+        else -> error("Unsupported ROOT run mode: $runMode")
     }
 }
 

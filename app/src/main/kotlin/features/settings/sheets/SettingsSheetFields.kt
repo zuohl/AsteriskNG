@@ -23,7 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import engine.network.NetworkLimits
+import engine.network.toPortOrNull
 import top.yukonga.miuix.kmp.basic.TextField
 import ui.components.StringListStatusText
 
@@ -76,6 +76,7 @@ internal fun SheetTextField(
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
     sanitizeInput: (String) -> String = { it },
 ) {
@@ -95,6 +96,7 @@ internal fun SheetTextField(
         lineLimits = TextFieldLineLimits.SingleLine,
         inputTransformation = inputTransformation,
         keyboardOptions = keyboardOptions,
+        enabled = enabled,
         modifier = modifier,
     )
 }
@@ -111,7 +113,5 @@ internal fun fiveDigitKeyboardOptions(): KeyboardOptions {
 }
 
 internal fun isPort(value: String): Boolean {
-    return value.isNotEmpty() &&
-        value.all(Char::isDigit) &&
-        value.toIntOrNull()?.let { it in NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX } == true
+    return value.toPortOrNull() != null
 }

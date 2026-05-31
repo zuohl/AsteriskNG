@@ -9,6 +9,7 @@ import engine.network.NetworkDefaults
 import features.proxy.server.model.ProxyServerConstants
 import org.json.JSONArray
 import org.json.JSONObject
+import utils.toIntCoercedInOrDefault
 
 internal fun buildXrayOutbounds(
     appState: AppState,
@@ -167,11 +168,11 @@ private fun AppState.wireguardDomainStrategy(): String {
 }
 
 private fun String.toMuxConcurrency(): Int {
-    return toIntOrNull()?.coerceIn(-1, MaxMuxConcurrency) ?: DefaultMuxConcurrency.toInt()
+    return toIntCoercedInOrDefault(-1..MaxMuxConcurrency, default = DefaultMuxConcurrency.toInt())
 }
 
 private fun String.toMuxXudpConcurrency(): Int {
-    return toIntOrNull()?.coerceIn(-1, MaxMuxXudpConcurrency) ?: DefaultMuxXudpConcurrency.toInt()
+    return toIntCoercedInOrDefault(-1..MaxMuxXudpConcurrency, default = DefaultMuxXudpConcurrency.toInt())
 }
 
 private fun Int.toMuxUdp443Mode(): String {

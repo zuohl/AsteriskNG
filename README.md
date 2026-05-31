@@ -1,35 +1,51 @@
 # AsteriskNG
 
-An Xray client for Android, powered by [Xray-core](https://github.com/XTLS/Xray-core) and [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite).
+An Xray client for Android, powered by [Xray-core](https://github.com/XTLS/Xray-core), [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite), and [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel).
 
-### Telegram Channel
+## Telegram Channel
 
 [Asterisk4Magisk](https://t.me/Asterisk4Magisk)
 
-### Features
+## Features
 
-- VPN Service and TPROXY(ROOT) run modes
+- VPN Service, TPROXY(ROOT), and TUN2SOCKS(ROOT) run modes
 - VMess, VLESS, Trojan, Shadowsocks, Socks, HTTP, Hysteria2, WireGuard, strategy group, and chain proxy
-- Subscription groups, QR code import, latency testing, and per-app proxy
-- Resource file management for `geoip.dat`, `geosite.dat`, and Xray-core
+- Subscription groups, QR code import, latency testing, and app proxy modes
+- Resource file management for `geoip.dat`, `geosite.dat`, and the Xray executable
+- ROOT start-on-boot script generation through Magisk `service.d`
 - MIUIX Compose UI
 
-### Usage
+## Run Modes
 
-#### Geoip and Geosite
+### VPN Service
 
-- `geoip.dat` and `geosite.dat` are stored in the app private `files/xray` directory, commonly `/data/user/0/org.asterisk.zcc.ang/files/xray`.
-- Resource files can be updated in the app from [Loyalsoldier/v2ray-rules-dat](https://github.com/Loyalsoldier/v2ray-rules-dat), [v2fly/geoip](https://github.com/v2fly/geoip) and [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community), or [Chocolate4U/Iran-v2ray-rules](https://github.com/Chocolate4U/Iran-v2ray-rules).
-- Third-party `geoip.dat` and `geosite.dat` files can be imported manually from Resource management.
-- Xray-core can also be replaced manually with an `xray` executable file or a zip archive containing `xray`.
+- Works without root permission.
+- Uses Android `VpnService`.
+- Suitable for normal Android app-level VPN usage.
 
-#### Run Mode
+### TPROXY(ROOT)
 
-- VPN Service mode works without root permission and uses Android `VpnService`.
-- TPROXY mode requires ROOT permission and uses the local Xray executable with iptables rules.
-- Start on boot can generate a Magisk `service.d` script for TPROXY mode.
+- Requires root permission.
+- Runs the local Xray executable directly with libsu.
+- Uses iptables and policy routing for transparent proxy traffic.
+- Uses the configured transparent proxy port as the Xray inbound.
 
-### Development guide
+### TUN2SOCKS(ROOT)
+
+- Requires root permission.
+- Runs the local Xray executable directly with libsu.
+- Uses `hev-socks5-tunnel` to create the fixed TUN device `asterisk0`.
+- Uses Xray's local SOCKS5 inbound as the tunnel target.
+- Shares most ROOT routing and app proxy behavior with TPROXY, but routes traffic through the TUN device instead of Xray's TPROXY inbound.
+
+## Resource Files
+
+- Runtime files are stored in the app private `files/xray` directory, commonly `/data/user/0/org.asterisk.zcc.ang/files/xray`.
+- The bundled Xray executable is restored from native libraries and can be replaced manually with an `xray` executable file or a zip archive containing `xray`.
+- `geoip.dat` and `geosite.dat` can be restored from bundled assets, updated from online sources, or replaced manually.
+- Built-in update sources include [Loyalsoldier/v2ray-rules-dat](https://github.com/Loyalsoldier/v2ray-rules-dat), [v2fly/geoip](https://github.com/v2fly/geoip), [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community), and [Chocolate4U/Iran-v2ray-rules](https://github.com/Chocolate4U/Iran-v2ray-rules).
+
+## Development
 
 Open the project root in Android Studio, or build it with Gradle wrapper:
 
@@ -43,21 +59,34 @@ On macOS or Linux:
 ./gradlew assembleDebug
 ```
 
-The build downloads the bundled Xray-core asset and compiles the native `setuidgid` helper. If Gradle cannot find Android NDK, set `ndk.dir` in `local.properties`, set `ANDROID_NDK_HOME`, or install an NDK under the Android SDK.
+The build:
+
+- uses the Android SDK and NDK
+- downloads or prepares the bundled Xray-core asset
+- builds the native `setuidgid` helper
+- packages native runtime components for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`
+
+If Gradle cannot find Android NDK, set `ndk.dir` in `local.properties`, set `ANDROID_NDK_HOME`, or install an NDK under the Android SDK.
+
+## WSA
 
 For WSA, VPN permission can be granted with:
 
 ```bash
 appops set org.asterisk.zcc.ang ACTIVATE_VPN allow
 ```
-### License
+
+## License
 
 [GPL-3.0](LICENSE)
 
-### Credits
+## Credits
 
 - [@XTLS/Xray-core](https://github.com/XTLS/Xray-core)
 - [@2dust/AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite)
+- [@heiher/hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel)
+- [@topjohnwu/libsu](https://github.com/topjohnwu/libsu)
+- [@compose-miuix-ui/miuix](https://github.com/compose-miuix-ui/miuix)
 - [@2dust/v2rayNG](https://github.com/2dust/v2rayNG)
 - [@Loyalsoldier/v2ray-rules-dat](https://github.com/Loyalsoldier/v2ray-rules-dat)
 - [@v2fly/geoip](https://github.com/v2fly/geoip)

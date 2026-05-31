@@ -3,6 +3,8 @@
 
 package system
 
+import utils.toTrimmedNonEmptyDistinctList
+
 class AndroidNetworkInterfaceProvider(
     private val rootAccess: AndroidRootShellGateway,
 ) {
@@ -19,18 +21,16 @@ class AndroidNetworkInterfaceProvider(
 }
 
 private fun List<String>.normalizedNetworkInterfaceNames(): List<String> {
-    return asSequence()
-        .map(String::trim)
-        .filter(String::isNotEmpty)
+    return toTrimmedNonEmptyDistinctList()
+        .asSequence()
         .filter { it != "." && it != ".." }
-        .distinct()
         .toList()
 }
 
-private val RootNetworkInterfaceCommand = """
+private val RootNetworkInterfaceCommand = $$"""
     for path in /sys/class/net/*; do
-        [ -e "${'$'}path" ] || continue
-        name="${'$'}{path##*/}"
-        [ -n "${'$'}name" ] && echo "${'$'}name"
+        [ -e "$path" ] || continue
+        name="${path##*/}"
+        [ -n "$name" ] && echo "$name"
     done
 """.trimIndent()

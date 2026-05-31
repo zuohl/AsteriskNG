@@ -5,9 +5,15 @@ package engine.proxy
 
 import android.content.Context
 import android.content.Intent
+import app.R
+import app.modes.RunModeTun2Socks
 import app.modes.RunModeTproxy
 import engine.proxy.mode.AndroidModeProxyEngine
-import engine.tproxy.TproxyEngine
+import engine.root.RootModeEngine
+import engine.tproxy.TproxyRootRunner
+import engine.tproxy.buildTproxyStartConfig
+import engine.tun2socks.Tun2SocksRootRunner
+import engine.tun2socks.buildTun2SocksStartConfig
 import engine.vpn.VpnXrayEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -22,7 +28,28 @@ class AndroidProxyEngine(
 ) {
     private val appContext = context.applicationContext
     private val vpnXrayEngine = VpnXrayEngine(appContext, requestVpnPermission)
-    private val tproxyEngine = TproxyEngine(appContext, rootAccess)
+    private val tproxyEngine = RootModeEngine(
+        context = appContext,
+        rootAccess = rootAccess,
+        runner = TproxyRootRunner(rootAccess),
+        runMode = RunModeTproxy,
+        rootRequiredErrorResId = R.string.error_tproxy_root_required,
+        startFailedErrorResId = R.string.error_tproxy_start_failed,
+        modeName = "TPROXY",
+        logTag = "TproxyEngine",
+        buildConfig = { rootContext -> rootContext.buildTproxyStartConfig() },
+    )
+    private val tun2SocksEngine = RootModeEngine(
+        context = appContext,
+        rootAccess = rootAccess,
+        runner = Tun2SocksRootRunner(rootAccess),
+        runMode = RunModeTun2Socks,
+        rootRequiredErrorResId = R.string.error_tun2socks_root_required,
+        startFailedErrorResId = R.string.error_tun2socks_start_failed,
+        modeName = "TUN2SOCKS",
+        logTag = "Tun2SocksEngine",
+        buildConfig = { rootContext -> rootContext.buildTun2SocksStartConfig() },
+    )
     private val operationMutex = Mutex()
     private var activeEngine: AndroidModeProxyEngine? = null
 
@@ -32,6 +59,10 @@ class AndroidProxyEngine(
 
     suspend fun stop(preferredRunMode: Int? = null): ProxyEngineStatus = operationMutex.withLock {
         stopUnlocked(preferredRunMode)
+    }
+
+    suspend fun stopCurrentRunMode(runMode: Int): ProxyEngineStatus = operationMutex.withLock {
+        stopRunModeUnlocked(runMode)
     }
 
     suspend fun restart(request: ProxyEngineStartRequest): ProxyEngineStatus = operationMutex.withLock {
@@ -45,24 +76,45 @@ class AndroidProxyEngine(
     private suspend fun startUnlocked(request: ProxyEngineStartRequest): ProxyEngineStatus = withContext(Dispatchers.Default) {
         val nextEngine = when (request.appState.runMode) {
             RunModeTproxy -> tproxyEngine
+            RunModeTun2Socks -> tun2SocksEngine
             else -> vpnXrayEngine
         }
-        if (activeEngine != null && activeEngine !== nextEngine) {
-            activeEngine?.stop()
+        val currentEngine = activeEngine ?: findEngineToStop(request.appState.runMode)
+        if (currentEngine != null && currentEngine !== nextEngine) {
+            currentEngine.stop()
         }
         activeEngine = nextEngine
         nextEngine.start(request)
     }
 
     private suspend fun stopUnlocked(preferredRunMode: Int? = null): ProxyEngineStatus = withContext(Dispatchers.Default) {
-        val engine = activeEngine
-            ?: preferredRunMode?.engine()?.takeIf { it.status().running }
-            ?: tproxyEngine.takeIf { it.status().running }
-            ?: vpnXrayEngine.takeIf { it.status().running }
+        val engine = findEngineToStop(preferredRunMode)
         val stoppedMode = engine?.runMode
         engine?.stop()
         activeEngine = null
         ProxyEngineStatus(running = false, runMode = stoppedMode)
+    }
+
+    private suspend fun stopRunModeUnlocked(runMode: Int): ProxyEngineStatus = withContext(Dispatchers.Default) {
+        val engine = runMode.engine()
+        activeEngine
+            ?.takeIf { active -> active !== engine }
+            ?.stop()
+        val status = engine.stop()
+        activeEngine = null
+        status
+    }
+
+    private suspend fun findEngineToStop(preferredRunMode: Int?): AndroidModeProxyEngine? {
+        val preferredEngine = preferredRunMode?.engine()
+        return activeEngine
+            ?: preferredEngine?.takeIf { it.status().running }
+            ?: preferredEngine?.takeIf { it.ownsRootRuntime() }
+            ?: tproxyEngine.takeIf { it.status().running }
+            ?: tun2SocksEngine.takeIf { it.status().running }
+            ?: vpnXrayEngine.takeIf { it.status().running }
+            ?: tproxyEngine.takeIf { it.ownsRuntime() }
+            ?: tun2SocksEngine.takeIf { it.ownsRuntime() }
     }
 
     private suspend fun statusUnlocked(preferredRunMode: Int? = null): ProxyEngineStatus = withContext(Dispatchers.Default) {
@@ -71,18 +123,17 @@ class AndroidProxyEngine(
             return@withContext activeStatus
         }
 
+        var fallbackStatus = activeStatus
         preferredRunMode?.engine()?.let { preferredEngine ->
             val preferredStatus = preferredEngine.status()
             if (preferredStatus.running) {
                 activeEngine = preferredEngine
                 return@withContext preferredStatus
             }
-            if (activeStatus == null) {
-                return@withContext preferredStatus
-            }
+            fallbackStatus = preferredStatus
         }
 
-        listOf(tproxyEngine, vpnXrayEngine)
+        listOf(tproxyEngine, tun2SocksEngine, vpnXrayEngine)
             .filterNot { engine -> engine.runMode == preferredRunMode }
             .forEach { engine ->
                 val status = engine.status()
@@ -93,13 +144,18 @@ class AndroidProxyEngine(
             }
 
         activeEngine = null
-        activeStatus ?: ProxyEngineStatus(running = false, runMode = preferredRunMode)
+        fallbackStatus ?: ProxyEngineStatus(running = false, runMode = preferredRunMode)
     }
 
     private fun Int.engine(): AndroidModeProxyEngine {
         return when (this) {
             RunModeTproxy -> tproxyEngine
+            RunModeTun2Socks -> tun2SocksEngine
             else -> vpnXrayEngine
         }
+    }
+
+    private suspend fun AndroidModeProxyEngine.ownsRootRuntime(): Boolean {
+        return this is RootModeEngine<*> && ownsRuntime()
     }
 }

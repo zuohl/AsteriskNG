@@ -24,6 +24,7 @@ import features.logs.CoreLogFileTailer
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.withTimeout
 import system.getInstalledApplicationsCompat
+import utils.toTrimmedNonEmptyDistinctList
 
 @SuppressLint("VpnServicePolicy")
 class AsteriskVpnService : VpnService() {
@@ -153,7 +154,7 @@ class AsteriskVpnService : VpnService() {
     }
 
     private fun Builder.addAllowedApplications(packageNames: List<String>): Int {
-        return packageNames.normalizedPackageNames().count { packageName ->
+        return packageNames.toTrimmedNonEmptyDistinctList().count { packageName ->
             addApplicationIfInstalled(packageName) {
                 addAllowedApplication(packageName)
             }
@@ -161,7 +162,7 @@ class AsteriskVpnService : VpnService() {
     }
 
     private fun Builder.addDisallowedApplications(packageNames: List<String>): Int {
-        return packageNames.normalizedPackageNames().count { packageName ->
+        return packageNames.toTrimmedNonEmptyDistinctList().count { packageName ->
             addApplicationIfInstalled(packageName) {
                 addDisallowedApplication(packageName)
             }
@@ -181,12 +182,6 @@ class AsteriskVpnService : VpnService() {
                 }
             },
         )
-    }
-
-    private fun List<String>.normalizedPackageNames(): List<String> {
-        return map(String::trim)
-            .filter(String::isNotEmpty)
-            .distinct()
     }
 
     private fun installedPackageNames(): List<String> {

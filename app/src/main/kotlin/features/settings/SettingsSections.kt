@@ -4,6 +4,7 @@
 package features.settings
 
 import app.modes.RunModeTproxy
+import app.modes.RunModeTun2Socks
 import app.modes.RunModeVpnService
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExitTransition
@@ -200,17 +201,17 @@ internal fun SettingsProxyModeSections(
     runMode: Int,
     localProxySettingsSummary: String,
     enableVpnAppendHttpProxy: Boolean,
-    vpnSettingsSummary: String,
+    tunSettingsSummary: String,
     inboundProxySummary: String,
-    enableTproxyBootScript: Boolean,
+    enableRootBootScript: Boolean,
     externalInterfacesSummary: String,
     ignoredInterfacesSummary: String,
     privateAddressCidrsSummary: String,
     onOpenLocalProxySettings: () -> Unit,
     onEnableVpnAppendHttpProxyChange: (Boolean) -> Unit,
-    onOpenVpnSettings: () -> Unit,
+    onOpenTunSettings: () -> Unit,
     onOpenProxySettings: () -> Unit,
-    onEnableTproxyBootScriptChange: (Boolean) -> Unit,
+    onEnableRootBootScriptChange: (Boolean) -> Unit,
     onOpenExternalInterfaces: () -> Unit,
     onOpenIgnoredInterfaces: () -> Unit,
     onOpenPrivateAddresses: () -> Unit,
@@ -235,32 +236,53 @@ internal fun SettingsProxyModeSections(
                     onCheckedChange = onEnableVpnAppendHttpProxyChange,
                 )
                 ArrowPreference(
-                    title = stringResource(R.string.settings_vpn),
-                    summary = vpnSettingsSummary,
-                    onClick = onOpenVpnSettings,
+                    title = stringResource(R.string.settings_tun),
+                    summary = tunSettingsSummary,
+                    onClick = onOpenTunSettings,
                 )
             }
         }
     }
     AnimatedVisibility(
-        visible = runMode == RunModeTproxy,
+        visible = runMode == RunModeTproxy || runMode == RunModeTun2Socks,
         enter = fadeIn() + expandVertically(),
         exit = ExitTransition.None,
     ) {
         Column {
-            SmallTitle(text = stringResource(R.string.settings_proxy_tproxy))
+            SmallTitle(
+                text = stringResource(
+                    if (runMode == RunModeTun2Socks) R.string.settings_proxy_tun2socks else R.string.settings_proxy_tproxy,
+                ),
+            )
             SettingsSectionCard {
-                SwitchPreference(
-                    title = stringResource(R.string.settings_tproxy_boot_script),
-                    summary = stringResource(R.string.settings_tproxy_boot_script_summary),
-                    checked = enableTproxyBootScript,
-                    onCheckedChange = onEnableTproxyBootScriptChange,
-                )
+                AnimatedVisibility(
+                    visible = runMode == RunModeTproxy || runMode == RunModeTun2Socks,
+                    enter = fadeIn() + expandVertically(),
+                    exit = shrinkVertically() + fadeOut(),
+                ) {
+                    SwitchPreference(
+                        title = stringResource(R.string.settings_root_boot_script),
+                        summary = stringResource(R.string.settings_root_boot_script_summary),
+                        checked = enableRootBootScript,
+                        onCheckedChange = onEnableRootBootScriptChange,
+                    )
+                }
                 ArrowPreference(
                     title = stringResource(R.string.settings_inbound),
                     summary = inboundProxySummary,
                     onClick = onOpenProxySettings,
                 )
+                AnimatedVisibility(
+                    visible = runMode == RunModeTun2Socks,
+                    enter = fadeIn() + expandVertically(),
+                    exit = shrinkVertically() + fadeOut(),
+                ) {
+                    ArrowPreference(
+                        title = stringResource(R.string.settings_tun),
+                        summary = tunSettingsSummary,
+                        onClick = onOpenTunSettings,
+                    )
+                }
                 ArrowPreference(
                     title = stringResource(R.string.settings_external_interfaces),
                     summary = externalInterfacesSummary,

@@ -6,347 +6,195 @@ package engine.tproxy
 import app.modes.ProxyAppListModeBlacklist
 import app.modes.ProxyAppListModeGlobal
 import app.modes.ProxyAppListModeWhitelist
+import engine.root.RootXrayGid
+import engine.root.RootIp6tablesCommand
+import engine.root.RootIptablesConfig
+import engine.root.RootProxyAppWhitelistSystemUids
+import engine.root.appendDeleteRuleLoop
+import engine.root.appendScript
+import engine.root.shellQuote
 
-internal fun TproxyIptablesConfig.setupCommand(
+internal fun RootIptablesConfig.buildSetupRulesCommand(
     port: Int,
     enableIpv6: Boolean,
 ): String {
     return buildString {
-        appendSetupRules(
-            config = this@setupCommand,
-            family = ipv4Family(),
+        appendIptablesVariantSetupRules(
+            config = this@buildSetupRulesCommand,
+            variant = ipv4IptablesVariant(),
             port = port,
         )
         if (enableIpv6) {
-            appendIpv6SetupRules(this@setupCommand, port)
+            appendIpv6VariantSetupRules(this@buildSetupRulesCommand, port)
         } else {
-            appendDisableIpv6DnsRule(TproxyIp6tablesCommand)
+            appendIpv6DnsRejectRule()
         }
     }
 }
 
-internal fun TproxyIptablesConfig.cleanupCommand(): String {
+internal fun RootIptablesConfig.buildCleanupRulesCommand(): String {
     return buildString {
-        appendCleanupRules(this@cleanupCommand, ipv4Family())
-        appendDeleteJumpLoop(TproxyIp6tablesCommand, "OUTPUT", "-p udp --dport 53 -j REJECT", table = "filter")
-        appendCleanupRules(this@cleanupCommand, ipv6Family(dummy = false))
-        appendCleanupRules(this@cleanupCommand, ipv6Family(dummy = true))
+        appendIptablesVariantCleanupRules(this@buildCleanupRulesCommand, ipv4IptablesVariant())
+        appendDeleteRuleLoop(RootIp6tablesCommand, "OUTPUT", "-p udp --dport 53 -j REJECT", table = "filter")
+        appendIptablesVariantCleanupRules(this@buildCleanupRulesCommand, ipv6IptablesVariant(useDummyInterface = false))
+        appendIptablesVariantCleanupRules(this@buildCleanupRulesCommand, ipv6IptablesVariant(useDummyInterface = true))
     }
 }
 
-private fun StringBuilder.appendIpv6SetupRules(
-    config: TproxyIptablesConfig,
+private fun StringBuilder.appendIpv6VariantSetupRules(
+    config: RootIptablesConfig,
     port: Int,
 ) {
-    appendScript("if ${hasGlobalIpv6AddressTest()}; then")
-    appendSetupRules(config, config.ipv6Family(dummy = false), port)
+    appendScript("if ${buildGlobalIpv6AddressCheckCommand()}; then")
+    appendIptablesVariantSetupRules(config, config.ipv6IptablesVariant(useDummyInterface = false), port)
     appendScript("else")
-    appendSetupRules(config, config.ipv6Family(dummy = true), port)
+    appendIptablesVariantSetupRules(config, config.ipv6IptablesVariant(useDummyInterface = true), port)
     appendScript("fi")
 }
 
-private fun StringBuilder.appendSetupRules(
-    config: TproxyIptablesConfig,
-    family: TproxyIptablesFamily,
+private fun StringBuilder.appendIptablesVariantSetupRules(
+    config: RootIptablesConfig,
+    variant: TproxyIptablesVariant,
     port: Int,
 ) {
-    if (family.dummy == null) {
+    if (variant.dummyInterface == null) {
         appendScript(
             """
-            ${family.ipCommand} rule add fwmark ${config.mark} table ${family.routeTable} 2>/dev/null || true
-            ${family.ipCommand} route add local ${family.routeDestination} dev lo table ${family.routeTable} 2>/dev/null || true
+            ${variant.ipCommand} rule add fwmark ${config.mark} table ${variant.routeTable} 2>/dev/null || true
+            ${variant.ipCommand} route add local ${variant.routeDestination} dev lo table ${variant.routeTable} 2>/dev/null || true
             """,
         )
     } else {
-        appendDummyRouteRules(family)
+        appendDummyRouteRules(variant)
     }
     appendScript(
         """
-        ${family.command} -t mangle -N ${family.preroutingTargetChain} 2>/dev/null || true
-        ${family.command} -t mangle -N ${family.outputChain} 2>/dev/null || true
-        ${family.command} -t mangle -I PREROUTING 1 -j ${family.preroutingTargetChain}
-        ${family.command} -t mangle -I OUTPUT 1 -j ${family.outputChain}
+        ${variant.command} -t mangle -N ${variant.preroutingChain} 2>/dev/null || true
+        ${variant.command} -t mangle -N ${variant.outputChain} 2>/dev/null || true
+        ${variant.command} -t mangle -I PREROUTING 1 -j ${variant.preroutingChain}
+        ${variant.command} -t mangle -I OUTPUT 1 -j ${variant.outputChain}
         """,
     )
-    appendPreroutingDnsHijackRules(family, port, config.mark)
-    appendPreroutingProxyInterfaceRules(
-        family = family,
+    appendPreroutingDnsTproxyRules(variant, port, config.mark)
+    appendPreroutingPrivateDestinationInterfaceTproxyRules(
+        variant = variant,
         interfacePrefixes = config.externalInterfacePrefixes,
         port = port,
         mark = config.mark,
     )
-    appendPreroutingProxyMarkedRules(family, port, config.mark)
-    appendBypassRules(
-        command = family.command,
-        chain = family.preroutingTargetChain,
-        cidrs = family.bypassPrivateCidrs,
+    appendPreroutingPrivateDestinationMarkedTproxyRules(variant, port, config.mark)
+    appendBypassReturnRules(
+        command = variant.command,
+        chain = variant.preroutingChain,
+        cidrs = variant.bypassPrivateCidrs,
         interfaces = emptyList(),
         input = true,
     )
-    appendBypassRules(
-        command = family.command,
-        chain = family.preroutingTargetChain,
-        cidrs = family.localInterfaceCidrs,
+    appendBypassReturnRules(
+        command = variant.command,
+        chain = variant.preroutingChain,
+        cidrs = variant.localInterfaceCidrs,
         interfaces = emptyList(),
         input = true,
     )
-    appendPreroutingMarkedProxyRules(family, port, config.mark)
+    appendPreroutingMarkedTproxyRules(variant, port, config.mark)
     config.externalInterfacePrefixes.forEach { prefix ->
-        appendPreroutingInterfaceProxyRules(family, prefix, port, config.mark)
+        appendPreroutingInterfaceTproxyRules(variant, prefix, port, config.mark)
     }
-    family.dummy?.let { dummy ->
-        appendDummyPreroutingRules(family.command, dummy, port)
+    variant.dummyInterface?.let { dummyInterface ->
+        appendDummyPreroutingRules(variant.command, dummyInterface, port)
     }
-    appendOutputDnsMarkRules(family.command, family.outputChain, config.gid, config.mark)
-    appendOutputProxyRules(family.command, family.outputChain, family.proxyPrivateCidrs, config.mark)
-    appendOutputApplicationRules(
-        command = family.command,
-        chain = family.outputChain,
+    appendUdpDnsMarkRule(variant.command, variant.outputChain, config.mark, ownerBypassGid = RootXrayGid)
+    appendDestinationMarkRules(variant.command, variant.outputChain, variant.proxyPrivateCidrs, config.mark)
+    appendOutputApplicationBypassRules(
+        command = variant.command,
+        chain = variant.outputChain,
         mode = config.proxyAppListMode,
         uids = config.proxyApplicationUids,
-        mark = config.mark,
-        phase = TproxyOutputApplicationRulePhase.BeforeBypass,
     )
-    family.dummy?.let { dummy ->
-        appendScript("${family.command} -t mangle -A ${family.outputChain} -o ${dummy.device.shellQuote()} -j RETURN")
+    variant.dummyInterface?.let { dummyInterface ->
+        appendScript("${variant.command} -t mangle -A ${variant.outputChain} -o ${dummyInterface.device.shellQuote()} -j RETURN")
     }
-    appendBypassRules(
-        command = family.command,
-        chain = family.outputChain,
+    appendBypassReturnRules(
+        command = variant.command,
+        chain = variant.outputChain,
         cidrs = emptyList(),
         interfaces = config.ignoredInterfaces,
         input = false,
     )
-    appendBypassRules(
-        command = family.command,
-        chain = family.outputChain,
-        cidrs = family.bypassPrivateCidrs,
+    appendBypassReturnRules(
+        command = variant.command,
+        chain = variant.outputChain,
+        cidrs = variant.bypassPrivateCidrs,
         interfaces = emptyList(),
         input = false,
     )
-    appendBypassRules(
-        command = family.command,
-        chain = family.outputChain,
-        cidrs = family.localInterfaceCidrs,
+    appendBypassReturnRules(
+        command = variant.command,
+        chain = variant.outputChain,
+        cidrs = variant.localInterfaceCidrs,
         interfaces = emptyList(),
         input = false,
     )
-    appendScript("${family.command} -t mangle -A ${family.outputChain} -m owner --gid-owner ${config.gid} -j RETURN")
-    appendOutputApplicationRules(
-        command = family.command,
-        chain = family.outputChain,
+    appendScript("${variant.command} -t mangle -A ${variant.outputChain} -m owner --gid-owner $RootXrayGid -j RETURN")
+    appendOutputApplicationMarkRules(
+        command = variant.command,
+        chain = variant.outputChain,
         mode = config.proxyAppListMode,
         uids = config.proxyApplicationUids,
         mark = config.mark,
-        phase = TproxyOutputApplicationRulePhase.AfterBypass,
     )
-    family.dummy?.let { dummy ->
-        appendDummyOutputRules(family.command, dummy)
+    variant.dummyInterface?.let { dummyInterface ->
+        appendDummyOutputRules(variant.command, dummyInterface)
     }
 }
 
-private fun StringBuilder.appendCleanupRules(
-    config: TproxyIptablesConfig,
-    family: TproxyIptablesFamily,
+private fun StringBuilder.appendIptablesVariantCleanupRules(
+    config: RootIptablesConfig,
+    variant: TproxyIptablesVariant,
 ) {
-    appendDeleteJumpLoop(family.command, "PREROUTING", "-j ${family.legacyPreroutingChain}")
-    appendDeleteJumpLoop(family.command, "PREROUTING", "-j ${family.preroutingTargetChain}")
-    appendDeleteJumpLoop(family.command, "OUTPUT", "-j ${family.outputChain}")
-    appendDeleteJumpLoop(family.command, "OUTPUT", "-p tcp -j ${family.outputChain}")
-    appendDeleteJumpLoop(family.command, "OUTPUT", "-p udp -j ${family.outputChain}")
-    appendDeleteJumpLoop(family.command, "OUTPUT", "-p tcp -j ${family.dnsOutputChain}", table = "nat")
-    appendDeleteJumpLoop(family.command, "OUTPUT", "-p udp -j ${family.dnsOutputChain}", table = "nat")
-    listOf(family.legacyPreroutingChain, family.preroutingTargetChain, family.outputChain).forEach { chain ->
+    appendDeleteRuleLoop(variant.command, "PREROUTING", "-j ${variant.preroutingChain}")
+    appendDeleteRuleLoop(variant.command, "OUTPUT", "-j ${variant.outputChain}")
+    appendDeleteRuleLoop(variant.command, "OUTPUT", "-p tcp -j ${variant.outputChain}")
+    appendDeleteRuleLoop(variant.command, "OUTPUT", "-p udp -j ${variant.outputChain}")
+    appendDeleteRuleLoop(variant.command, "OUTPUT", "-p tcp -j ${variant.dnsOutputChain}", table = "nat")
+    appendDeleteRuleLoop(variant.command, "OUTPUT", "-p udp -j ${variant.dnsOutputChain}", table = "nat")
+    listOf(variant.preroutingChain, variant.outputChain).forEach { chain ->
         appendScript(
             """
-            ${family.command} -t mangle -F $chain 2>/dev/null || true
-            ${family.command} -t mangle -X $chain 2>/dev/null || true
+            ${variant.command} -t mangle -F $chain 2>/dev/null || true
+            ${variant.command} -t mangle -X $chain 2>/dev/null || true
             """,
         )
     }
     appendScript(
         """
-        ${family.command} -t nat -F ${family.dnsOutputChain} 2>/dev/null || true
-        ${family.command} -t nat -X ${family.dnsOutputChain} 2>/dev/null || true
-        ${family.ipCommand} rule del fwmark ${config.mark} table ${family.routeTable} 2>/dev/null || true
-        ${family.ipCommand} route flush table ${family.routeTable} 2>/dev/null || true
+        ${variant.command} -t nat -F ${variant.dnsOutputChain} 2>/dev/null || true
+        ${variant.command} -t nat -X ${variant.dnsOutputChain} 2>/dev/null || true
+        ${variant.ipCommand} rule del fwmark ${config.mark} table ${variant.routeTable} 2>/dev/null || true
+        ${variant.ipCommand} route flush table ${variant.routeTable} 2>/dev/null || true
         """,
     )
-    family.dummy?.let { dummy ->
-        appendDummyCleanupRules(family.command, family.ipCommand, dummy)
+    variant.dummyInterface?.let { dummyInterface ->
+        appendDummyCleanupRules(variant.command, variant.ipCommand, dummyInterface)
     }
 }
 
-private fun StringBuilder.appendPreroutingDnsHijackRules(
-    family: TproxyIptablesFamily,
-    port: Int,
-    mark: String,
-) {
-    appendScript(
-        "${family.command} -t mangle -A ${family.preroutingTargetChain} -p udp -m udp --dport 53 " +
-            "-j TPROXY --on-port $port --on-ip ${family.tproxyOnIp} --tproxy-mark $mark",
-    )
+private fun StringBuilder.appendIpv6DnsRejectRule() {
+    appendScript("$RootIp6tablesCommand -t filter -I OUTPUT 1 -p udp --dport 53 -j REJECT")
 }
 
-private fun StringBuilder.appendOutputDnsMarkRules(
-    command: String,
-    chain: String,
-    bypassGid: Int,
-    mark: String,
-) {
-    appendScript("$command -t mangle -A $chain -p udp -m owner ! --gid-owner $bypassGid -m udp --dport 53 -j MARK --set-xmark $mark")
-}
-
-private fun StringBuilder.appendOutputApplicationRules(
-    command: String,
-    chain: String,
-    mode: Int,
-    uids: List<Int>,
-    mark: String,
-    phase: TproxyOutputApplicationRulePhase,
-) {
-    when (mode) {
-        ProxyAppListModeBlacklist -> {
-            if (phase == TproxyOutputApplicationRulePhase.BeforeBypass) {
-                appendOutputOwnerReturnRules(command, chain, uids)
-            } else {
-                appendOutputMarkAllRules(command, chain, mark)
-            }
-        }
-
-        ProxyAppListModeWhitelist -> {
-            if (phase == TproxyOutputApplicationRulePhase.AfterBypass) {
-                appendOutputOwnerMarkRules(command, chain, uids + TproxyWhitelistSystemUids, mark)
-            }
-        }
-
-        ProxyAppListModeGlobal -> {
-            if (phase == TproxyOutputApplicationRulePhase.AfterBypass) {
-                appendOutputMarkAllRules(command, chain, mark)
-            }
-        }
-
-        else -> {
-            if (phase == TproxyOutputApplicationRulePhase.AfterBypass) {
-                appendOutputMarkAllRules(command, chain, mark)
-            }
-        }
-    }
-}
-
-private enum class TproxyOutputApplicationRulePhase {
-    BeforeBypass,
-    AfterBypass,
-}
-
-private fun StringBuilder.appendOutputMarkAllRules(
+private fun StringBuilder.appendUdpDnsMarkRule(
     command: String,
     chain: String,
     mark: String,
+    ownerBypassGid: Int? = null,
 ) {
-    appendScript(
-        """
-        $command -t mangle -A $chain -p tcp -j MARK --set-xmark $mark
-        $command -t mangle -A $chain -p udp -j MARK --set-xmark $mark
-        """,
-    )
+    val ownerMatch = ownerBypassGid?.let { gid -> "-m owner ! --gid-owner $gid " }.orEmpty()
+    appendScript("$command -t mangle -A $chain -p udp ${ownerMatch}-m udp --dport 53 -j MARK --set-xmark $mark")
 }
 
-private fun StringBuilder.appendOutputOwnerReturnRules(
-    command: String,
-    chain: String,
-    uids: List<Int>,
-) {
-    uids.distinct().asReversed().forEach { uid ->
-        appendScript("$command -t mangle -A $chain -m owner --uid-owner $uid -j RETURN")
-    }
-}
-
-private fun StringBuilder.appendOutputOwnerMarkRules(
-    command: String,
-    chain: String,
-    uids: List<Int>,
-    mark: String,
-) {
-    uids.distinct().forEach { uid ->
-        appendScript(
-            """
-            $command -t mangle -A $chain -p tcp -m owner --uid-owner $uid -j MARK --set-xmark $mark
-            $command -t mangle -A $chain -p udp -m owner --uid-owner $uid -j MARK --set-xmark $mark
-            """,
-        )
-    }
-}
-
-private fun StringBuilder.appendDisableIpv6DnsRule(command: String) {
-    appendScript("$command -t filter -I OUTPUT 1 -p udp --dport 53 -j REJECT")
-}
-
-private fun StringBuilder.appendPreroutingMarkedProxyRules(
-    family: TproxyIptablesFamily,
-    port: Int,
-    mark: String,
-) {
-    appendScript(
-        """
-        ${family.command} -t mangle -A ${family.preroutingTargetChain} -p tcp -m mark --mark $mark -j TPROXY --on-port $port --on-ip ${family.tproxyOnIp} --tproxy-mark $mark
-        ${family.command} -t mangle -A ${family.preroutingTargetChain} -p udp -m mark --mark $mark -j TPROXY --on-port $port --on-ip ${family.tproxyOnIp} --tproxy-mark $mark
-        """,
-    )
-}
-
-private fun StringBuilder.appendPreroutingInterfaceProxyRules(
-    family: TproxyIptablesFamily,
-    interfaceName: String,
-    port: Int,
-    mark: String,
-) {
-    val quotedInterface = interfaceName.shellQuote()
-    appendScript(
-        """
-        ${family.command} -t mangle -A ${family.preroutingTargetChain} -i $quotedInterface -p tcp -j TPROXY --on-port $port --on-ip ${family.tproxyOnIp} --tproxy-mark $mark
-        ${family.command} -t mangle -A ${family.preroutingTargetChain} -i $quotedInterface -p udp -j TPROXY --on-port $port --on-ip ${family.tproxyOnIp} --tproxy-mark $mark
-        """,
-    )
-}
-
-private fun StringBuilder.appendPreroutingProxyInterfaceRules(
-    family: TproxyIptablesFamily,
-    interfacePrefixes: List<String>,
-    port: Int,
-    mark: String,
-) {
-    interfacePrefixes.asReversed().forEach { prefix ->
-        val quotedInterface = prefix.shellQuote()
-        family.proxyPrivateCidrs.asReversed().forEach { cidr ->
-            val quotedCidr = cidr.shellQuote()
-            appendScript(
-                """
-                ${family.command} -t mangle -A ${family.preroutingTargetChain} -d $quotedCidr -i $quotedInterface -p udp -j TPROXY --on-port $port --on-ip ${family.tproxyOnIp} --tproxy-mark $mark
-                ${family.command} -t mangle -A ${family.preroutingTargetChain} -d $quotedCidr -i $quotedInterface -p tcp -j TPROXY --on-port $port --on-ip ${family.tproxyOnIp} --tproxy-mark $mark
-                """,
-            )
-        }
-    }
-}
-
-private fun StringBuilder.appendPreroutingProxyMarkedRules(
-    family: TproxyIptablesFamily,
-    port: Int,
-    mark: String,
-) {
-    family.proxyPrivateCidrs.asReversed().forEach { cidr ->
-        val quotedCidr = cidr.shellQuote()
-        appendScript(
-            """
-            ${family.command} -t mangle -A ${family.preroutingTargetChain} -d $quotedCidr -p udp -m mark --mark $mark -j TPROXY --on-port $port --on-ip ${family.tproxyOnIp} --tproxy-mark $mark
-            ${family.command} -t mangle -A ${family.preroutingTargetChain} -d $quotedCidr -p tcp -m mark --mark $mark -j TPROXY --on-port $port --on-ip ${family.tproxyOnIp} --tproxy-mark $mark
-            """,
-        )
-    }
-}
-
-private fun StringBuilder.appendOutputProxyRules(
+private fun StringBuilder.appendDestinationMarkRules(
     command: String,
     chain: String,
     cidrs: List<String>,
@@ -356,14 +204,14 @@ private fun StringBuilder.appendOutputProxyRules(
         val quotedCidr = cidr.shellQuote()
         appendScript(
             """
-            $command -t mangle -A $chain -d $quotedCidr -p udp -j MARK --set-xmark $mark
             $command -t mangle -A $chain -d $quotedCidr -p tcp -j MARK --set-xmark $mark
+            $command -t mangle -A $chain -d $quotedCidr -p udp -j MARK --set-xmark $mark
             """,
         )
     }
 }
 
-private fun StringBuilder.appendBypassRules(
+private fun StringBuilder.appendBypassReturnRules(
     command: String,
     chain: String,
     cidrs: List<String>,
@@ -379,11 +227,144 @@ private fun StringBuilder.appendBypassRules(
     }
 }
 
-internal fun StringBuilder.appendDeleteJumpLoop(
+private fun StringBuilder.appendOutputApplicationBypassRules(
     command: String,
     chain: String,
-    rule: String,
-    table: String = "mangle",
+    mode: Int,
+    uids: List<Int>,
 ) {
-    appendScript("while $command -t $table -D $chain $rule 2>/dev/null; do :; done")
+    if (mode == ProxyAppListModeBlacklist) {
+        appendOutputUidReturnRules(command, chain, uids)
+    }
+}
+
+private fun StringBuilder.appendOutputApplicationMarkRules(
+    command: String,
+    chain: String,
+    mode: Int,
+    uids: List<Int>,
+    mark: String,
+) {
+    when (mode) {
+        ProxyAppListModeBlacklist,
+        ProxyAppListModeGlobal -> appendOutputAllTrafficMarkRules(command, chain, mark)
+
+        ProxyAppListModeWhitelist -> appendOutputUidMarkRules(command, chain, uids + RootProxyAppWhitelistSystemUids, mark)
+
+        else -> appendOutputAllTrafficMarkRules(command, chain, mark)
+    }
+}
+
+private fun StringBuilder.appendOutputAllTrafficMarkRules(
+    command: String,
+    chain: String,
+    mark: String,
+) {
+    appendScript(
+        """
+        $command -t mangle -A $chain -p tcp -j MARK --set-xmark $mark
+        $command -t mangle -A $chain -p udp -j MARK --set-xmark $mark
+        """,
+    )
+}
+
+private fun StringBuilder.appendOutputUidReturnRules(
+    command: String,
+    chain: String,
+    uids: List<Int>,
+) {
+    uids.distinct().asReversed().forEach { uid ->
+        appendScript("$command -t mangle -A $chain -m owner --uid-owner $uid -j RETURN")
+    }
+}
+
+private fun StringBuilder.appendOutputUidMarkRules(
+    command: String,
+    chain: String,
+    uids: List<Int>,
+    mark: String,
+) {
+    uids.distinct().forEach { uid ->
+        appendScript(
+            """
+            $command -t mangle -A $chain -p tcp -m owner --uid-owner $uid -j MARK --set-xmark $mark
+            $command -t mangle -A $chain -p udp -m owner --uid-owner $uid -j MARK --set-xmark $mark
+            """,
+        )
+    }
+}
+
+private fun StringBuilder.appendPreroutingDnsTproxyRules(
+    variant: TproxyIptablesVariant,
+    port: Int,
+    mark: String,
+) {
+    appendScript(
+        "${variant.command} -t mangle -A ${variant.preroutingChain} -p udp -m udp --dport 53 " +
+            "-j TPROXY --on-port $port --on-ip ${variant.tproxyOnIp} --tproxy-mark $mark",
+    )
+}
+
+private fun StringBuilder.appendPreroutingMarkedTproxyRules(
+    variant: TproxyIptablesVariant,
+    port: Int,
+    mark: String,
+) {
+    appendScript(
+        """
+        ${variant.command} -t mangle -A ${variant.preroutingChain} -p tcp -m mark --mark $mark -j TPROXY --on-port $port --on-ip ${variant.tproxyOnIp} --tproxy-mark $mark
+        ${variant.command} -t mangle -A ${variant.preroutingChain} -p udp -m mark --mark $mark -j TPROXY --on-port $port --on-ip ${variant.tproxyOnIp} --tproxy-mark $mark
+        """,
+    )
+}
+
+private fun StringBuilder.appendPreroutingInterfaceTproxyRules(
+    variant: TproxyIptablesVariant,
+    interfaceName: String,
+    port: Int,
+    mark: String,
+) {
+    val quotedInterface = interfaceName.shellQuote()
+    appendScript(
+        """
+        ${variant.command} -t mangle -A ${variant.preroutingChain} -i $quotedInterface -p tcp -j TPROXY --on-port $port --on-ip ${variant.tproxyOnIp} --tproxy-mark $mark
+        ${variant.command} -t mangle -A ${variant.preroutingChain} -i $quotedInterface -p udp -j TPROXY --on-port $port --on-ip ${variant.tproxyOnIp} --tproxy-mark $mark
+        """,
+    )
+}
+
+private fun StringBuilder.appendPreroutingPrivateDestinationInterfaceTproxyRules(
+    variant: TproxyIptablesVariant,
+    interfacePrefixes: List<String>,
+    port: Int,
+    mark: String,
+) {
+    interfacePrefixes.asReversed().forEach { prefix ->
+        val quotedInterface = prefix.shellQuote()
+        variant.proxyPrivateCidrs.asReversed().forEach { cidr ->
+            val quotedCidr = cidr.shellQuote()
+            appendScript(
+                """
+                ${variant.command} -t mangle -A ${variant.preroutingChain} -d $quotedCidr -i $quotedInterface -p udp -j TPROXY --on-port $port --on-ip ${variant.tproxyOnIp} --tproxy-mark $mark
+                ${variant.command} -t mangle -A ${variant.preroutingChain} -d $quotedCidr -i $quotedInterface -p tcp -j TPROXY --on-port $port --on-ip ${variant.tproxyOnIp} --tproxy-mark $mark
+                """,
+            )
+        }
+    }
+}
+
+private fun StringBuilder.appendPreroutingPrivateDestinationMarkedTproxyRules(
+    variant: TproxyIptablesVariant,
+    port: Int,
+    mark: String,
+) {
+    variant.proxyPrivateCidrs.asReversed().forEach { cidr ->
+        val quotedCidr = cidr.shellQuote()
+        appendScript(
+            """
+            ${variant.command} -t mangle -A ${variant.preroutingChain} -d $quotedCidr -p udp -m mark --mark $mark -j TPROXY --on-port $port --on-ip ${variant.tproxyOnIp} --tproxy-mark $mark
+            ${variant.command} -t mangle -A ${variant.preroutingChain} -d $quotedCidr -p tcp -m mark --mark $mark -j TPROXY --on-port $port --on-ip ${variant.tproxyOnIp} --tproxy-mark $mark
+            """,
+        )
+    }
 }

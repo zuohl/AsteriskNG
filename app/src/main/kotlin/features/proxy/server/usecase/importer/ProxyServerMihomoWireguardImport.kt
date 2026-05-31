@@ -4,6 +4,7 @@
 package features.proxy.server.usecase.importer
 
 import features.proxy.server.model.Wireguard
+import utils.toCsvValues
 
 internal fun MihomoYamlMap.toMihomoWireguardProxyServer(): Wireguard {
     val peers = list("peers").orEmpty().mapNotNull { item -> item.asStringMap() }
@@ -46,7 +47,7 @@ private fun MihomoYamlMap.wireguardReservedString(): String {
     val value = this["reserved"] ?: return "0,0,0"
     val parts = when (value) {
         is Iterable<*> -> value.mapNotNull { item -> item.scalarString() }
-        else -> value.scalarString()?.split(',')?.map(String::trim).orEmpty()
+        else -> value.scalarString().toCsvValues()
     }.filter(String::isNotBlank)
     if (parts.isEmpty()) {
         return "0,0,0"

@@ -8,6 +8,7 @@ plugins {
 
 val generatedSrcDir: Provider<Directory> = layout.buildDirectory.dir("generated/projectInfo")
 val generatedXrayCoreJniLibsDir: Provider<Directory> = layout.buildDirectory.dir("generated/xrayCoreJniLibs")
+val generatedHevSocks5TunnelJniLibsDir: Provider<Directory> = layout.buildDirectory.dir("generated/hevSocks5TunnelJniLibs")
 
 android {
     namespace = "app"
@@ -132,6 +133,7 @@ val generateProjectInfo by tasks.registering(GenerateProjectInfoTask::class) {
     versionCode.set(getGitVersionCode())
     xrayCoreVersion.set(ProjectConfig.XRAY_CORE_VERSION)
     androidLibXrayLiteVersion.set(ProjectConfig.ANDROID_LIB_XRAY_LITE_VERSION)
+    hevSocks5TunnelVersion.set(ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION)
     outputDirectory.set(generatedSrcDir.map { it.dir("kotlin") })
 }
 
@@ -141,6 +143,7 @@ androidComponents {
             task.outputDirectory
         }
         variant.sources.jniLibs?.addStaticSourceDirectory("build/generated/xrayCoreJniLibs")
+        variant.sources.jniLibs?.addStaticSourceDirectory("build/generated/hevSocks5TunnelJniLibs")
     }
 }
 

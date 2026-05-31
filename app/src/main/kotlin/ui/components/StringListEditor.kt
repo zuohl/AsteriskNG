@@ -44,6 +44,7 @@ import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import utils.toTrimmedNonEmptyDistinctList
 
 @Composable
 internal fun StringListEditor(
@@ -64,7 +65,7 @@ internal fun StringListEditor(
         input = ""
         inputState.clearText()
     }
-    val sanitizedValues = values.sanitizeStringListItems()
+    val sanitizedValues = values.toTrimmedNonEmptyDistinctList()
     val trimmedInput = input.trim()
     val inputError = when {
         trimmedInput.isEmpty() -> null
@@ -74,7 +75,7 @@ internal fun StringListEditor(
     val canAddInput = trimmedInput.isNotEmpty() && inputError == null
     val addInput = {
         if (canAddInput) {
-            onValuesChange((sanitizedValues + trimmedInput).sanitizeStringListItems())
+            onValuesChange((sanitizedValues + trimmedInput).toTrimmedNonEmptyDistinctList())
             input = ""
             inputState.clearText()
         }
@@ -164,12 +165,6 @@ internal fun StringListStatusText(
         color = if (error) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.onSurfaceVariantSummary,
         modifier = modifier.padding(horizontal = 8.dp, vertical = 2.dp),
     )
-}
-
-internal fun List<String>.sanitizeStringListItems(): List<String> {
-    return map(String::trim)
-        .filter { it.isNotEmpty() }
-        .distinct()
 }
 
 @Composable

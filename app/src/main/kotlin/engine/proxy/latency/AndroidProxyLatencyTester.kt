@@ -14,7 +14,7 @@ import engine.xray.initializeAndroidXrayCoreEnvironment
 import engine.xray.prepareXrayCoreLogPaths
 import features.resources.runtime.prepareXrayResourceFilePaths
 import engine.network.NetworkDefaults
-import engine.network.NetworkLimits
+import engine.network.toPortOrNull
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
@@ -59,7 +59,7 @@ internal class AndroidProxyLatencyTester(
         repeat(TcpConnectAttempts) {
             currentCoroutineContext().ensureActive()
             val millis = socketConnectTime(endpoint.host, endpoint.port)
-            if (millis >= 0 && (bestMillis < 0 || millis < bestMillis)) {
+            if (millis >= 0 && (bestMillis !in 0..millis)) {
                 bestMillis = millis
             }
         }
@@ -140,9 +140,7 @@ private fun ProxyServer<*>.endpoint(): ProxyServerEndpoint? {
 }
 
 private fun endpoint(host: String, port: String): ProxyServerEndpoint? {
-    val parsedPort = port.toIntOrNull()
-        ?.takeIf { it in NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX }
-        ?: return null
+    val parsedPort = port.toPortOrNull() ?: return null
     return host.trim()
         .takeIf(String::isNotEmpty)
         ?.let { ProxyServerEndpoint(it, parsedPort) }

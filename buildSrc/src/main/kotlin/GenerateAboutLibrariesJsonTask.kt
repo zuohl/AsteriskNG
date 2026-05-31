@@ -84,6 +84,15 @@ abstract class GenerateAboutLibrariesJsonTask : DefaultTask() {
                 "https://github.com/XTLS/Xray-core",
                 listOf("MPL-2.0"),
             ),
+            library(
+                "github:heiher/hev-socks5-tunnel",
+                ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION,
+                "hev-socks5-tunnel",
+                "A tun2socks tunnel that forwards TUN traffic to a SOCKS5 server.",
+                "https://github.com/heiher/hev-socks5-tunnel",
+                "https://github.com/heiher/hev-socks5-tunnel",
+                listOf("MIT"),
+            ),
         )
 
         val gradleLibraries = project.rootProject.allprojects

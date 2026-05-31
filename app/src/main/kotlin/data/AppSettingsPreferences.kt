@@ -60,10 +60,10 @@ internal class AppSettingsPreferences(
                 KeyEnableVpnAppendHttpProxy,
                 defaults.enableVpnAppendHttpProxy,
             ),
-            vpnMtu = preferences.getString(KeyVpnMtu, defaults.vpnMtu) ?: defaults.vpnMtu,
-            vpnDefaultDns = preferences.getString(KeyVpnDefaultDns, defaults.vpnDefaultDns) ?: defaults.vpnDefaultDns,
-            vpnIpv4Cidr = preferences.getString(KeyVpnIpv4Cidr, defaults.vpnIpv4Cidr) ?: defaults.vpnIpv4Cidr,
-            vpnIpv6Cidr = preferences.getString(KeyVpnIpv6Cidr, defaults.vpnIpv6Cidr) ?: defaults.vpnIpv6Cidr,
+            tunMtu = preferences.getString(KeyTunMtu, defaults.tunMtu) ?: defaults.tunMtu,
+            tunDefaultDns = preferences.getString(KeyTunDefaultDns, defaults.tunDefaultDns) ?: defaults.tunDefaultDns,
+            tunIpv4Cidr = preferences.getString(KeyTunIpv4Cidr, defaults.tunIpv4Cidr) ?: defaults.tunIpv4Cidr,
+            tunIpv6Cidr = preferences.getString(KeyTunIpv6Cidr, defaults.tunIpv6Cidr) ?: defaults.tunIpv6Cidr,
             nextProxyServerId = preferences.getInt(KeyNextProxyServerId, defaults.nextProxyServerId),
             selectedProxyServerId = preferences.getInt(KeySelectedProxyServerId, defaults.selectedProxyServerId),
             routeDomainStrategy = preferences.getInt(KeyRouteDomainStrategy, defaults.routeDomainStrategy),
@@ -129,9 +129,9 @@ internal class AppSettingsPreferences(
                 KeyTransparentProxyPort,
                 defaults.transparentProxyPort,
             ) ?: defaults.transparentProxyPort,
-            enableTproxyBootScript = preferences.getBoolean(
-                KeyEnableTproxyBootScript,
-                defaults.enableTproxyBootScript,
+            enableRootBootScript = preferences.getBoolean(
+                KeyEnableRootBootScript,
+                defaults.enableRootBootScript,
             ),
             enableSocks5Proxy = preferences.getBoolean(KeyEnableSocks5Proxy, defaults.enableSocks5Proxy),
             socks5ProxyPort = preferences.getString(
@@ -166,10 +166,10 @@ internal class AppSettingsPreferences(
             .putString(KeyLocalProxyUsername, state.localProxyUsername)
             .putString(KeyLocalProxyPassword, state.localProxyPassword)
             .putBoolean(KeyEnableVpnAppendHttpProxy, state.enableVpnAppendHttpProxy)
-            .putString(KeyVpnMtu, state.vpnMtu)
-            .putString(KeyVpnDefaultDns, state.vpnDefaultDns)
-            .putString(KeyVpnIpv4Cidr, state.vpnIpv4Cidr)
-            .putString(KeyVpnIpv6Cidr, state.vpnIpv6Cidr)
+            .putString(KeyTunMtu, state.tunMtu)
+            .putString(KeyTunDefaultDns, state.tunDefaultDns)
+            .putString(KeyTunIpv4Cidr, state.tunIpv4Cidr)
+            .putString(KeyTunIpv6Cidr, state.tunIpv6Cidr)
             .putInt(KeyNextProxyServerId, state.nextProxyServerId)
             .putInt(KeySelectedProxyServerId, state.selectedProxyServerId)
             .putInt(KeyRouteDomainStrategy, state.routeDomainStrategy)
@@ -202,7 +202,7 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyEnableDirectDnsForProxyServerDomains, state.enableDirectDnsForProxyServerDomains)
             .putStringList(KeyDnsHosts, state.dnsHosts)
             .putString(KeyTransparentProxyPort, state.transparentProxyPort)
-            .putBoolean(KeyEnableTproxyBootScript, state.enableTproxyBootScript)
+            .putBoolean(KeyEnableRootBootScript, state.enableRootBootScript)
             .putBoolean(KeyEnableSocks5Proxy, state.enableSocks5Proxy)
             .putString(KeySocks5ProxyPort, state.socks5ProxyPort)
             .putBoolean(KeyEnableHttpProxy, state.enableHttpProxy)
@@ -254,10 +254,10 @@ private const val KeyLocalProxyListenAllInterfaces = "local_proxy_listen_all_int
 private const val KeyLocalProxyUsername = "local_proxy_username"
 private const val KeyLocalProxyPassword = "local_proxy_password"
 private const val KeyEnableVpnAppendHttpProxy = "enable_vpn_append_http_proxy"
-private const val KeyVpnMtu = "vpn_mtu"
-private const val KeyVpnDefaultDns = "vpn_default_dns"
-private const val KeyVpnIpv4Cidr = "vpn_ipv4_cidr"
-private const val KeyVpnIpv6Cidr = "vpn_ipv6_cidr"
+private const val KeyTunMtu = "tun_mtu"
+private const val KeyTunDefaultDns = "tun_default_dns"
+private const val KeyTunIpv4Cidr = "tun_ipv4_cidr"
+private const val KeyTunIpv6Cidr = "tun_ipv6_cidr"
 private const val KeyNextProxyServerId = "next_proxy_server_id"
 private const val KeySelectedProxyServerId = "selected_proxy_server_id"
 private const val KeyRouteDomainStrategy = "route_domain_strategy"
@@ -290,7 +290,7 @@ private const val KeyDirectDnsDomains = "direct_dns_domains"
 private const val KeyEnableDirectDnsForProxyServerDomains = "enable_direct_dns_for_proxy_server_domains"
 private const val KeyDnsHosts = "dns_hosts"
 private const val KeyTransparentProxyPort = "transparent_proxy_port"
-private const val KeyEnableTproxyBootScript = "enable_tproxy_boot_script"
+private const val KeyEnableRootBootScript = "enable_root_boot_script"
 private const val KeyEnableSocks5Proxy = "enable_socks5_proxy"
 private const val KeySocks5ProxyPort = "socks5_proxy_port"
 private const val KeyEnableHttpProxy = "enable_http_proxy"

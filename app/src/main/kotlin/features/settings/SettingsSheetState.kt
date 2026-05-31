@@ -25,8 +25,8 @@ internal class SettingsSheetState(
     var showLocalProxySettings by mutableStateOf(false)
     var localProxySettingsDraft by mutableStateOf(LocalProxySettingsDraft())
 
-    var showVpnSettings by mutableStateOf(false)
-    var vpnSettingsDraft by mutableStateOf(VpnSettingsDraft())
+    var showTunSettings by mutableStateOf(false)
+    var tunSettingsDraft by mutableStateOf(TunSettingsDraft())
 
     var showDnsSettings by mutableStateOf(false)
     var dnsSettingsDraft by mutableStateOf(DnsSettingsDraft())
@@ -59,9 +59,9 @@ internal class SettingsSheetState(
         showLocalProxySettings = true
     }
 
-    fun openVpnSettings(appState: AppState) {
-        vpnSettingsDraft = appState.toVpnSettingsDraft()
-        showVpnSettings = true
+    fun openTunSettings(appState: AppState) {
+        tunSettingsDraft = appState.toTunSettingsDraft()
+        showTunSettings = true
     }
 
     fun openDnsSettings(appState: AppState) {

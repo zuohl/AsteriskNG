@@ -10,7 +10,7 @@ import engine.xray.XrayTags
 import engine.xray.toJsonStringArray
 import engine.xray.xraySniffingDestOverrides
 import engine.network.NetworkDefaults
-import engine.network.NetworkLimits
+import engine.network.toPortOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.InetAddress
@@ -56,9 +56,7 @@ internal object VpnLocalProxyRuntime {
 }
 
 internal fun AppState.toVpnLocalProxyOptions(): VpnLocalProxyOptions {
-    val configuredPort = localProxyPort.toIntOrNull()
-        ?.takeIf { it in NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX }
-        ?: VpnDefaults.LOCAL_PROXY_PORT
+    val configuredPort = localProxyPort.toPortOrNull() ?: VpnDefaults.LOCAL_PROXY_PORT
     val listenAddress = if (localProxyListenAllInterfaces) {
         LocalProxyAllInterfacesAddress
     } else {

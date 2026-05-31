@@ -26,6 +26,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import app.modes.RunModeTun2Socks
+import app.modes.RunModeVpnService
 import app.ProjectInfo
 import app.R
 import features.settings.sheets.externalInterfacesSummary
@@ -33,9 +35,9 @@ import features.settings.sheets.fragmentSettingsSummary
 import features.settings.sheets.ignoredInterfacesSummary
 import features.settings.sheets.muxSettingsSummary
 import features.settings.sheets.privateAddressCidrsSummary
-import features.settings.sheets.vpnSettingsSummary
+import features.settings.sheets.tunSettingsSummary
 import features.settings.usecase.SwitchRunModeResult
-import features.settings.usecase.TproxyBootScriptResult
+import features.settings.usecase.RootBootScriptResult
 import kotlinx.coroutines.launch
 import app.navigation.Route
 import androidx.compose.ui.res.stringResource
@@ -94,12 +96,12 @@ private fun SettingsContent(
     val services = LocalAppServices.current
     val networkInterfaces = services.networkInterfaces
     val switchRunModeUseCase = services.switchRunModeUseCase
-    val tproxyBootScriptUseCase = services.tproxyBootScriptUseCase
+    val rootBootScriptUseCase = services.rootBootScriptUseCase
     val tipNotifier = services.tipNotifier
     val scope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
     var runModeSwitchInProgress by rememberSaveable { mutableStateOf(false) }
-    var tproxyBootScriptSwitchInProgress by rememberSaveable { mutableStateOf(false) }
+    var rootBootScriptSwitchInProgress by rememberSaveable { mutableStateOf(false) }
     val contentPadding = pageContentPaddingWithCutout(
         innerPadding = innerPadding,
         outerPadding = outerPadding,
@@ -124,6 +126,7 @@ private fun SettingsContent(
     val runModeOptions = listOf(
         stringResource(R.string.settings_run_mode_vpn_service),
         stringResource(R.string.settings_run_mode_tproxy),
+        stringResource(R.string.settings_run_mode_tun2socks),
     )
     val keyColorOptions = listOf(
         stringResource(R.string.theme_color_default),
@@ -135,13 +138,15 @@ private fun SettingsContent(
         stringResource(R.string.theme_color_rose),
         stringResource(R.string.theme_color_cyan),
     ).take(KeyColors.size + 1)
-    val tproxyRootRequiredMessage = stringResource(R.string.settings_tproxy_root_required)
-    val tproxyBootScriptFailedMessage = stringResource(R.string.settings_tproxy_boot_script_failed)
+    val rootRequiredMessage = stringResource(R.string.settings_root_required)
+    val rootBootScriptFailedMessage = stringResource(R.string.settings_root_boot_script_failed)
     val serviceStoppedMessage = stringResource(R.string.proxy_server_list_service_stopped)
     val selectServerFirstMessage = stringResource(R.string.proxy_server_list_select_first)
     val ignoredInterfacesErrorDetail = stringResource(R.string.settings_ignored_interfaces_error_detail)
     val inboundProxySummary = inboundProxySummary(
+        useTun2SocksProxyPort = appState.runMode == RunModeTun2Socks,
         transparentProxyPort = appState.transparentProxyPort,
+        socks5ProxyPort = appState.socks5ProxyPort,
         enableSocks5Proxy = appState.enableSocks5Proxy,
         enableHttpProxy = appState.enableHttpProxy,
     )
@@ -153,11 +158,12 @@ private fun SettingsContent(
     val externalInterfacesSummary = externalInterfacesSummary(appState.externalInterfaces)
     val ignoredInterfacesSummary = ignoredInterfacesSummary(appState.ignoredInterfaces)
     val privateAddressCidrsSummary = privateAddressCidrsSummary(appState.privateAddressCidrs)
-    val vpnSettingsSummary = vpnSettingsSummary(
-        mtu = appState.vpnMtu,
-        defaultDns = appState.vpnDefaultDns,
-        ipv4Cidr = appState.vpnIpv4Cidr,
-        ipv6Cidr = appState.vpnIpv6Cidr,
+    val tunSettingsSummary = tunSettingsSummary(
+        mtu = appState.tunMtu,
+        defaultDns = appState.tunDefaultDns,
+        ipv4Cidr = appState.tunIpv4Cidr,
+        ipv6Cidr = appState.tunIpv6Cidr,
+        showDefaultDns = appState.runMode == RunModeVpnService,
     )
     val muxSettingsSummary = muxSettingsSummary(
         enabled = appState.enableMux,
@@ -251,14 +257,14 @@ private fun SettingsContent(
                                                 state.copy(
                                                     runMode = result.runMode,
                                                     proxyRunning = result.proxyRunning,
-                                                    enableTproxyBootScript = false,
+                                                    enableRootBootScript = false,
                                                 )
                                             }
                                         }
 
                                         is SwitchRunModeResult.RootUnavailable -> {
                                             updateAppState { state -> state.copy(proxyRunning = result.proxyRunning) }
-                                            tipNotifier.show(tproxyRootRequiredMessage)
+                                            tipNotifier.show(rootRequiredMessage)
                                         }
 
                                         is SwitchRunModeResult.StopFailed -> {
@@ -278,9 +284,9 @@ private fun SettingsContent(
                     runMode = appState.runMode,
                     localProxySettingsSummary = localProxySettingsSummary,
                     enableVpnAppendHttpProxy = appState.enableVpnAppendHttpProxy,
-                    vpnSettingsSummary = vpnSettingsSummary,
+                    tunSettingsSummary = tunSettingsSummary,
                     inboundProxySummary = inboundProxySummary,
-                    enableTproxyBootScript = appState.enableTproxyBootScript,
+                    enableRootBootScript = appState.enableRootBootScript,
                     externalInterfacesSummary = externalInterfacesSummary,
                     ignoredInterfacesSummary = ignoredInterfacesSummary,
                     privateAddressCidrsSummary = privateAddressCidrsSummary,
@@ -288,34 +294,34 @@ private fun SettingsContent(
                     onEnableVpnAppendHttpProxyChange = { enabled ->
                         updateAppState { state -> state.copy(enableVpnAppendHttpProxy = enabled) }
                     },
-                    onOpenVpnSettings = { sheetState.openVpnSettings(appState) },
+                    onOpenTunSettings = { sheetState.openTunSettings(appState) },
                     onOpenProxySettings = { sheetState.openProxySettings(appState) },
-                    onEnableTproxyBootScriptChange = { enabled ->
-                        if (!tproxyBootScriptSwitchInProgress) {
+                    onEnableRootBootScriptChange = { enabled ->
+                        if (!rootBootScriptSwitchInProgress) {
                             scope.launch {
-                                tproxyBootScriptSwitchInProgress = true
+                                rootBootScriptSwitchInProgress = true
                                 try {
-                                    when (val result = tproxyBootScriptUseCase.setEnabled(appState, enabled)) {
-                                        TproxyBootScriptResult.Success -> {
+                                    when (val result = rootBootScriptUseCase.setEnabled(appState, enabled)) {
+                                        RootBootScriptResult.Success -> {
                                             updateAppState { state ->
-                                                state.copy(enableTproxyBootScript = enabled)
+                                                state.copy(enableRootBootScript = enabled)
                                             }
                                         }
 
-                                        TproxyBootScriptResult.MissingServer -> {
+                                        RootBootScriptResult.MissingServer -> {
                                             tipNotifier.show(selectServerFirstMessage)
                                         }
 
-                                        TproxyBootScriptResult.RootUnavailable -> {
-                                            tipNotifier.show(tproxyRootRequiredMessage)
+                                        RootBootScriptResult.RootUnavailable -> {
+                                            tipNotifier.show(rootRequiredMessage)
                                         }
 
-                                        is TproxyBootScriptResult.Failed -> {
-                                            tipNotifier.showError(result.error, tproxyBootScriptFailedMessage)
+                                        is RootBootScriptResult.Failed -> {
+                                            tipNotifier.showError(result.error, rootBootScriptFailedMessage)
                                         }
                                     }
                                 } finally {
-                                    tproxyBootScriptSwitchInProgress = false
+                                    rootBootScriptSwitchInProgress = false
                                 }
                             }
                         }

@@ -39,7 +39,7 @@ internal object VpnXrayConfigFactory {
         val appState = request.appState
         val coreLogPaths = context.prepareXrayCoreLogPaths()
         val resourceFilePaths = context.prepareXrayResourceFilePaths()
-        val tunOptions = appState.toVpnTunOptions()
+        val tunOptions = appState.toTunOptions()
         val localProxyOptions = appState.toVpnLocalProxyOptions()
         val appendHttpProxyOptions = appState.toVpnAppendHttpProxyOptions(localProxyOptions)
         val outboundPlan = appState.buildXrayOutboundPlan(request.selectedServer)

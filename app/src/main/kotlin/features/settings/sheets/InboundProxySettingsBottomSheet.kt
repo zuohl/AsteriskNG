@@ -24,6 +24,8 @@ import top.yukonga.miuix.kmp.preference.SwitchPreference
 @Composable
 internal fun ProxySettingsBottomSheet(
     show: Boolean,
+    useTun2SocksProxyPort: Boolean,
+    lockInboundSettings: Boolean,
     transparentProxyPort: String,
     enableSocks5Proxy: Boolean,
     socks5ProxyPort: String,
@@ -62,41 +64,71 @@ internal fun ProxySettingsBottomSheet(
         },
         onDismissRequest = onDismissRequest,
     ) {
-        key(show) {
+        key(show, useTun2SocksProxyPort) {
             SettingsSheetContent {
-                ProxyPortTextField(
-                    value = transparentProxyPort,
-                    onValueChange = onTransparentProxyPortChange,
-                    label = stringResource(R.string.settings_transparent_proxy_port),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp),
-                )
-                SwitchPreference(
-                    title = stringResource(R.string.settings_socks5_proxy),
-                    summary = stringResource(R.string.settings_socks5_proxy_summary),
-                    checked = enableSocks5Proxy,
-                    onCheckedChange = onEnableSocks5ProxyChange,
-                )
-                AnimatedVisibility(
-                    visible = enableSocks5Proxy,
-                    enter = fadeIn() + expandVertically(),
-                    exit = shrinkVertically() + fadeOut(),
-                ) {
+                if (useTun2SocksProxyPort) {
                     ProxyPortTextField(
                         value = socks5ProxyPort,
-                        onValueChange = onSocks5ProxyPortChange,
+                        onValueChange = if (lockInboundSettings) {
+                            {}
+                        } else {
+                            onSocks5ProxyPortChange
+                        },
                         label = stringResource(R.string.settings_socks5_proxy_port),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 12.dp),
+                        enabled = !lockInboundSettings,
                     )
+                } else {
+                    ProxyPortTextField(
+                        value = transparentProxyPort,
+                        onValueChange = if (lockInboundSettings) {
+                            {}
+                        } else {
+                            onTransparentProxyPortChange
+                        },
+                        label = stringResource(R.string.settings_transparent_proxy_port),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        enabled = !lockInboundSettings,
+                    )
+                }
+                if (!useTun2SocksProxyPort) {
+                    SwitchPreference(
+                        title = stringResource(R.string.settings_socks5_proxy),
+                        summary = stringResource(R.string.settings_socks5_proxy_summary),
+                        checked = enableSocks5Proxy,
+                        onCheckedChange = onEnableSocks5ProxyChange,
+                        enabled = !lockInboundSettings,
+                    )
+                    AnimatedVisibility(
+                        visible = enableSocks5Proxy,
+                        enter = fadeIn() + expandVertically(),
+                        exit = shrinkVertically() + fadeOut(),
+                    ) {
+                        ProxyPortTextField(
+                            value = socks5ProxyPort,
+                            onValueChange = if (lockInboundSettings) {
+                                {}
+                            } else {
+                                onSocks5ProxyPortChange
+                            },
+                            label = stringResource(R.string.settings_socks5_proxy_port),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            enabled = !lockInboundSettings,
+                        )
+                    }
                 }
                 SwitchPreference(
                     title = stringResource(R.string.settings_http_proxy),
                     summary = stringResource(R.string.settings_http_proxy_summary),
                     checked = enableHttpProxy,
                     onCheckedChange = onEnableHttpProxyChange,
+                    enabled = !lockInboundSettings,
                 )
                 AnimatedVisibility(
                     visible = enableHttpProxy,
@@ -105,11 +137,16 @@ internal fun ProxySettingsBottomSheet(
                 ) {
                     ProxyPortTextField(
                         value = httpProxyPort,
-                        onValueChange = onHttpProxyPortChange,
+                        onValueChange = if (lockInboundSettings) {
+                            {}
+                        } else {
+                            onHttpProxyPortChange
+                        },
                         label = stringResource(R.string.settings_http_proxy_port),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 12.dp),
+                        enabled = !lockInboundSettings,
                     )
                 }
             }
@@ -123,12 +160,14 @@ private fun ProxyPortTextField(
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     SheetTextField(
         value = value,
         onValueChange = onValueChange,
         label = label,
         modifier = modifier,
+        enabled = enabled,
         keyboardOptions = fiveDigitKeyboardOptions(),
         sanitizeInput = ::sanitizeFiveDigitInput,
     )

@@ -11,6 +11,7 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import utils.toCsvValues
 
 @Serializable
 data class Wireguard(
@@ -34,9 +35,7 @@ data class Wireguard(
             protocol = ProxyServerConstants.PROTOCOL_WIREGUARD,
             settings = buildJsonObject {
                 put("secretKey", secretKey)
-                val addresses = address.split(',')
-                    .map(String::trim)
-                    .filter(String::isNotEmpty)
+                val addresses = address.toCsvValues()
                 if (addresses.isNotEmpty()) {
                     putJsonArray("address") {
                         addresses.forEach { add(it) }
@@ -52,8 +51,7 @@ data class Wireguard(
                     )
                 }
                 mtu.toIntOrNull()?.let { put("mtu", it) }
-                val reservedBytes = reserved.split(',')
-                    .map(String::trim)
+                val reservedBytes = reserved.toCsvValues()
                     .mapNotNull(String::toIntOrNull)
                 if (reservedBytes.isNotEmpty()) {
                     putJsonArray("reserved") {

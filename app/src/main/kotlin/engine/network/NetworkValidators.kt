@@ -3,6 +3,7 @@
 
 package engine.network
 
+import utils.toIntInRangeOrNull
 
 data class NetworkCidrAddress(
     val address: String,
@@ -57,15 +58,25 @@ fun isPortList(value: String): Boolean {
     return trimmed.split(",").all { segment ->
         val bounds = segment.trim().split("-")
         when (bounds.size) {
-            1 -> parsePort(bounds[0]) != null
+            1 -> bounds[0].toPortOrNull() != null
             2 -> {
-                val start = parsePort(bounds[0])
-                val end = parsePort(bounds[1])
+                val start = bounds[0].toPortOrNull()
+                val end = bounds[1].toPortOrNull()
                 start != null && end != null && start <= end
             }
             else -> false
         }
     }
+}
+
+fun Int.isPort(): Boolean {
+    return this in NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX
+}
+
+fun String.toPortOrNull(): Int? {
+    val value = trim()
+    if (value.isEmpty() || !value.all(Char::isDigit)) return null
+    return value.toIntInRangeOrNull(NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX)
 }
 
 fun isIpv4Address(address: String): Boolean {
@@ -90,11 +101,6 @@ fun isIpv6Address(address: String): Boolean {
     val left = parseIpv6Hextets(compressedParts[0]) ?: return false
     val right = parseIpv6Hextets(compressedParts[1]) ?: return false
     return left.size + right.size < 8
-}
-
-private fun parsePort(value: String): Int? {
-    if (value.isEmpty() || !value.all(Char::isDigit)) return null
-    return value.toIntOrNull()?.takeIf { it in NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX }
 }
 
 private fun parsePrefixLength(prefix: String): Int? {

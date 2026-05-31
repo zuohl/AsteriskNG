@@ -12,7 +12,7 @@ import app.ResourceFilesStatus
 import app.ResourceFileUpdateSource
 import engine.vpn.LocalProxyLoopbackAddress
 import engine.vpn.VpnLocalProxyRuntime
-import engine.network.NetworkLimits
+import engine.network.isPort
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import features.resources.ResourceFileUpdateOptions
@@ -193,7 +193,7 @@ private fun ResourceFileUpdateOptions.toDownloadProxy(): AndroidResourceFileDown
     if (!useRunningProxy) return null
     val runtimeOptions = VpnLocalProxyRuntime.current()
     val port = runtimeOptions?.port
-        ?: fallbackProxyPort?.takeIf { it in NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX }
+        ?: fallbackProxyPort?.takeIf(Int::isPort)
         ?: return null
     return AndroidResourceFileDownloadProxy(
         host = LocalProxyLoopbackAddress,

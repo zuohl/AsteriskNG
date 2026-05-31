@@ -3,23 +3,31 @@
 
 package features.settings.usecase
 
+import android.content.Context
 import app.AppState
+import app.modes.RunModeTun2Socks
 import app.modes.RunModeTproxy
 import app.modes.RunModeVpnService
 import engine.proxy.AndroidProxyEngine
+import engine.tun2socks.deleteHevSocks5TunnelLogFile
+import features.logs.AndroidAppLogger
 import system.AndroidRootShellGateway
 
 internal class SwitchRunModeUseCase(
+    context: Context,
     private val proxyEngine: AndroidProxyEngine,
     private val rootAccess: AndroidRootShellGateway,
-    private val tproxyBootScriptUseCase: TproxyBootScriptUseCase,
+    private val rootBootScriptUseCase: RootBootScriptUseCase,
 ) {
+    private val appContext = context.applicationContext
+
     suspend fun switchRunMode(
         currentState: AppState,
         targetRunMode: Int,
     ): SwitchRunModeResult {
         val normalizedTargetMode = when (targetRunMode) {
             RunModeTproxy -> RunModeTproxy
+            RunModeTun2Socks -> RunModeTun2Socks
             else -> RunModeVpnService
         }
         if (currentState.runMode == normalizedTargetMode) {
@@ -29,31 +37,53 @@ internal class SwitchRunModeUseCase(
             )
         }
 
-        val stoppedRunning = runCatching { proxyEngine.stop() }
-            .getOrElse { error -> return SwitchRunModeResult.StopFailed(error) }
-            .running
+        val targetRequiresRoot = normalizedTargetMode.isRootRunMode()
+        val stopRequiresRoot = currentState.proxyRunning && currentState.runMode.isRootRunMode()
+        val needsRootAccess = stopRequiresRoot || currentState.enableRootBootScript || targetRequiresRoot
+        if (needsRootAccess && !rootAccess.hasRootAccess()) {
+            return SwitchRunModeResult.RootUnavailable(proxyRunning = currentState.proxyRunning)
+        }
 
-        when (val result = tproxyBootScriptUseCase.uninstall()) {
-            TproxyBootScriptResult.Success,
-            TproxyBootScriptResult.MissingServer -> Unit
+        val stoppedRunning = if (currentState.proxyRunning) {
+            runCatching { proxyEngine.stopCurrentRunMode(currentState.runMode) }
+                .getOrElse { error -> return SwitchRunModeResult.StopFailed(error) }
+                .running
+        } else {
+            false
+        }
 
-            TproxyBootScriptResult.RootUnavailable -> {
-                return SwitchRunModeResult.RootUnavailable(proxyRunning = stoppedRunning)
-            }
+        if (currentState.enableRootBootScript) {
+            when (val result = rootBootScriptUseCase.uninstall(rootAccessVerified = true)) {
+                RootBootScriptResult.Success,
+                RootBootScriptResult.MissingServer -> Unit
 
-            is TproxyBootScriptResult.Failed -> {
-                return SwitchRunModeResult.StopFailed(result.error)
+                RootBootScriptResult.RootUnavailable -> {
+                    return SwitchRunModeResult.RootUnavailable(proxyRunning = stoppedRunning)
+                }
+
+                is RootBootScriptResult.Failed -> {
+                    return SwitchRunModeResult.StopFailed(result.error)
+                }
             }
         }
 
-        if (normalizedTargetMode == RunModeTproxy && !rootAccess.hasRootAccess()) {
-            return SwitchRunModeResult.RootUnavailable(proxyRunning = stoppedRunning)
+        if (normalizedTargetMode != RunModeTun2Socks) {
+            deleteHevSocks5TunnelLog()
         }
 
         return SwitchRunModeResult.Success(
             runMode = normalizedTargetMode,
             proxyRunning = stoppedRunning,
         )
+    }
+
+    private fun Int.isRootRunMode(): Boolean {
+        return this == RunModeTproxy || this == RunModeTun2Socks
+    }
+
+    private fun deleteHevSocks5TunnelLog() {
+        runCatching { appContext.deleteHevSocks5TunnelLogFile() }
+            .onFailure { error -> AndroidAppLogger.warn(LogTag, "Failed to delete tun2socks log", error) }
     }
 }
 
@@ -71,3 +101,5 @@ internal sealed interface SwitchRunModeResult {
         val error: Throwable,
     ) : SwitchRunModeResult
 }
+
+private const val LogTag = "SwitchRunMode"

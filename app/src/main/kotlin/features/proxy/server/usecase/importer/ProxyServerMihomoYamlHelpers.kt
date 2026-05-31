@@ -3,6 +3,8 @@
 
 package features.proxy.server.usecase.importer
 
+import utils.toCsvValues
+
 internal typealias MihomoYamlMap = Map<String, Any?>
 
 internal fun MihomoYamlMap.requiredString(vararg names: String): String {
@@ -64,7 +66,7 @@ internal fun MihomoYamlMap.hasTlsFields(): Boolean {
 
 internal fun MihomoYamlMap.v2raySecurity(defaultSecurity: String): String {
     val realityOpts = map("reality-opts")
-    if (realityOpts != null && realityOpts.isNotEmpty()) {
+    if (!realityOpts.isNullOrEmpty()) {
         return "reality"
     }
     return if (defaultSecurity == "tls" || boolean("tls") == true || hasTlsFields()) {
@@ -93,7 +95,7 @@ internal fun Any?.scalarString(): String? {
 internal fun Any?.scalarStringList(): List<String> {
     return when (this) {
         is Iterable<*> -> mapNotNull { item -> item.scalarString() }
-        else -> scalarString()?.split(',')?.map(String::trim).orEmpty()
+        else -> scalarString().toCsvValues()
     }.filter(String::isNotBlank)
 }
 

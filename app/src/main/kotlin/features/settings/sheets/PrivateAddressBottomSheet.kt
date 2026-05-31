@@ -16,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import ui.text.formatTemplate
+import utils.toTrimmedNonEmptyList
 
 @Composable
 internal fun privateAddressCidrsSummary(cidrs: List<String>): String {
@@ -28,7 +29,7 @@ internal fun privateAddressCidrsSummary(cidrs: List<String>): String {
 }
 
 internal fun List<String>.sanitizePrivateAddressCidrs(): List<String> {
-    return map(String::trim)
+    return toTrimmedNonEmptyList()
         .filter(::isCidrAddress)
         .distinct()
 }

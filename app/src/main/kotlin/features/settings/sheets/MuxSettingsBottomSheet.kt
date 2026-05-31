@@ -29,6 +29,7 @@ import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import ui.text.formatTemplate
+import utils.toIntInRangeOrNull
 
 @Composable
 internal fun muxSettingsSummary(
@@ -217,13 +218,11 @@ private fun muxXudpConcurrencyDisplay(value: String): String {
 }
 
 private fun isMuxConcurrencyValid(value: String): Boolean {
-    val concurrency = value.toIntOrNull() ?: return false
-    return concurrency in -1..MaxMuxConcurrency
+    return value.toIntInRangeOrNull(-1..MaxMuxConcurrency) != null
 }
 
 private fun isMuxXudpConcurrencyValid(value: String): Boolean {
-    val concurrency = value.toIntOrNull() ?: return false
-    return concurrency in -1..MaxMuxXudpConcurrency
+    return value.toIntInRangeOrNull(-1..MaxMuxXudpConcurrency) != null
 }
 
 private fun normalizeMuxInteger(value: String, fallback: String = ""): String {

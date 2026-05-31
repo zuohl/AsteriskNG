@@ -3,7 +3,7 @@
 
 package features.proxy.server.model
 
-import engine.network.NetworkLimits
+import engine.network.toPortOrNull
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -11,6 +11,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import utils.toTrimmedNonEmptyDistinctList
 
 @Serializable
 data class Custom(
@@ -111,8 +112,7 @@ private fun JsonArray.customProxyServerHosts(): List<String> {
         .filter { outbound -> outbound.stringValue("tag") !in CustomInfrastructureOutboundTags }
         .flatMap { outbound -> outbound.proxyServerHosts() }
         .map { host -> host.normalizedHostAddress() }
-        .filter(String::isNotEmpty)
-        .distinct()
+        .toTrimmedNonEmptyDistinctList()
 }
 
 private fun List<JsonObject>.firstEndpoint(predicate: (JsonObject) -> Boolean): CustomProxyOutboundEndpoint? {
@@ -200,9 +200,7 @@ private fun String.endpointHostOrNull(): String? {
 
 private fun endpoint(host: String, port: String): CustomProxyOutboundEndpoint? {
     val normalizedHost = host.normalizedHostAddress().takeIf(String::isNotEmpty) ?: return null
-    val parsedPort = port.trim().toIntOrNull()
-        ?.takeIf { it in NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX }
-        ?: return null
+    val parsedPort = port.toPortOrNull() ?: return null
     return CustomProxyOutboundEndpoint(normalizedHost, parsedPort)
 }
 

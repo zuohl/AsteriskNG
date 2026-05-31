@@ -3,10 +3,12 @@
 
 package features.proxy.server.model
 
+import engine.network.isPort
 import engine.network.NetworkLimits
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlin.io.encoding.Base64
+import utils.toIntInRangeOrNull
 
 private val DomainLabelRegex = Regex("[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?")
 private val HexRegex = Regex("[0-9a-fA-F]+")
@@ -63,7 +65,7 @@ internal fun validatePort(port: String, fieldName: String = "server port"): Int 
     val value = port.trim()
     validateRequired(value, fieldName)
     val number = value.toIntOrNull() ?: proxyValidationError(ProxyServerValidationError.NumberRequired, fieldName)
-    if (number !in NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX) {
+    if (!number.isPort()) {
         proxyValidationError(
             ProxyServerValidationError.PortOutOfRange,
             NetworkLimits.PORT_MIN,
@@ -126,7 +128,7 @@ internal fun validateV2RayParameters(params: V2RayParameters) {
             validateOptionalIntRange(params.tti, "mKCP TTI", KcpTtiMin, KcpTtiMax)
         }
 
-        "ws", "websocket", "httpupgrade", "xhttp", "splithttp" -> validateOptionalPath(params.path, "${type} path")
+        "ws", "websocket", "httpupgrade", "xhttp", "splithttp" -> validateOptionalPath(params.path, "$type path")
         "grpc" -> validateAllowed(params.mode ?: "gun", "gRPC mode", setOf("gun", "multi"))
     }
     if (type in setOf("xhttp", "splithttp")) {
@@ -178,8 +180,7 @@ internal fun validateWireguardReserved(reserved: String) {
         proxyValidationError(ProxyServerValidationError.WireguardReservedCountInvalid)
     }
     parts.forEach { part ->
-        val value = part.trim().toIntOrNull()
-        if (value == null || value !in NetworkLimits.IPV4_OCTET_MIN..NetworkLimits.IPV4_OCTET_MAX) {
+        if (part.toIntInRangeOrNull(NetworkLimits.IPV4_OCTET_MIN..NetworkLimits.IPV4_OCTET_MAX) == null) {
             proxyValidationError(
                 ProxyServerValidationError.WireguardReservedValueInvalid,
                 NetworkLimits.IPV4_OCTET_MIN,
@@ -213,8 +214,10 @@ internal fun validateWireguardAddresses(addresses: String) {
 
 internal fun validateMtu(mtu: String) {
     if (mtu.isBlank()) return
-    val value = mtu.toIntOrNull() ?: proxyValidationError(ProxyServerValidationError.MtuNumberRequired)
-    if (value !in WireguardMtuMin..WireguardMtuMax) {
+    if (mtu.toIntOrNull() == null) {
+        proxyValidationError(ProxyServerValidationError.MtuNumberRequired)
+    }
+    if (mtu.toIntInRangeOrNull(WireguardMtuMin..WireguardMtuMax) == null) {
         proxyValidationError(ProxyServerValidationError.MtuOutOfRange, WireguardMtuMin, WireguardMtuMax)
     }
 }
@@ -326,10 +329,10 @@ private fun validateVlessPaddingBlock(block: String, fieldName: String, firstPad
     if (parts.size != 3) {
         proxyValidationError(ProxyServerValidationError.VlessPaddingFormatInvalid)
     }
-    val probability = parts[0].toIntOrNull()
-    val min = parts[1].toIntOrNull()
+    val probability = parts[0].toIntInRangeOrNull(0..100)
+    val min = parts[1].toIntInRangeOrNull(0..Int.MAX_VALUE)
     val max = parts[2].toIntOrNull()
-    if (probability == null || probability !in 0..100 || min == null || max == null || min < 0 || max < min) {
+    if (probability == null || min == null || max == null || max < min) {
         proxyValidationError(ProxyServerValidationError.VlessPaddingRangeInvalid)
     }
     if (firstPadding && (probability != 100 || min <= 0)) {
@@ -339,8 +342,10 @@ private fun validateVlessPaddingBlock(block: String, fieldName: String, firstPad
 
 private fun validateOptionalIntRange(value: String?, fieldName: String, min: Int, max: Int) {
     if (value.isNullOrBlank()) return
-    val number = value.toIntOrNull() ?: proxyValidationError(ProxyServerValidationError.NumberRequired, fieldName)
-    if (number !in min..max) {
+    if (value.toIntOrNull() == null) {
+        proxyValidationError(ProxyServerValidationError.NumberRequired, fieldName)
+    }
+    if (value.toIntInRangeOrNull(min..max) == null) {
         proxyValidationError(ProxyServerValidationError.ValueOutOfRange, min, max)
     }
 }

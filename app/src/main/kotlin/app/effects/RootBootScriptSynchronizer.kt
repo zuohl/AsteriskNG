@@ -6,44 +6,46 @@ package app.effects
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import app.AppState
+import app.modes.RunModeTproxy
+import app.modes.RunModeTun2Socks
 import data.AndroidAppStateStore
 import features.logs.AndroidAppLogger
 import features.proxy.server.model.ProxyServer
 import features.routing.model.RouteRule
-import features.settings.usecase.TproxyBootScriptResult
-import features.settings.usecase.TproxyBootScriptUseCase
+import features.settings.usecase.RootBootScriptResult
+import features.settings.usecase.RootBootScriptUseCase
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
 @Composable
-internal fun TproxyBootScriptSynchronizer(
+internal fun RootBootScriptSynchronizer(
     stateStore: AndroidAppStateStore,
-    tproxyBootScriptUseCase: TproxyBootScriptUseCase,
+    rootBootScriptUseCase: RootBootScriptUseCase,
 ) {
-    LaunchedEffect(stateStore, tproxyBootScriptUseCase) {
+    LaunchedEffect(stateStore, rootBootScriptUseCase) {
         stateStore.state
-            .map { state -> state.toTproxyBootScriptRefresh() }
+            .map { state -> state.toRootBootScriptRefresh() }
             .distinctUntilChanged { previous, next -> previous.signature == next.signature }
             .conflate()
             .collect { refresh ->
                 val state = refresh.appState
-                if (!state.enableTproxyBootScript) {
+                if (!state.enableRootBootScript || (state.runMode != RunModeTproxy && state.runMode != RunModeTun2Socks)) {
                     return@collect
                 }
-                when (val result = tproxyBootScriptUseCase.refresh(state)) {
-                    TproxyBootScriptResult.Success -> Unit
-                    TproxyBootScriptResult.MissingServer -> AndroidAppLogger.warn(
+                when (val result = rootBootScriptUseCase.refresh(state)) {
+                    RootBootScriptResult.Success -> Unit
+                    RootBootScriptResult.MissingServer -> AndroidAppLogger.warn(
                         LogTag,
-                        "Skipped TPROXY boot script refresh because no proxy server is selected",
+                        "Skipped ROOT boot script refresh because no proxy server is selected",
                     )
-                    TproxyBootScriptResult.RootUnavailable -> AndroidAppLogger.warn(
+                    RootBootScriptResult.RootUnavailable -> AndroidAppLogger.warn(
                         LogTag,
-                        "Skipped TPROXY boot script refresh because root access is unavailable",
+                        "Skipped ROOT boot script refresh because root access is unavailable",
                     )
-                    is TproxyBootScriptResult.Failed -> AndroidAppLogger.warn(
+                    is RootBootScriptResult.Failed -> AndroidAppLogger.warn(
                         LogTag,
-                        "Failed to refresh TPROXY boot script",
+                        "Failed to refresh ROOT boot script",
                         result.error,
                     )
                 }
@@ -51,15 +53,16 @@ internal fun TproxyBootScriptSynchronizer(
     }
 }
 
-private data class TproxyBootScriptRefresh(
+private data class RootBootScriptRefresh(
     val appState: AppState,
-    val signature: TproxyBootScriptSignature,
+    val signature: RootBootScriptSignature,
 )
 
-private data class TproxyBootScriptSignature(
+private data class RootBootScriptSignature(
     val enabled: Boolean,
+    val runMode: Int,
     val selectedProxyServerId: Int,
-    val proxyServers: List<TproxyBootScriptProxyServerState>,
+    val proxyServers: List<RootBootScriptProxyServerState>,
     val enableResolveProxyServerDomain: Boolean,
     val routeDomainStrategy: Int,
     val defaultRouteOutboundTag: String,
@@ -96,20 +99,21 @@ private data class TproxyBootScriptSignature(
     val proxyAppListSelectedApps: List<String>,
 )
 
-private data class TproxyBootScriptProxyServerState(
+private data class RootBootScriptProxyServerState(
     val id: Int,
     val groupId: Int,
     val server: ProxyServer<*>,
 )
 
-private fun AppState.toTproxyBootScriptRefresh(): TproxyBootScriptRefresh {
-    return TproxyBootScriptRefresh(
+private fun AppState.toRootBootScriptRefresh(): RootBootScriptRefresh {
+    return RootBootScriptRefresh(
         appState = this,
-        signature = TproxyBootScriptSignature(
-            enabled = enableTproxyBootScript,
+        signature = RootBootScriptSignature(
+            enabled = enableRootBootScript,
+            runMode = runMode,
             selectedProxyServerId = selectedProxyServerId,
             proxyServers = proxyServers.map { proxyServer ->
-                TproxyBootScriptProxyServerState(
+                RootBootScriptProxyServerState(
                     id = proxyServer.id,
                     groupId = proxyServer.groupId,
                     server = proxyServer.server,
@@ -153,4 +157,4 @@ private fun AppState.toTproxyBootScriptRefresh(): TproxyBootScriptRefresh {
     )
 }
 
-private const val LogTag = "TproxyBootScript"
+private const val LogTag = "RootBootScript"

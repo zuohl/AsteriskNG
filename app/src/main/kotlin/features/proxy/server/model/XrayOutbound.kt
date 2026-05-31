@@ -3,6 +3,7 @@
 
 package features.proxy.server.model
 
+import engine.network.toPortOrNull
 import engine.network.NetworkLimits
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -13,6 +14,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
+import utils.toCsvValues
 
 data class OutboundObject(
     val tag: String,
@@ -33,7 +35,7 @@ data class OutboundObject(
 }
 
 internal fun String.toXrayPort(): Int {
-    return toIntOrNull()?.takeIf { it in NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX }
+    return toPortOrNull()
         ?: proxyValidationError(
             ProxyServerValidationError.PortOutOfRange,
             NetworkLimits.PORT_MIN,
@@ -48,10 +50,7 @@ internal fun JsonObjectBuilder.putIfNotBlank(name: String, value: String?) {
 }
 
 internal fun JsonObjectBuilder.putJsonArrayIfNotBlank(name: String, value: String?) {
-    val values = value?.split(',')
-        ?.map(String::trim)
-        ?.filter(String::isNotEmpty)
-        .orEmpty()
+    val values = value.toCsvValues()
     if (values.isNotEmpty()) {
         putJsonArray(name) {
             values.forEach { add(it) }
@@ -127,7 +126,7 @@ private fun JsonObjectBuilder.putRawSettings(params: V2RayParameters) {
                 if (headerType == "http") {
                     putJsonObject("request") {
                         putJsonArrayIfNotBlank("path", params.path)
-                        val hostValues = params.host.toXrayCsvValues()
+                        val hostValues = params.host.toCsvValues()
                         if (hostValues.isNotEmpty()) {
                             putJsonObject("headers") {
                                 putJsonArray("Host") {
@@ -183,13 +182,6 @@ private fun JsonObjectBuilder.putKcpSettings(params: V2RayParameters) {
         params.mtu?.toIntOrNull()?.let { put("mtu", it) }
         params.tti?.toIntOrNull()?.let { put("tti", it) }
     }
-}
-
-private fun String?.toXrayCsvValues(): List<String> {
-    return this?.split(',')
-        ?.map(String::trim)
-        ?.filter(String::isNotEmpty)
-        .orEmpty()
 }
 
 private fun String?.toXrayJsonObjectOrNull(fieldName: String): JsonObject? {

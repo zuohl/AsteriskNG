@@ -5,9 +5,9 @@ package features.subscription.runtime
 
 import android.util.Base64
 import features.subscription.DefaultSubscriptionUserAgent
+import engine.network.isPort
 import engine.vpn.LocalProxyLoopbackAddress
 import engine.vpn.VpnLocalProxyRuntime
-import engine.network.NetworkLimits
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.Authenticator
@@ -57,7 +57,7 @@ private fun AndroidSubscriptionFetchOptions.toProxy(): AndroidSubscriptionProxy?
     if (!useRunningProxy) return null
     val runtimeOptions = VpnLocalProxyRuntime.current()
     val port = runtimeOptions?.port
-        ?: fallbackProxyPort?.takeIf { it in NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX }
+        ?: fallbackProxyPort?.takeIf(Int::isPort)
         ?: return null
     return AndroidSubscriptionProxy(
         host = LocalProxyLoopbackAddress,

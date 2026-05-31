@@ -3,6 +3,7 @@
 
 package features.proxy.server.usecase.importer
 
+import engine.network.toPortOrNull
 import features.proxy.server.model.VLESS
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -195,7 +196,7 @@ private fun JsonObjectBuilder.putXrayTlsSettings(
     }
     putStringIfNotBlank("echConfigList", (primary.map("ech-opts") ?: fallback.map("ech-opts"))?.string("config"))
     putStringIfNotBlank("pinnedPeerCertSha256", primary.string("fingerprint") ?: fallback.string("fingerprint"))
-    if (primary.boolean("skip-cert-verify") ?: fallback.boolean("skip-cert-verify") == true) {
+    if ((primary.boolean("skip-cert-verify") ?: fallback.boolean("skip-cert-verify")) == true) {
         put("allowInsecure", true)
     }
 }
@@ -223,7 +224,7 @@ private fun JsonObjectBuilder.putStringIfNotBlank(name: String, value: String?) 
 }
 
 private fun JsonObjectBuilder.putXrayPort(name: String, value: String?) {
-    val port = value?.toIntOrNull() ?: unsupported("XHTTP download-settings port is required")
+    val port = value?.toPortOrNull() ?: unsupported("XHTTP download-settings port is required")
     put(name, port)
 }
 
@@ -275,8 +276,9 @@ private fun Any?.integerJsonElement(fieldName: String): JsonElement? {
 
 private fun Any?.headerJsonString(fieldName: String): String? {
     return when (this) {
-        is Iterable<*> -> map { item -> item.scalarStringAllowBlank() ?: unsupported("$fieldName must be scalar") }
-            .joinToString(",")
+        is Iterable<*> -> joinToString(",") { item ->
+            item.scalarStringAllowBlank() ?: unsupported("$fieldName must be scalar")
+        }
 
         null -> null
         else -> scalarStringAllowBlank() ?: unsupported("$fieldName must be scalar")

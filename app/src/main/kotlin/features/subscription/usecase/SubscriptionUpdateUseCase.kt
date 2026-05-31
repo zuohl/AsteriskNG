@@ -13,6 +13,7 @@ import features.proxy.server.usecase.ProxyServerListSubscriptionUpdateResult
 import features.proxy.server.usecase.importProxyServersFromText
 import features.subscription.runtime.AndroidSubscriptionFetchOptions
 import features.subscription.runtime.AndroidSubscriptionFetcher
+import engine.network.toPortOrNull
 import java.net.URI
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -86,7 +87,7 @@ private suspend fun updateSubscriptionGroup(
 internal fun AppState.toSubscriptionFetchOptions(group: SubscriptionGroupState): AndroidSubscriptionFetchOptions {
     return AndroidSubscriptionFetchOptions(
         useRunningProxy = group.updateViaProxy && proxyRunning && runMode == RunModeVpnService,
-        fallbackProxyPort = localProxyPort.toIntOrNull(),
+        fallbackProxyPort = localProxyPort.toPortOrNull(),
         fallbackProxyUsername = localProxyUsername,
         fallbackProxyPassword = localProxyPassword,
     )

@@ -7,6 +7,7 @@ import app.AppState
 import app.modes.ProxyAppListModeBlacklist
 import app.modes.ProxyAppListModeGlobal
 import app.modes.ProxyAppListModeWhitelist
+import utils.toTrimmedNonEmptyDistinctList
 
 internal data class VpnApplicationPolicy(
     val mode: Int = ProxyAppListModeGlobal,
@@ -44,7 +45,5 @@ private fun List<String>.toVpnServicePackageNames(currentUserId: Int): List<Stri
             }
         }
     }
-        .map(String::trim)
-        .filter(String::isNotEmpty)
-        .distinct()
+        .toTrimmedNonEmptyDistinctList()
 }

@@ -8,6 +8,8 @@ import app.effectiveLocalDnsEnabled
 import features.routing.model.RouteRule
 import org.json.JSONArray
 import org.json.JSONObject
+import utils.toDistinctCsvValues
+import utils.toTrimmedNonEmptyDistinctList
 
 internal fun buildXrayRouting(
     appState: AppState,
@@ -74,7 +76,7 @@ private fun AppState.defaultRouteTarget(routeTargets: Map<String, XrayRouteTarge
 }
 
 internal fun buildXrayDnsHijackRule(inboundTags: List<String>): JSONObject? {
-    val tags = inboundTags.map(String::trim).filter(String::isNotEmpty).distinct()
+    val tags = inboundTags.toTrimmedNonEmptyDistinctList()
     if (tags.isEmpty()) return null
     return JSONObject()
         .put("inboundTag", tags.toJsonStringArray())
@@ -102,7 +104,7 @@ private fun RouteRule.toXrayRule(routeTargets: Map<String, XrayRouteTarget>): JS
     rule.putJsonStringArrayIfNotEmpty("process", process)
     rule.putIfNotBlank("port", port)
     rule.putIfNotBlank("network", network)
-    rule.putJsonStringArrayIfNotEmpty("protocol", protocol.toCommaSeparatedList())
+    rule.putJsonStringArrayIfNotEmpty("protocol", protocol.toDistinctCsvValues())
     rule.putIfNotBlank("ruleTag", remarks)
     return if (rule.length() > 1) rule else null
 }
@@ -116,15 +118,11 @@ private fun JSONObject.putIfNotBlank(name: String, value: String): JSONObject {
 }
 
 private fun JSONObject.putJsonStringArrayIfNotEmpty(name: String, values: List<String>): JSONObject {
-    val sanitized = values.map(String::trim).filter(String::isNotEmpty).distinct()
+    val sanitized = values.toTrimmedNonEmptyDistinctList()
     if (sanitized.isNotEmpty()) {
         put(name, sanitized.toJsonStringArray())
     }
     return this
-}
-
-private fun String.toCommaSeparatedList(): List<String> {
-    return split(",").map(String::trim).filter(String::isNotEmpty).distinct()
 }
 
 private val ReservedDefaultRouteOutboundTags = setOf(XrayTags.DNS_OUT, XrayTags.FRAGMENT)
