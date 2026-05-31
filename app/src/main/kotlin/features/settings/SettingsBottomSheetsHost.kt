@@ -123,22 +123,22 @@ internal fun SettingsBottomSheetsHost(
     TunSettingsBottomSheet(
         show = sheetState.showTunSettings,
         mtu = sheetState.tunSettingsDraft.mtu,
-        defaultDns = sheetState.tunSettingsDraft.defaultDns,
+        vpnDns = sheetState.tunSettingsDraft.vpnDns,
         ipv4Cidr = sheetState.tunSettingsDraft.ipv4Cidr,
         ipv6Cidr = sheetState.tunSettingsDraft.ipv6Cidr,
-        showDefaultDns = appState.runMode == RunModeVpnService,
+        showVpnDns = appState.runMode == RunModeVpnService,
         onMtuChange = {
             sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(mtu = it)
         },
-        onDefaultDnsChange = { sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(defaultDns = it) },
+        onVpnDnsChange = { sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(vpnDns = it) },
         onIpv4CidrChange = { sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(ipv4Cidr = it) },
         onIpv6CidrChange = { sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(ipv6Cidr = it) },
         onDismissRequest = { sheetState.showTunSettings = false },
-        onSave = { mtu, defaultDns, ipv4Cidr, ipv6Cidr ->
+        onSave = { mtu, vpnDns, ipv4Cidr, ipv6Cidr ->
             updateAppState { state ->
                 state.copy(
                     tunMtu = mtu,
-                    tunDefaultDns = if (state.runMode == RunModeVpnService) defaultDns else state.tunDefaultDns,
+                    tunVpnDns = if (state.runMode == RunModeVpnService) vpnDns else state.tunVpnDns,
                     tunIpv4Cidr = ipv4Cidr,
                     tunIpv6Cidr = ipv6Cidr,
                 )

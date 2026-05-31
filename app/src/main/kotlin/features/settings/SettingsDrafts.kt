@@ -27,7 +27,7 @@ internal fun AppState.toProxySettingsDraft(): ProxySettingsDraft {
 
 internal data class TunSettingsDraft(
     val mtu: String = "",
-    val defaultDns: String = "",
+    val vpnDns: String = "",
     val ipv4Cidr: String = "",
     val ipv6Cidr: String = "",
 )
@@ -35,7 +35,7 @@ internal data class TunSettingsDraft(
 internal fun AppState.toTunSettingsDraft(): TunSettingsDraft {
     return TunSettingsDraft(
         mtu = tunMtu,
-        defaultDns = tunDefaultDns,
+        vpnDns = tunVpnDns,
         ipv4Cidr = tunIpv4Cidr,
         ipv6Cidr = tunIpv6Cidr,
     )

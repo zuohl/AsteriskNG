@@ -121,7 +121,7 @@ internal fun AppState.xrayProxyDnsServers(
         (directDnsDomains == null || directDnsDomains.isNotEmpty())
     return if (!hasDirectDns) {
         listOf(
-            tunDefaultDns.trim()
+            tunVpnDns.trim()
                 .takeIf(::isIpv4Address)
                 ?: VpnDefaults.IPV4_DNS,
         )

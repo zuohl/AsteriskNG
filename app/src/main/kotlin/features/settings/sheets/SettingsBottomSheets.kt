@@ -19,17 +19,17 @@ import utils.toIntInRangeOrNull
 @Composable
 internal fun tunSettingsSummary(
     mtu: String,
-    defaultDns: String,
+    vpnDns: String,
     ipv4Cidr: String,
     ipv6Cidr: String,
-    showDefaultDns: Boolean,
+    showVpnDns: Boolean,
 ): String {
     val template = stringResource(
-        if (showDefaultDns) R.string.settings_tun_summary else R.string.settings_tun_summary_without_dns,
+        if (showVpnDns) R.string.settings_tun_summary else R.string.settings_tun_summary_without_dns,
     )
     return template.formatTemplate(
         "mtu" to mtu,
-        "dns" to defaultDns,
+        "vpnDns" to vpnDns,
         "ipv4" to ipv4Cidr,
         "ipv6" to ipv6Cidr,
     )
@@ -39,19 +39,19 @@ internal fun tunSettingsSummary(
 internal fun TunSettingsBottomSheet(
     show: Boolean,
     mtu: String,
-    defaultDns: String,
+    vpnDns: String,
     ipv4Cidr: String,
     ipv6Cidr: String,
-    showDefaultDns: Boolean,
+    showVpnDns: Boolean,
     onMtuChange: (String) -> Unit,
-    onDefaultDnsChange: (String) -> Unit,
+    onVpnDnsChange: (String) -> Unit,
     onIpv4CidrChange: (String) -> Unit,
     onIpv6CidrChange: (String) -> Unit,
     onDismissRequest: () -> Unit,
     onSave: (String, String, String, String) -> Unit,
 ) {
     val mtuError = if (isTunMtu(mtu)) null else stringResource(R.string.settings_tun_mtu_invalid)
-    val defaultDnsError = if (!showDefaultDns || isTunDefaultDns(defaultDns)) {
+    val vpnDnsError = if (!showVpnDns || isTunVpnDns(vpnDns)) {
         null
     } else {
         stringResource(R.string.settings_tun_dns_invalid)
@@ -66,7 +66,7 @@ internal fun TunSettingsBottomSheet(
     } else {
         stringResource(R.string.settings_tun_ipv6_cidr_invalid)
     }
-    val canSave = listOf(mtuError, defaultDnsError, ipv4CidrError, ipv6CidrError).all { it == null }
+    val canSave = listOf(mtuError, vpnDnsError, ipv4CidrError, ipv6CidrError).all { it == null }
 
     WindowBottomSheet(
         show = show,
@@ -84,7 +84,7 @@ internal fun TunSettingsBottomSheet(
                     if (canSave) {
                         onSave(
                             mtu.trim(),
-                            defaultDns.trim(),
+                            vpnDns.trim(),
                             ipv4Cidr.trim(),
                             ipv6Cidr.trim(),
                         )
@@ -104,12 +104,12 @@ internal fun TunSettingsBottomSheet(
                     keyboardOptions = fiveDigitKeyboardOptions(),
                     sanitizeInput = ::sanitizeFiveDigitInput,
                 )
-                if (showDefaultDns) {
+                if (showVpnDns) {
                     SettingsTextField(
-                        value = defaultDns,
-                        onValueChange = onDefaultDnsChange,
-                        label = stringResource(R.string.settings_tun_default_dns),
-                        errorText = defaultDnsError,
+                        value = vpnDns,
+                        onValueChange = onVpnDnsChange,
+                        label = stringResource(R.string.settings_tun_vpn_dns),
+                        errorText = vpnDnsError,
                     )
                 }
                 SettingsTextField(
@@ -134,7 +134,7 @@ private fun isTunMtu(value: String): Boolean {
     return value.toIntInRangeOrNull(VpnDefaults.MTU_MIN..VpnDefaults.MTU_MAX) != null
 }
 
-private fun isTunDefaultDns(value: String): Boolean {
+private fun isTunVpnDns(value: String): Boolean {
     val trimmed = value.trim()
     return trimmed.contains(".") && !trimmed.contains(":") && isIpAddress(trimmed)
 }

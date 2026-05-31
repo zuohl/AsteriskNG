@@ -94,14 +94,14 @@
     <string name="settings_vpn_append_http_proxy">Append HTTP proxy</string>
     <string name="settings_vpn_append_http_proxy_summary">Supported apps use HTTP proxy directly</string>
     <string name="settings_tun">TUN settings</string>
-    <string name="settings_tun_summary">MTU {mtu}, DNS {dns}, IPv4 {ipv4}, IPv6 {ipv6}</string>
+    <string name="settings_tun_summary">MTU {mtu}, VPN DNS {vpnDns}, IPv4 {ipv4}, IPv6 {ipv6}</string>
     <string name="settings_tun_summary_without_dns">MTU {mtu}, IPv4 {ipv4}, IPv6 {ipv6}</string>
     <string name="settings_tun_mtu">MTU</string>
-    <string name="settings_tun_default_dns">Default DNS</string>
+    <string name="settings_tun_vpn_dns">VPN DNS</string>
     <string name="settings_tun_ipv4_cidr">IPv4 CIDR</string>
     <string name="settings_tun_ipv6_cidr">IPv6 CIDR</string>
     <string name="settings_tun_mtu_invalid">MTU must be 1280–65535</string>
-    <string name="settings_tun_dns_invalid">Default DNS must be an IPv4 address</string>
+    <string name="settings_tun_dns_invalid">VPN DNS must be an IPv4 address</string>
     <string name="settings_tun_ipv4_cidr_invalid">Invalid IPv4 CIDR</string>
     <string name="settings_tun_ipv6_cidr_invalid">Invalid IPv6 CIDR</string>
     <string name="settings_inbound">Inbound proxy settings</string>

@@ -94,14 +94,14 @@
     <string name="settings_vpn_append_http_proxy">追加 HTTP 代理</string>
     <string name="settings_vpn_append_http_proxy_summary">让受支持的应用直接使用 HTTP 代理</string>
     <string name="settings_tun">TUN 设置</string>
-    <string name="settings_tun_summary">MTU {mtu}，DNS {dns}，IPv4 {ipv4}，IPv6 {ipv6}</string>
+    <string name="settings_tun_summary">MTU {mtu}，VPN DNS {vpnDns}，IPv4 {ipv4}，IPv6 {ipv6}</string>
     <string name="settings_tun_summary_without_dns">MTU {mtu}，IPv4 {ipv4}，IPv6 {ipv6}</string>
     <string name="settings_tun_mtu">MTU</string>
-    <string name="settings_tun_default_dns">默认 DNS</string>
+    <string name="settings_tun_vpn_dns">VPN DNS</string>
     <string name="settings_tun_ipv4_cidr">IPv4 CIDR</string>
     <string name="settings_tun_ipv6_cidr">IPv6 CIDR</string>
     <string name="settings_tun_mtu_invalid">MTU 范围应为 1280–65535</string>
-    <string name="settings_tun_dns_invalid">默认 DNS 必须为 IPv4 地址</string>
+    <string name="settings_tun_dns_invalid">VPN DNS 必须为 IPv4 地址</string>
     <string name="settings_tun_ipv4_cidr_invalid">无效 IPv4 CIDR</string>
     <string name="settings_tun_ipv6_cidr_invalid">无效 IPv6 CIDR</string>
     <string name="settings_inbound">入站代理设置</string>

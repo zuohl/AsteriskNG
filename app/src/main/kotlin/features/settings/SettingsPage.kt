@@ -160,10 +160,10 @@ private fun SettingsContent(
     val privateAddressCidrsSummary = privateAddressCidrsSummary(appState.privateAddressCidrs)
     val tunSettingsSummary = tunSettingsSummary(
         mtu = appState.tunMtu,
-        defaultDns = appState.tunDefaultDns,
+        vpnDns = appState.tunVpnDns,
         ipv4Cidr = appState.tunIpv4Cidr,
         ipv6Cidr = appState.tunIpv6Cidr,
-        showDefaultDns = appState.runMode == RunModeVpnService,
+        showVpnDns = appState.runMode == RunModeVpnService,
     )
     val muxSettingsSummary = muxSettingsSummary(
         enabled = appState.enableMux,

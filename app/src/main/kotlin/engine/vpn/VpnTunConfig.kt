@@ -69,7 +69,7 @@ internal fun AppState.toTunOptions(): TunOptions {
         ipv4Address = tunIpv4Address(),
         ipv6Address = tunIpv6Address(),
         dnsServers = listOf(
-            tunDefaultDns.trim()
+            tunVpnDns.trim()
                 .takeIf(::isIpv4Address)
                 ?: VpnDefaults.IPV4_DNS,
         ),

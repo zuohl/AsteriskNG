@@ -61,7 +61,7 @@ internal class AppSettingsPreferences(
                 defaults.enableVpnAppendHttpProxy,
             ),
             tunMtu = preferences.getString(KeyTunMtu, defaults.tunMtu) ?: defaults.tunMtu,
-            tunDefaultDns = preferences.getString(KeyTunDefaultDns, defaults.tunDefaultDns) ?: defaults.tunDefaultDns,
+            tunVpnDns = preferences.getString(KeyTunVpnDns, defaults.tunVpnDns) ?: defaults.tunVpnDns,
             tunIpv4Cidr = preferences.getString(KeyTunIpv4Cidr, defaults.tunIpv4Cidr) ?: defaults.tunIpv4Cidr,
             tunIpv6Cidr = preferences.getString(KeyTunIpv6Cidr, defaults.tunIpv6Cidr) ?: defaults.tunIpv6Cidr,
             nextProxyServerId = preferences.getInt(KeyNextProxyServerId, defaults.nextProxyServerId),
@@ -167,7 +167,7 @@ internal class AppSettingsPreferences(
             .putString(KeyLocalProxyPassword, state.localProxyPassword)
             .putBoolean(KeyEnableVpnAppendHttpProxy, state.enableVpnAppendHttpProxy)
             .putString(KeyTunMtu, state.tunMtu)
-            .putString(KeyTunDefaultDns, state.tunDefaultDns)
+            .putString(KeyTunVpnDns, state.tunVpnDns)
             .putString(KeyTunIpv4Cidr, state.tunIpv4Cidr)
             .putString(KeyTunIpv6Cidr, state.tunIpv6Cidr)
             .putInt(KeyNextProxyServerId, state.nextProxyServerId)
@@ -255,7 +255,7 @@ private const val KeyLocalProxyUsername = "local_proxy_username"
 private const val KeyLocalProxyPassword = "local_proxy_password"
 private const val KeyEnableVpnAppendHttpProxy = "enable_vpn_append_http_proxy"
 private const val KeyTunMtu = "tun_mtu"
-private const val KeyTunDefaultDns = "tun_default_dns"
+private const val KeyTunVpnDns = "tun_vpn_dns"
 private const val KeyTunIpv4Cidr = "tun_ipv4_cidr"
 private const val KeyTunIpv6Cidr = "tun_ipv6_cidr"
 private const val KeyNextProxyServerId = "next_proxy_server_id"
