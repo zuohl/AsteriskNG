@@ -8,8 +8,8 @@ import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.formatCustomXrayConfigJson
 import features.proxy.server.usecase.EmptyProxyServerImportResult
+import features.proxy.server.usecase.ProxyServerImportContext
 import features.proxy.server.usecase.ProxyServerImportResult
-import features.proxy.server.usecase.ProxyServerImportSource
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -17,10 +17,11 @@ import kotlinx.serialization.json.contentOrNull
 
 private const val LogTag = "ProxyServerJsonImport"
 
-internal fun parseProxyServersFromJsonConfig(
+internal suspend fun parseProxyServersFromJsonConfig(
     text: String,
-    source: ProxyServerImportSource,
+    context: ProxyServerImportContext,
 ): ProxyServerImportResult {
+    val source = context.source
     val root = runCatching {
         ProxyServer.json.parseToJsonElement(text.trimStart(ImportByteOrderMark))
     }.getOrNull() ?: return EmptyProxyServerImportResult

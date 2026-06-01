@@ -132,6 +132,9 @@ internal fun validateV2RayParameters(params: V2RayParameters) {
         "ws", "websocket", "httpupgrade", "xhttp", "splithttp" -> validateOptionalPath(params.path, "$type path")
         "grpc" -> validateAllowed(params.mode ?: "gun", "gRPC mode", setOf("gun", "multi"))
     }
+    if (type in setOf("ws", "websocket", "httpupgrade")) {
+        validateOptionalJsonObject(params.headers, "$type headers")
+    }
     if (type in setOf("xhttp", "splithttp")) {
         validateAllowed(params.mode ?: "auto", "XHTTP mode", setOf("auto", "packet-up", "stream-up", "stream-one"))
         validateOptionalJsonObject(params.extra, "XHTTP Extra")

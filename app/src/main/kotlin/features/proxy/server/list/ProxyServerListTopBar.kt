@@ -31,11 +31,12 @@ import features.proxy.server.usecase.withImportedProxyServers
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
 import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.SubscriptionInstallConfigUseCase
+import features.subscription.runtime.AndroidSubscriptionFetchOptions
 import features.subscription.runtime.AndroidSubscriptionFetcher
 import features.subscription.usecase.subscriptionUpdateMessage
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
-import features.subscription.toRawHttpsSubscriptionInstallConfigOrNull
+import features.subscription.toSubscriptionInstallConfigOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -173,6 +174,7 @@ private fun handleProxyServerListAddAction(
                             text = scanText,
                             source = ProxyServerImportSource.QrCode,
                             groupState = groupState,
+                            subscriptionFetcher = subscriptionFetcher,
                             updateAppState = updateAppState,
                             tipNotifier = tipNotifier,
                             messages = messages,
@@ -200,6 +202,7 @@ private fun handleProxyServerListAddAction(
                     text = text,
                     source = ProxyServerImportSource.Clipboard,
                     groupState = groupState,
+                    subscriptionFetcher = subscriptionFetcher,
                     updateAppState = updateAppState,
                     tipNotifier = tipNotifier,
                     messages = messages,
@@ -226,6 +229,7 @@ private fun handleProxyServerListAddAction(
                             text = text,
                             source = ProxyServerImportSource.File,
                             groupState = groupState,
+                            subscriptionFetcher = subscriptionFetcher,
                             updateAppState = updateAppState,
                             tipNotifier = tipNotifier,
                             messages = messages,
@@ -262,7 +266,7 @@ private suspend fun installSubscriptionFromText(
     tipNotifier: AndroidToastTipNotifier,
     messages: ProxyServerListMessages,
 ): Boolean {
-    val config = text.toRawHttpsSubscriptionInstallConfigOrNull() ?: return false
+    val config = text.toSubscriptionInstallConfigOrNull() ?: return false
     runCatching {
         SubscriptionInstallConfigUseCase(
             stateStore = stateStore,
@@ -286,6 +290,7 @@ private suspend fun importProxyServers(
     text: String,
     source: ProxyServerImportSource,
     groupState: ProxyServerListGroups,
+    subscriptionFetcher: AndroidSubscriptionFetcher,
     updateAppState: ((AppState) -> AppState) -> Unit,
     tipNotifier: AndroidToastTipNotifier,
     messages: ProxyServerListMessages,
@@ -298,6 +303,13 @@ private suspend fun importProxyServers(
     val importResult = importProxyServersFromText(
         text = text,
         source = source,
+        providerUrlFetcher = { providerUrl ->
+            subscriptionFetcher.fetch(
+                url = providerUrl,
+                userAgent = "",
+                options = AndroidSubscriptionFetchOptions(),
+            )
+        },
     )
     if (importResult.servers.isNotEmpty()) {
         updateAppState { state -> state.withImportedProxyServers(importResult, targetGroupId) }

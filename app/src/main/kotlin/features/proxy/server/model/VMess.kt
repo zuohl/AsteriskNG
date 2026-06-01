@@ -99,6 +99,10 @@ data class LegacyVMess(
     }
 
     fun convertToAEAD(): VMess {
+        val alterId = this.alterId.trim().toIntOrNull() ?: 0
+        if (alterId != 0) {
+            throw IllegalArgumentException("VMess legacy alterId is not supported")
+        }
         return VMess(
             remarks = this.remarks.ifBlank { "none" },
             id = this.id,

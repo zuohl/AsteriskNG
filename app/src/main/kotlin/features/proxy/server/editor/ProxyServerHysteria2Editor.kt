@@ -184,9 +184,6 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
             exit = ExitTransition.None,
         ) {
             Column {
-                val allowInsecureOptions = remember { listOf("false", "true") }
-                val allowInsecure = remember { mutableIntStateOf(hy2Edit.insecure) }
-
                 SmallTitle(text = stringResource(R.string.proxy_editor_tls_settings))
                 TextField(
                     label = "SNI",
@@ -200,18 +197,6 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
                         .padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                )
-                OverlayDropdownPreference(
-                    title = stringResource(R.string.proxy_editor_allow_insecure),
-                    items = allowInsecureOptions,
-                    selectedIndex = allowInsecure.intValue,
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
-                    onSelectedIndexChange = { newOption ->
-                        allowInsecure.intValue = newOption
-                        hy2Edit.insecure = newOption
-                    },
                 )
                 TextField(
                     label = stringResource(R.string.proxy_editor_certificate_fingerprint),

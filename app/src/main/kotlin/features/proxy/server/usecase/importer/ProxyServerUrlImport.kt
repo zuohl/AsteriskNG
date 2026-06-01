@@ -6,13 +6,15 @@ package features.proxy.server.usecase.importer
 import features.logs.AndroidAppLogger
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.ProxyServerConstants
+import features.proxy.server.usecase.ProxyServerImportContext
 import features.proxy.server.usecase.ProxyServerImportResult
 import features.proxy.server.usecase.ProxyServerImportSource
 
-internal fun parseProxyServersFromUrls(
+internal suspend fun parseProxyServersFromUrls(
     text: String,
-    source: ProxyServerImportSource,
+    context: ProxyServerImportContext,
 ): ProxyServerImportResult {
+    val source = context.source
     val seenUrls = linkedSetOf<String>()
     val servers = mutableListOf<ProxyServer<*>>()
     var urlCount = 0

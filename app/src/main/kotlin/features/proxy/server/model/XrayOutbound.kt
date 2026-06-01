@@ -145,6 +145,10 @@ private fun JsonObjectBuilder.putWsSettings(params: V2RayParameters) {
     putJsonObject("wsSettings") {
         putIfNotBlank("path", params.path)
         putIfNotBlank("host", params.host)
+        val headers = params.headers.toXrayJsonObjectOrNull("WebSocket headers")
+        if (headers != null) {
+            put("headers", headers)
+        }
     }
 }
 
@@ -162,6 +166,10 @@ private fun JsonObjectBuilder.putHttpUpgradeSettings(params: V2RayParameters) {
     putJsonObject("httpupgradeSettings") {
         putIfNotBlank("path", params.path)
         putIfNotBlank("host", params.host)
+        val headers = params.headers.toXrayJsonObjectOrNull("HTTPUpgrade headers")
+        if (headers != null) {
+            put("headers", headers)
+        }
     }
 }
 

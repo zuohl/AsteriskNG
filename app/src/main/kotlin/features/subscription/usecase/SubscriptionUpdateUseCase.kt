@@ -61,6 +61,13 @@ private suspend fun updateSubscriptionGroup(
         val importResult = importProxyServersFromText(
             text = text,
             source = ProxyServerImportSource.SubscriptionUrl,
+            providerUrlFetcher = { providerUrl ->
+                subscriptionFetcher.fetch(
+                    url = providerUrl,
+                    userAgent = group.userAgent,
+                    options = fetchOptions,
+                )
+            },
         )
         ProxyServerListSubscriptionUpdate(
             groupId = group.id,
@@ -71,7 +78,7 @@ private suspend fun updateSubscriptionGroup(
                 AndroidAppLogger.warn(
                     LogTag,
                     "Subscription update imported no proxy servers ${group.logIdentity()} " +
-                        "parsedNodeCount=${update.urlCount} responseLength=${text.length}",
+                        "parsedProxyServerCount=${update.urlCount} responseLength=${text.length}",
                 )
             }
         }

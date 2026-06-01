@@ -50,6 +50,17 @@ internal fun MihomoYamlMap.headerString(name: String): String? {
         ?.joinToString(",")
 }
 
+internal fun Any?.headerValueString(fieldName: String): String? {
+    return when (this) {
+        is Iterable<*> -> joinToString(",") { item ->
+            item.scalarStringAllowBlank() ?: unsupported("$fieldName must be scalar")
+        }
+
+        null -> null
+        else -> scalarStringAllowBlank() ?: unsupported("$fieldName must be scalar")
+    }
+}
+
 internal fun MihomoYamlMap.hasTlsFields(): Boolean {
     return listOf(
         "sni",
@@ -97,6 +108,15 @@ internal fun Any?.scalarStringList(): List<String> {
         is Iterable<*> -> mapNotNull { item -> item.scalarString() }
         else -> scalarString().toCsvValues()
     }.filter(String::isNotBlank)
+}
+
+private fun Any?.scalarStringAllowBlank(): String? {
+    return when (this) {
+        is String -> this
+        is Number -> toString()
+        is Boolean -> toString()
+        else -> null
+    }
 }
 
 internal fun Any?.asStringMap(): MihomoYamlMap? {

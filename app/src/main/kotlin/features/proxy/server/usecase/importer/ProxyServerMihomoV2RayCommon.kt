@@ -4,6 +4,8 @@
 package features.proxy.server.usecase.importer
 
 import features.proxy.server.model.V2RayParameters
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 internal fun MihomoYamlMap.toMihomoV2RayParameters(
     defaultSecurity: String,
@@ -12,7 +14,6 @@ internal fun MihomoYamlMap.toMihomoV2RayParameters(
 ): V2RayParameters {
     ensureNoUnsupportedV2RayTlsOptions()
     val wsOpts = map("ws-opts")
-    wsOpts?.ensureNoUnsupportedWsHeaders()
     val grpcOpts = map("grpc-opts")
     val xhttpOpts = map("xhttp-opts")
     val xhttpSupported = xhttpHost != null || xhttpExtra != null
@@ -39,6 +40,10 @@ internal fun MihomoYamlMap.toMihomoV2RayParameters(
         host = when (transport) {
             "websocket", "httpupgrade" -> wsOpts?.map("headers")?.headerString("Host") ?: wsOpts?.string("host")
             "xhttp" -> xhttpOpts?.let { xhttpHost?.invoke(it) }
+            else -> null
+        },
+        headers = when (transport) {
+            "websocket", "httpupgrade" -> wsOpts?.transportHeadersJson()
             else -> null
         },
         mtu = map("kcp-opts")?.string("mtu"),
@@ -83,10 +88,14 @@ private fun MihomoYamlMap.ensureNoUnsupportedV2RayTlsOptions() {
     }
 }
 
-private fun MihomoYamlMap.ensureNoUnsupportedWsHeaders() {
-    val headers = map("headers") ?: return
-    val unsupportedKeys = headers.keys.filterNot { key -> key.equals("Host", ignoreCase = true) }
-    if (unsupportedKeys.isNotEmpty()) {
-        unsupported("WebSocket custom headers are not supported")
+private fun MihomoYamlMap.transportHeadersJson(): String? {
+    val headers = map("headers") ?: return null
+    val json = buildJsonObject {
+        headers.entries.forEach { (name, value) ->
+            if (!name.equals("Host", ignoreCase = true)) {
+                value.headerValueString("transport header $name")?.let { put(name, it) }
+            }
+        }
     }
+    return json.takeIf { it.isNotEmpty() }?.toString()
 }

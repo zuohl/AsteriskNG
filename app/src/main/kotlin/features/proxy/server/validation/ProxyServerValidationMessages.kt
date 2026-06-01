@@ -76,7 +76,6 @@ internal fun rememberProxyServerValidationMessageResolver(
         chainProxyMemberCountInvalid = stringResource(R.string.proxy_validation_chain_proxy_member_count_invalid),
         hysteriaObfsTypeRequired = stringResource(R.string.proxy_validation_hysteria_obfs_type_required),
         hysteriaObfsUnsupported = stringResource(R.string.proxy_validation_hysteria_obfs_unsupported),
-        booleanRequired = stringResource(R.string.proxy_validation_boolean_required),
         portHoppingIntervalNumberRequired =
             stringResource(R.string.proxy_validation_port_hopping_interval_number_required),
         portHoppingIntervalTooSmall = stringResource(R.string.proxy_validation_port_hopping_interval_too_small),
@@ -131,7 +130,6 @@ private data class ProxyServerValidationMessages(
     val chainProxyMemberCountInvalid: String,
     val hysteriaObfsTypeRequired: String,
     val hysteriaObfsUnsupported: String,
-    val booleanRequired: String,
     val portHoppingIntervalNumberRequired: String,
     val portHoppingIntervalTooSmall: String,
     val shadowsocks2022KeyBase64Invalid: String,
@@ -182,7 +180,6 @@ private data class ProxyServerValidationMessages(
             ProxyServerValidationError.ChainProxyMemberCountInvalid -> chainProxyMemberCountInvalid
             ProxyServerValidationError.HysteriaObfsTypeRequired -> hysteriaObfsTypeRequired
             ProxyServerValidationError.HysteriaObfsUnsupported -> hysteriaObfsUnsupported
-            ProxyServerValidationError.BooleanRequired -> booleanRequired
             ProxyServerValidationError.PortHoppingIntervalNumberRequired -> portHoppingIntervalNumberRequired
             ProxyServerValidationError.PortHoppingIntervalTooSmall -> portHoppingIntervalTooSmall
             ProxyServerValidationError.Shadowsocks2022KeyBase64Invalid -> shadowsocks2022KeyBase64Invalid

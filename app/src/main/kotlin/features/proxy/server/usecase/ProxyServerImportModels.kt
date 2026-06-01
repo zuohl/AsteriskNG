@@ -18,9 +18,21 @@ internal enum class ProxyServerImportSource(
     File(logName = "file", decodeBase64 = true),
     QrCode(logName = "qr_code", decodeBase64 = false),
     SubscriptionUrl(logName = "subscription_url", decodeBase64 = true),
+    MihomoProxyProviderUrl(logName = "mihomo_proxy_provider_url", decodeBase64 = true),
 }
 
-internal typealias ProxyServerPayloadParser = (String, ProxyServerImportSource) -> ProxyServerImportResult
+internal fun interface ProxyServerProviderUrlFetcher {
+    suspend fun fetch(url: String): String
+}
+
+internal data class ProxyServerImportContext(
+    val source: ProxyServerImportSource,
+    val providerUrlFetcher: ProxyServerProviderUrlFetcher? = null,
+    val providerDepth: Int = 0,
+    val fetchedProviderUrls: Set<String> = emptySet(),
+)
+
+internal typealias ProxyServerPayloadParser = suspend (String, ProxyServerImportContext) -> ProxyServerImportResult
 
 internal val EmptyProxyServerImportResult = ProxyServerImportResult(
     urlCount = 0,

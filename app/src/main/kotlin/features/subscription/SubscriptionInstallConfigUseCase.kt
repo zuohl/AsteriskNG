@@ -140,11 +140,12 @@ private enum class InstallConfigSource(
     val defaultName: String? = null,
 ) {
     V2rayNg(scheme = "v2rayng", userAgent = DefaultSubscriptionUserAgent, defaultName = V2rayNgDefaultSubscriptionName),
-    ClashMeta(scheme = "clashmeta", userAgent = ClashMetaSubscriptionUserAgent),
+    Clash(scheme = "clash", userAgent = ClashMetaSubscriptionUserAgent, defaultName = ClashDefaultSubscriptionName),
+    ClashMeta(scheme = "clashmeta", userAgent = ClashMetaSubscriptionUserAgent, defaultName = ClashDefaultSubscriptionName),
     FlClashX(
         scheme = "flclashx",
         userAgent = FlClashXSubscriptionUserAgent,
-        defaultName = "clashsub",
+        defaultName = ClashDefaultSubscriptionName,
     ),
 }
 
@@ -165,5 +166,6 @@ private fun String.toSubscriptionUrlFragmentOrNull(): String? {
 }
 
 private const val V2rayNgDefaultSubscriptionName = "import sub"
+private const val ClashDefaultSubscriptionName = "clashsub"
 private val InstallConfigHosts = setOf("install-config", "install-sub")
 private val SubscriptionUrlSchemes = setOf("https")

@@ -15,6 +15,9 @@ internal fun MihomoYamlMap.toMihomoHysteria2ProxyServer(): Hysteria2 {
     if ('-' in hopInterval) {
         unsupported("Hysteria2 ranged hop-interval is not supported")
     }
+    if (boolean("skip-cert-verify") == true) {
+        unsupported("skip-cert-verify is not supported")
+    }
     val port = string("port") ?: multiPorts.firstPortInRange()
     return Hysteria2(
         remarks = requiredString("name"),
@@ -24,7 +27,6 @@ internal fun MihomoYamlMap.toMihomoHysteria2ProxyServer(): Hysteria2 {
         obfs = string("obfs").orEmpty(),
         obfsPassword = string("obfs-password", "obfsPassword").orEmpty(),
         sni = string("sni", "servername").orEmpty(),
-        insecure = if (boolean("skip-cert-verify") == true) 1 else 0,
         pinSHA256 = string("pinSHA256", "pin-sha256", "fingerprint").orEmpty(),
         mport = multiPorts,
         mportHopInt = hopInterval,

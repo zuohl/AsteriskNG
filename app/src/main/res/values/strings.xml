@@ -368,7 +368,6 @@
     <string name="proxy_editor_mport_hop_interval">Port hop interval (seconds)</string>
     <string name="proxy_editor_down_bandwidth">Download bandwidth (supports k/m/g/t)</string>
     <string name="proxy_editor_up_bandwidth">Upload bandwidth (supports k/m/g/t)</string>
-    <string name="proxy_editor_allow_insecure">Allow insecure</string>
     <string name="proxy_editor_certificate_fingerprint">Certificate fingerprint (SHA-256)</string>
     <string name="proxy_editor_transport">Transport</string>
     <string name="proxy_editor_transport_type">Transport protocol</string>
@@ -445,7 +444,6 @@
     <string name="proxy_validation_chain_proxy_member_count_invalid">Proxy chain requires at least two members</string>
     <string name="proxy_validation_hysteria_obfs_type_required">Obfs type is required when obfs password is set</string>
     <string name="proxy_validation_hysteria_obfs_unsupported">Hysteria2 obfs only supports salamander</string>
-    <string name="proxy_validation_boolean_required">Value must be true or false</string>
     <string name="proxy_validation_port_hopping_interval_number_required">Port hopping interval must be a number</string>
     <string name="proxy_validation_port_hopping_interval_too_small">Port hopping interval must be at least 5 seconds</string>
     <string name="proxy_validation_shadowsocks_2022_key_base64_invalid">Shadowsocks 2022 key must be base64</string>
@@ -516,6 +514,6 @@
     <string name="subscription_auto_update_interval">Auto update interval (hours)</string>
     <string name="subscription_update_via_proxy">Update via proxy</string>
     <string name="subscription_update_via_proxy_summary">Use the local proxy for subscription requests</string>
-    <string name="subscription_install_config_invalid">Invalid v2rayNG subscription link</string>
+    <string name="subscription_install_config_invalid">Invalid subscription link</string>
     <string name="subscription_install_config_failed">Failed to import subscription</string>
 </resources>

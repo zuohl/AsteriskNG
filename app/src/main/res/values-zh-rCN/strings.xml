@@ -368,7 +368,6 @@
     <string name="proxy_editor_mport_hop_interval">端口跳跃间隔（秒）</string>
     <string name="proxy_editor_down_bandwidth">带宽下行（支持的单位 k/m/g/t）</string>
     <string name="proxy_editor_up_bandwidth">带宽上行（支持的单位 k/m/g/t）</string>
-    <string name="proxy_editor_allow_insecure">跳过证书验证</string>
     <string name="proxy_editor_certificate_fingerprint">证书指纹（SHA-256）</string>
     <string name="proxy_editor_transport">底层传输方式</string>
     <string name="proxy_editor_transport_type">传输协议</string>
@@ -445,7 +444,6 @@
     <string name="proxy_validation_chain_proxy_member_count_invalid">代理链至少需要两个成员</string>
     <string name="proxy_validation_hysteria_obfs_type_required">设置混淆密码时必须填写混淆类型</string>
     <string name="proxy_validation_hysteria_obfs_unsupported">Hysteria2 混淆仅支持 salamander</string>
-    <string name="proxy_validation_boolean_required">取值必须为 true 或 false</string>
     <string name="proxy_validation_port_hopping_interval_number_required">端口跳跃间隔必须是数字</string>
     <string name="proxy_validation_port_hopping_interval_too_small">端口跳跃间隔至少为 5 秒</string>
     <string name="proxy_validation_shadowsocks_2022_key_base64_invalid">Shadowsocks 2022 密钥必须是 base64</string>
@@ -516,6 +514,6 @@
     <string name="subscription_auto_update_interval">自动更新间隔（小时）</string>
     <string name="subscription_update_via_proxy">使用代理更新</string>
     <string name="subscription_update_via_proxy_summary">通过本地代理请求订阅地址</string>
-    <string name="subscription_install_config_invalid">无效的 v2rayNG 订阅链接</string>
+    <string name="subscription_install_config_invalid">无效的订阅链接</string>
     <string name="subscription_install_config_failed">导入订阅失败</string>
 </resources>

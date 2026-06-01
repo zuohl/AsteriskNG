@@ -159,6 +159,7 @@ data class V2RayParameters(
     var security: String = "none",
     var path: String? = null,
     var host: String? = null,
+    var headers: String? = null,
     var mtu: String? = null,
     var tti: String? = null,
     var serviceName: String? = null,
@@ -200,11 +201,13 @@ data class V2RayParameters(
                 this.type = "websocket"
                 this.path = url.parameters["path"]
                 this.host = url.parameters["host"]
+                this.headers = url.parameters["headers"]
             }
 
             "httpupgrade" -> {
                 this.path = url.parameters["path"]
                 this.host = url.parameters["host"]
+                this.headers = url.parameters["headers"]
             }
 
             "grpc" -> {
@@ -269,6 +272,7 @@ data class V2RayParameters(
                 "ws", "websocket", "httpupgrade" -> {
                     appendIfNotBlank("path", this@V2RayParameters.path)
                     appendIfNotBlank("host", this@V2RayParameters.host)
+                    appendIfNotBlank("headers", this@V2RayParameters.headers)
                 }
 
                 "grpc" -> {

@@ -164,7 +164,7 @@ private fun JsonObjectBuilder.putXrayXhttpHeaders(
 private fun MihomoYamlMap.putXrayXhttpHeaderEntries(builder: JsonObjectBuilder) {
     entries.forEach { (name, value) ->
         if (!name.equals("Host", ignoreCase = true)) {
-            value.headerJsonString("XHTTP header $name")?.let { builder.put(name, it) }
+            value.headerValueString("XHTTP header $name")?.let { builder.put(name, it) }
         }
     }
 }
@@ -197,7 +197,7 @@ private fun JsonObjectBuilder.putXrayTlsSettings(
     putStringIfNotBlank("echConfigList", (primary.map("ech-opts") ?: fallback.map("ech-opts"))?.string("config"))
     putStringIfNotBlank("pinnedPeerCertSha256", primary.string("fingerprint") ?: fallback.string("fingerprint"))
     if ((primary.boolean("skip-cert-verify") ?: fallback.boolean("skip-cert-verify")) == true) {
-        put("allowInsecure", true)
+        unsupported("skip-cert-verify is not supported")
     }
 }
 
@@ -274,17 +274,6 @@ private fun Any?.integerJsonElement(fieldName: String): JsonElement? {
     }
 }
 
-private fun Any?.headerJsonString(fieldName: String): String? {
-    return when (this) {
-        is Iterable<*> -> joinToString(",") { item ->
-            item.scalarStringAllowBlank() ?: unsupported("$fieldName must be scalar")
-        }
-
-        null -> null
-        else -> scalarStringAllowBlank() ?: unsupported("$fieldName must be scalar")
-    }
-}
-
 private fun List<String>.toJsonStringArray(): JsonArray {
     return buildJsonArray {
         forEach { value -> add(JsonPrimitive(value)) }
@@ -293,15 +282,6 @@ private fun List<String>.toJsonStringArray(): JsonArray {
 
 private fun JsonObject.toCompactJsonStringOrNull(): String? {
     return takeIf { it.isNotEmpty() }?.toString()
-}
-
-private fun Any?.scalarStringAllowBlank(): String? {
-    return when (this) {
-        is String -> this
-        is Number -> toString()
-        is Boolean -> toString()
-        else -> null
-    }
 }
 
 private enum class XrayXhttpValueType {

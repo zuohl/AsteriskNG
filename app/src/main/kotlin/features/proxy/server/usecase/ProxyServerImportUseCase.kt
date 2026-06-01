@@ -4,37 +4,19 @@
 package features.proxy.server.usecase
 
 import features.proxy.server.usecase.importer.importPayloads
-import features.proxy.server.usecase.importer.parseProxyServersFromJsonConfig
-import features.proxy.server.usecase.importer.parseProxyServersFromMihomoYamlConfig
-import features.proxy.server.usecase.importer.parseProxyServersFromUrls
+import features.proxy.server.usecase.importer.parseProxyServersFromPayloads
 
-internal fun importProxyServersFromText(
+internal suspend fun importProxyServersFromText(
     text: String,
     source: ProxyServerImportSource,
+    providerUrlFetcher: ProxyServerProviderUrlFetcher? = null,
 ): ProxyServerImportResult {
+    val context = ProxyServerImportContext(
+        source = source,
+        providerUrlFetcher = providerUrlFetcher,
+    )
     return parseProxyServersFromPayloads(
         payloads = text.importPayloads(source),
-        source = source,
+        context = context,
     )
 }
-
-private fun parseProxyServersFromPayloads(
-    payloads: List<String>,
-    source: ProxyServerImportSource,
-): ProxyServerImportResult {
-    for (payload in payloads) {
-        for (parser in ProxyServerImportParsers) {
-            val result = parser(payload, source)
-            if (result.urlCount > 0) {
-                return result
-            }
-        }
-    }
-    return EmptyProxyServerImportResult
-}
-
-private val ProxyServerImportParsers: List<ProxyServerPayloadParser> = listOf(
-    ::parseProxyServersFromJsonConfig,
-    ::parseProxyServersFromMihomoYamlConfig,
-    ::parseProxyServersFromUrls,
-)

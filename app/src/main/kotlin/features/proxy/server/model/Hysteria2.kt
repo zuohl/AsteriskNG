@@ -24,7 +24,6 @@ data class Hysteria2(
     var obfs: String = "",
     var obfsPassword: String = "",
     var sni: String = "",
-    var insecure: Int = 0,
     var pinSHA256: String = "",
     //v2rayNg
     var mport: String = "",
@@ -56,9 +55,6 @@ data class Hysteria2(
                 putJsonObject("tlsSettings") {
                     putIfNotBlank("serverName", sni)
                     putIfNotBlank("pinnedPeerCertSha256", pinSHA256)
-                    if (insecure == 1) {
-                        put("allowInsecure", true)
-                    }
                 }
                 val finalMask = toXrayFinalMask()
                 if (finalMask.isNotEmpty()) {
@@ -77,7 +73,9 @@ data class Hysteria2(
         this.obfs = url.parameters["obfs"] ?: ""
         this.obfsPassword = url.parameters["obfs-password"] ?: ""
         this.sni = url.parameters["sni"] ?: ""
-        this.insecure = url.parameters["insecure"]?.toIntOrNull() ?: 0
+        if (url.parameters["insecure"].isEnabledFlag()) {
+            throw IllegalArgumentException("Hysteria2 insecure is not supported")
+        }
         this.pinSHA256 = url.parameters["pinSHA256"] ?: ""
         //v2rayNg
         this.mport = url.parameters["mport"] ?: url.parameters["ports"] ?: ""
@@ -116,7 +114,6 @@ data class Hysteria2(
             }
             if (this@Hysteria2.security.isNotBlank() && this@Hysteria2.security != "none") {
                 parameters.append("security", this@Hysteria2.security)
-                parameters.append("insecure", this@Hysteria2.insecure.toString())
             }
 
             fragment = this@Hysteria2.remarks
@@ -135,7 +132,6 @@ data class Hysteria2(
             obfs = other.obfs
             obfsPassword = other.obfsPassword
             sni = other.sni
-            insecure = other.insecure
             pinSHA256 = other.pinSHA256
             mport = other.mport
             mportHopInt = other.mportHopInt
@@ -159,10 +155,14 @@ data class Hysteria2(
         validateOptionalBandwidth(up, "up bandwidth")
         validateOptionalBandwidth(down, "down bandwidth")
         validateAllowed(security.ifBlank { "none" }, "transport security", setOf("none", "tls"))
-        if (insecure !in 0..1) {
-            proxyValidationError(ProxyServerValidationError.BooleanRequired)
-        }
         validateOptionalSha256(pinSHA256, "certificate fingerprint")
+    }
+}
+
+private fun String?.isEnabledFlag(): Boolean {
+    return when (this?.trim()?.lowercase()) {
+        "1", "true", "yes", "on" -> true
+        else -> false
     }
 }
 

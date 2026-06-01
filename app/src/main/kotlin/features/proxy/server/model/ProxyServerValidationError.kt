@@ -47,7 +47,6 @@ enum class ProxyServerValidationError {
     ChainProxyMemberCountInvalid,
     HysteriaObfsTypeRequired,
     HysteriaObfsUnsupported,
-    BooleanRequired,
     PortHoppingIntervalNumberRequired,
     PortHoppingIntervalTooSmall,
     Shadowsocks2022KeyBase64Invalid,
