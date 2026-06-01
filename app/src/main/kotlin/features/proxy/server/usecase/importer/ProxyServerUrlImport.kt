@@ -13,17 +13,41 @@ internal fun parseProxyServersFromUrls(
     text: String,
     source: ProxyServerImportSource,
 ): ProxyServerImportResult {
-    val urls = text.lineSequence()
-        .proxyServerUrlCandidates(distinct = true)
-    val servers = urls.mapIndexedNotNull { index, url ->
-        parseProxyServerUrlOrNull(
+    val seenUrls = linkedSetOf<String>()
+    val servers = mutableListOf<ProxyServer<*>>()
+    var urlCount = 0
+
+    fun importCandidate(url: String): ProxyServer<*>? {
+        if (!seenUrls.add(url)) return null
+        val server = parseProxyServerUrlOrNull(
             url = url,
-            index = index,
+            index = urlCount,
             source = source,
         )
+        urlCount += 1
+        return server
     }
+
+    text.lineSequence().forEach { rawLine ->
+        val line = rawLine.trim().trimStart(ImportByteOrderMark)
+        if (line.isBlank()) return@forEach
+
+        if (line.startsWithProxyServerScheme()) {
+            importCandidate(line)?.let { server ->
+                servers += server
+                return@forEach
+            }
+        }
+
+        line.embeddedProxyServerUrls()
+            .filterNot { url -> url == line }
+            .forEach { url ->
+                importCandidate(url)?.let { server -> servers += server }
+            }
+    }
+
     return ProxyServerImportResult(
-        urlCount = urls.size,
+        urlCount = urlCount,
         servers = servers,
     )
 }
@@ -52,24 +76,9 @@ private fun String.importFailureMessage(
     return "Failed to import proxy server URL source=${source.logName} index=$index protocol=$protocol length=$length"
 }
 
-private fun Sequence<String>.proxyServerUrlCandidates(distinct: Boolean): List<String> {
-    val urls = flatMap { line -> line.proxyServerUrlCandidates() }
-        .let { sequence -> if (distinct) sequence.distinct() else sequence }
-    return urls.toList()
-}
-
-private fun String.proxyServerUrlCandidates(): Sequence<String> {
-    val line = trim().trimStart(ImportByteOrderMark)
-    if (line.isBlank()) return emptySequence()
-    val embeddedUrls = ProxyServerUrlRegex.findAll(line)
+private fun String.embeddedProxyServerUrls(): Sequence<String> {
+    return ProxyServerUrlRegex.findAll(this)
         .map { match -> match.value.trimEnd(',', ';') }
-        .filterNot { url -> url == line }
-        .toList()
-    return if (line.startsWithProxyServerScheme()) {
-        (listOf(line) + embeddedUrls).asSequence()
-    } else {
-        embeddedUrls.asSequence()
-    }
 }
 
 private fun String.startsWithProxyServerScheme(): Boolean {
@@ -80,6 +89,8 @@ private fun String.startsWithProxyServerScheme(): Boolean {
 private val ProxyServerUrlPrefixes = listOf(
     "${ProxyServerConstants.PROTOCOL_HTTP}://",
     "${ProxyServerConstants.PROTOCOL_SOCKS}://",
+    "${ProxyServerConstants.PROTOCOL_SOCKS4}://",
+    "${ProxyServerConstants.PROTOCOL_SOCKS5}://",
     "${ProxyServerConstants.PROTOCOL_SS}://",
     "${ProxyServerConstants.PROTOCOL_VMESS}://",
     "${ProxyServerConstants.PROTOCOL_VLESS}://",
@@ -90,7 +101,7 @@ private val ProxyServerUrlPrefixes = listOf(
 )
 
 private val ProxyServerUrlRegex = Regex(
-    "(?i)\\b(?:http|socks|ss|vmess|vless|trojan|hy2|hysteria2|wireguard)://[^\\s<>\"']+",
+    "(?i)\\b(?:http|socks|socks4|socks5|ss|vmess|vless|trojan|hy2|hysteria2|wireguard)://[^\\s<>\"']+",
 )
 
 private const val ProxyServerImportLogTag = "ProxyServerImport"

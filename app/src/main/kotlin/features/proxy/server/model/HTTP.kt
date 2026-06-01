@@ -9,6 +9,9 @@ import io.ktor.http.Url
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import utils.decodeFlexibleBase64ToStringOrRaw
+import utils.proxyUrlRemarks
+import utils.userInfoOrNull
 
 @Serializable
 data class HTTP(
@@ -38,11 +41,11 @@ data class HTTP(
     }
 
     override fun parse(url: Url): HTTP {
-        this.remarks = url.fragment
+        this.remarks = url.proxyUrlRemarks()
         this.server = url.host
         this.port = url.port.toString()
-        url.user?.let { str ->
-            val info = str.decodeProxyUrlBase64().decodeToString()
+        url.userInfoOrNull()?.let { str ->
+            val info = str.decodeFlexibleBase64ToStringOrRaw()
             val pos = info.indexOfFirst { it == ':' }
             if (pos > -1) {
                 this.user = info.substring(0, pos)

@@ -10,7 +10,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import utils.decodeFlexibleBase64OrNull
+import utils.decodeFlexibleBase64ToStringOrRaw
 import utils.encodeBase64
+import utils.proxyUrlRemarks
+import utils.userInfoOrNull
 
 @Serializable
 data class Shadowsocks(
@@ -40,36 +43,59 @@ data class Shadowsocks(
     }
 
     override fun parse(url: Url): Shadowsocks {
-        this.remarks = url.fragment
+        this.remarks = url.proxyUrlRemarks()
         this.server = url.host
         this.port = url.port.toString()
         if (url.port == 0) {
             val full =
                 url.host.decodeProxyUrlBase64().decodeToString()
-            val infoAndServer = full.split('@')
-            if (infoAndServer.size == 2) {
-                val methodAndPassword = infoAndServer[0].split(':')
-                if (methodAndPassword.size == 2) {
-                    this.method = methodAndPassword[0]
-                    this.password = methodAndPassword[1]
-                }
-                val addressAndPort = infoAndServer[1].split(':')
-                if (addressAndPort.size == 2) {
-                    this.server = addressAndPort[0]
-                    this.port = addressAndPort[1]
-                }
-            }
+            parseLegacy(full, this.remarks)
         } else {
-            val info = url.user?.let {
-                it.decodeProxyUrlBase64().decodeToString()
-            } ?: throw IllegalArgumentException("Bad Shadowsocks url")
+            val info = url.userInfoOrNull()?.decodeFlexibleBase64ToStringOrRaw() ?: throw IllegalArgumentException("Bad Shadowsocks url")
             val pos = info.indexOfFirst { it == ':' }
             if (pos > -1) {
                 this.method = info.substring(0, pos)
                 this.password = info.substring(pos + 1)
             }
+            applyXrayRawHttpObfs(url.parameters["plugin"])
         }
         return this
+    }
+
+    internal fun parseLegacy(value: String, remarks: String): Shadowsocks {
+        this.remarks = remarks
+        val infoAndServer = value.trimEnd('/').split('@', limit = 2)
+        if (infoAndServer.size == 2) {
+            val methodAndPassword = infoAndServer[0].split(':', limit = 2)
+            if (methodAndPassword.size == 2) {
+                this.method = methodAndPassword[0].lowercase()
+                this.password = methodAndPassword[1]
+            }
+            parseLegacyEndpoint(infoAndServer[1])?.let { (server, port) ->
+                this.server = server
+                this.port = port
+            }
+        }
+        return this
+    }
+
+    // Xray does not run SIP002 plugins; only obfs=http can be represented as RAW HTTP header.
+    private fun applyXrayRawHttpObfs(plugin: String?) {
+        if (plugin.isNullOrBlank()) return
+        val queryPairs = plugin.split(";")
+            .mapNotNull { pair ->
+                val index = pair.indexOf('=')
+                if (index <= 0) return@mapNotNull null
+                pair.substring(0, index).lowercase() to pair.substring(index + 1)
+            }
+            .toMap()
+        if (!queryPairs["obfs"].equals("http", ignoreCase = true)) return
+        this.parms = this.parms.copy(
+            type = "raw",
+            headerType = "http",
+            host = queryPairs["obfs-host"],
+            path = queryPairs["path"],
+        )
     }
 
     override fun getUrl(): String {
@@ -78,6 +104,9 @@ data class Shadowsocks(
             host = this@Shadowsocks.server
             this@Shadowsocks.port.toIntOrNull()?.let { port = it }
             user = "${this@Shadowsocks.method}:${this@Shadowsocks.password}".encodeToByteArray().encodeProxyUrlBase64()
+            this@Shadowsocks.parms.toSip002HttpObfsPluginOrNull()?.let { plugin ->
+                parameters.append("plugin", plugin)
+            }
             fragment = this@Shadowsocks.remarks
         }.build().toString()
     }
@@ -156,6 +185,31 @@ private fun decodeShadowsocks2022Key(key: String): ByteArray? {
         return null
     }
     return key.decodeFlexibleBase64OrNull()
+}
+
+private fun parseLegacyEndpoint(value: String): Pair<String, String>? {
+    val endpoint = value.trimEnd('/')
+    return if (endpoint.startsWith('[')) {
+        val end = endpoint.indexOf("]:")
+        if (end <= 0) return null
+        endpoint.substring(1, end) to endpoint.substring(end + 2)
+    } else {
+        val separator = endpoint.lastIndexOf(':')
+        if (separator <= 0 || separator == endpoint.lastIndex) return null
+        endpoint.substring(0, separator) to endpoint.substring(separator + 1)
+    }
+}
+
+private fun V2RayParameters.toSip002HttpObfsPluginOrNull(): String? {
+    val transport = type.ifBlank { "raw" }
+    if (transport != "raw" && transport != "tcp") return null
+    if (!headerType.equals("http", ignoreCase = true)) return null
+    return listOfNotNull(
+        "obfs-local",
+        "obfs=http",
+        host?.takeIf(String::isNotBlank)?.let { "obfs-host=$it" },
+        path?.takeIf(String::isNotBlank)?.let { "path=$it" },
+    ).joinToString(";")
 }
 
 private val Shadowsocks2022KeyLengths = mapOf(

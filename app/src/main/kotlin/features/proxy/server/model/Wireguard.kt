@@ -12,6 +12,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import utils.toCsvValues
+import utils.proxyUrlRemarks
 
 @Serializable
 data class Wireguard(
@@ -63,7 +64,7 @@ data class Wireguard(
     }
 
     override fun parse(url: Url): Wireguard {
-        this.remarks = url.fragment
+        this.remarks = url.proxyUrlRemarks()
         this.server = url.host
         this.port = url.port.toString()
         this.secretKey = url.user ?: ""
@@ -71,7 +72,7 @@ data class Wireguard(
         this.preSharedKey = url.parameters["presharedkey"] ?: ""
         this.reserved = url.parameters["reserved"] ?: "0,0,0"
         this.address = url.parameters["address"] ?: "172.16.0.2/32"
-        this.mtu = url.parameters["mtu"] ?: ""
+        this.mtu = url.parameters["mtu"] ?: "1420"
         return this
     }
 

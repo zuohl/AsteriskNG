@@ -10,6 +10,7 @@ import io.ktor.http.parsing.ParseException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import utils.proxyUrlRemarks
 
 @Serializable
 data class VLESS(
@@ -41,7 +42,7 @@ data class VLESS(
     }
 
     override fun parse(url: Url): VLESS {
-        this.remarks = url.fragment
+        this.remarks = url.proxyUrlRemarks()
         this.id = url.user ?: throw ParseException("Invalid VLESS url")
         this.server = url.host
         this.port = url.port.toString()

@@ -10,6 +10,7 @@ import io.ktor.http.parsing.ParseException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import utils.proxyUrlRemarks
 
 @Serializable
 data class Trojan(
@@ -37,11 +38,11 @@ data class Trojan(
     }
 
     override fun parse(url: Url): Trojan {
-        this.remarks = url.fragment
+        this.remarks = url.proxyUrlRemarks()
         this.password = url.user ?: throw ParseException("Invalid Trojan url")
         this.server = url.host
         this.port = url.port.toString()
-        this.parms = this.parms.parse(url, "raw", "none")
+        this.parms = this.parms.parse(url, "raw", "tls")
         return this
     }
 

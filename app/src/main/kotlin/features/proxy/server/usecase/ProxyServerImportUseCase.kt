@@ -22,19 +22,15 @@ private fun parseProxyServersFromPayloads(
     payloads: List<String>,
     source: ProxyServerImportSource,
 ): ProxyServerImportResult {
-    var lastAttempt = EmptyProxyServerImportResult
     for (payload in payloads) {
         for (parser in ProxyServerImportParsers) {
             val result = parser(payload, source)
-            if (result.servers.isNotEmpty()) {
+            if (result.urlCount > 0) {
                 return result
-            }
-            if (result.urlCount > 0 || lastAttempt.urlCount == 0) {
-                lastAttempt = result
             }
         }
     }
-    return lastAttempt
+    return EmptyProxyServerImportResult
 }
 
 private val ProxyServerImportParsers: List<ProxyServerPayloadParser> = listOf(

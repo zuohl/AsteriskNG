@@ -12,6 +12,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
+import utils.proxyUrlRemarks
 
 @Serializable
 data class Hysteria2(
@@ -69,7 +70,7 @@ data class Hysteria2(
 
     override fun parse(url: Url): Hysteria2 {
         //standard
-        this.remarks = url.fragment
+        this.remarks = url.proxyUrlRemarks()
         this.server = url.host
         this.port = url.port.toString()
         this.auth = url.user ?: ""
@@ -83,7 +84,7 @@ data class Hysteria2(
         this.mportHopInt = url.parameters["mportHopInt"] ?: url.parameters["hop-interval"] ?: ""
         this.up = url.parameters["up"] ?: ""
         this.down = url.parameters["down"] ?: ""
-        this.security = url.parameters["security"] ?: ""
+        this.security = url.parameters["security"] ?: "tls"
         return this
     }
 

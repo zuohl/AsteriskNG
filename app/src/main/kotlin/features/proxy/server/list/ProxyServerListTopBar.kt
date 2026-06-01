@@ -35,7 +35,7 @@ import features.subscription.runtime.AndroidSubscriptionFetcher
 import features.subscription.usecase.subscriptionUpdateMessage
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
-import features.subscription.toSubscriptionInstallConfigOrNull
+import features.subscription.toRawHttpsSubscriptionInstallConfigOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -159,7 +159,7 @@ private fun handleProxyServerListAddAction(
                     .onSuccess { scanText ->
                         if (scanText.isNullOrBlank()) return@onSuccess
                         if (
-                            installSubscriptionFromQrCode(
+                            installSubscriptionFromText(
                                 text = scanText,
                                 stateStore = stateStore,
                                 subscriptionFetcher = subscriptionFetcher,
@@ -184,8 +184,20 @@ private fun handleProxyServerListAddAction(
 
         ProxyServerListAddAction.Clipboard -> {
             scope.launch {
+                val text = clipboard.getPlainText().orEmpty()
+                if (
+                    installSubscriptionFromText(
+                        text = text,
+                        stateStore = stateStore,
+                        subscriptionFetcher = subscriptionFetcher,
+                        tipNotifier = tipNotifier,
+                        messages = messages,
+                    )
+                ) {
+                    return@launch
+                }
                 importProxyServers(
-                    text = clipboard.getPlainText().orEmpty(),
+                    text = text,
                     source = ProxyServerImportSource.Clipboard,
                     groupState = groupState,
                     updateAppState = updateAppState,
@@ -199,6 +211,17 @@ private fun handleProxyServerListAddAction(
             scope.launch {
                 runCatching {
                     proxyServerImportFileUseCase.readText()?.let { text ->
+                        if (
+                            installSubscriptionFromText(
+                                text = text,
+                                stateStore = stateStore,
+                                subscriptionFetcher = subscriptionFetcher,
+                                tipNotifier = tipNotifier,
+                                messages = messages,
+                            )
+                        ) {
+                            return@let
+                        }
                         importProxyServers(
                             text = text,
                             source = ProxyServerImportSource.File,
@@ -232,14 +255,14 @@ private fun handleProxyServerListAddAction(
     }
 }
 
-private suspend fun installSubscriptionFromQrCode(
+private suspend fun installSubscriptionFromText(
     text: String,
     stateStore: AndroidAppStateStore,
     subscriptionFetcher: AndroidSubscriptionFetcher,
     tipNotifier: AndroidToastTipNotifier,
     messages: ProxyServerListMessages,
 ): Boolean {
-    val config = text.toSubscriptionInstallConfigOrNull() ?: return false
+    val config = text.toRawHttpsSubscriptionInstallConfigOrNull() ?: return false
     runCatching {
         SubscriptionInstallConfigUseCase(
             stateStore = stateStore,

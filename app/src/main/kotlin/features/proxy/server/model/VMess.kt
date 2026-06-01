@@ -18,6 +18,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import utils.encodeUrlSafeBase64OptionalPadding
+import utils.proxyUrlRemarks
 
 @Serializable
 data class LegacyVMess(
@@ -99,7 +100,7 @@ data class LegacyVMess(
 
     fun convertToAEAD(): VMess {
         return VMess(
-            remarks = this.remarks,
+            remarks = this.remarks.ifBlank { "none" },
             id = this.id,
             server = this.server,
             port = this.port.toString(),
@@ -149,7 +150,7 @@ data class VMess(
     }
 
     override fun parse(url: Url): VMess {
-        this.remarks = url.fragment
+        this.remarks = url.proxyUrlRemarks()
         this.id = url.user ?: throw ParseException("Invalid VMessAEAD url")
         this.server = url.host
         this.port = url.port.toString()

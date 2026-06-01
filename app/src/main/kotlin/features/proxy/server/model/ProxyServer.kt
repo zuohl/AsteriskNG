@@ -9,12 +9,15 @@ import io.ktor.http.Url
 import io.ktor.http.parsing.ParseException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import utils.decodeUrlSafeBase64OptionalPaddingOrNull
+import utils.decodeFlexibleBase64OrNull
 import utils.encodeUrlSafeBase64OptionalPadding
+import utils.toProxyUrlRemarks
 
 object ProxyServerConstants {
     const val PROTOCOL_HTTP = "http"
     const val PROTOCOL_SOCKS = "socks"
+    const val PROTOCOL_SOCKS4 = "socks4"
+    const val PROTOCOL_SOCKS5 = "socks5"
     const val PROTOCOL_SS = "ss"
     const val PROTOCOL_VMESS = "vmess"
     const val PROTOCOL_VLESS = "vless"
@@ -42,10 +45,18 @@ interface ProxyServer<T : ProxyServer<T>> {
         }
 
         fun parse(str: String): ProxyServer<*> {
-            val url = Url(str)
+            val value = str.trim()
+            parseLegacyProxyServerUrl(value)?.let { server ->
+                server.check()
+                return server
+            }
+
+            val url = Url(value)
             val server = when (url.protocol.name) {
                 ProxyServerConstants.PROTOCOL_HTTP -> HTTP().parse(url)
-                ProxyServerConstants.PROTOCOL_SOCKS -> Socks().parse(url)
+                ProxyServerConstants.PROTOCOL_SOCKS,
+                ProxyServerConstants.PROTOCOL_SOCKS4,
+                ProxyServerConstants.PROTOCOL_SOCKS5 -> Socks().parse(url)
                 ProxyServerConstants.PROTOCOL_SS -> Shadowsocks().parse(url)
                 ProxyServerConstants.PROTOCOL_VMESS -> {
                     if (url.user == null) {
@@ -67,6 +78,30 @@ interface ProxyServer<T : ProxyServer<T>> {
             server.check()
             return server
         }
+
+        private fun parseLegacyProxyServerUrl(value: String): ProxyServer<*>? {
+            val scheme = value.substringBefore("://", missingDelimiterValue = "")
+            val payload = value.substringAfter("://", missingDelimiterValue = "")
+            val body = payload.substringBefore("#")
+            if (body.isBlank()) return null
+            return when {
+                scheme.equals(ProxyServerConstants.PROTOCOL_VMESS, ignoreCase = true) &&
+                    !body.contains('@') &&
+                    !body.contains('?') -> {
+                    val originJson = body.decodeProxyUrlBase64().decodeToString()
+                    json.decodeFromString<LegacyVMess>(originJson).convertToAEAD()
+                }
+
+                scheme.equals(ProxyServerConstants.PROTOCOL_SS, ignoreCase = true) &&
+                    !body.contains('@') -> {
+                    val remarks = payload.substringAfter("#", missingDelimiterValue = "").toProxyUrlRemarks()
+                    val decoded = body.decodeProxyUrlBase64().decodeToString()
+                    Shadowsocks().parseLegacy(decoded, remarks)
+                }
+
+                else -> null
+            }
+        }
     }
 
     fun getInfo(): ProxyServerInfo
@@ -76,7 +111,7 @@ interface ProxyServer<T : ProxyServer<T>> {
 }
 
 internal fun String.decodeProxyUrlBase64(): ByteArray {
-    return decodeUrlSafeBase64OptionalPaddingOrNull()
+    return decodeFlexibleBase64OrNull()
         ?: throw IllegalArgumentException("Bad proxy URL base64")
 }
 
