@@ -7,7 +7,6 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
 internal data class GeneratedXrayConfig(
     val log: JsonObject,
@@ -26,7 +25,7 @@ internal data class GeneratedXrayConfig(
             put("inbounds", inbounds)
             put("outbounds", outbounds)
             routing?.let { put("routing", it) }
-            fakeDns?.let { put("fakedns", it) }
+            fakeDns?.let { put("fakeDns", it) }
             observatory?.let { put("observatory", it) }
             burstObservatory?.let { put("burstObservatory", it) }
         }

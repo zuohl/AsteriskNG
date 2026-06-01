@@ -53,10 +53,10 @@ private fun JsonObject.overwriteAsteriskInboundDns(
         ),
     )
 
-    return updatedWithout(setOf("fakedns")) {
+    return updatedWithout(setOf("fakedns", "fakeDns")) {
         put("inbounds", request.inbounds.toJsonObjectArray())
         put("dns", buildXrayDnsConfig(dnsPlan))
-        putIfNotNull("fakedns", dnsPlan.fakeDns)
+        putIfNotNull("fakeDns", dnsPlan.fakeDns)
         put("outbounds", outboundsRewrite.outbounds)
         put("routing", routing)
     }

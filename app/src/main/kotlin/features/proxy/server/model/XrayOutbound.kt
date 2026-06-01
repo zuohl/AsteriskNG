@@ -9,8 +9,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
@@ -143,12 +145,10 @@ private fun JsonObjectBuilder.putRawSettings(params: V2RayParameters) {
 
 private fun JsonObjectBuilder.putWsSettings(params: V2RayParameters) {
     putJsonObject("wsSettings") {
+        val transportHeaders = params.httpTransportHeaders("WebSocket headers")
         putIfNotBlank("path", params.path)
-        putIfNotBlank("host", params.host)
-        val headers = params.headers.toXrayJsonObjectOrNull("WebSocket headers")
-        if (headers != null) {
-            put("headers", headers)
-        }
+        putIfNotBlank("host", transportHeaders.host)
+        transportHeaders.headers?.let { put("headers", it) }
     }
 }
 
@@ -164,12 +164,10 @@ private fun JsonObjectBuilder.putGrpcSettings(params: V2RayParameters) {
 
 private fun JsonObjectBuilder.putHttpUpgradeSettings(params: V2RayParameters) {
     putJsonObject("httpupgradeSettings") {
+        val transportHeaders = params.httpTransportHeaders("HTTPUpgrade headers")
         putIfNotBlank("path", params.path)
-        putIfNotBlank("host", params.host)
-        val headers = params.headers.toXrayJsonObjectOrNull("HTTPUpgrade headers")
-        if (headers != null) {
-            put("headers", headers)
-        }
+        putIfNotBlank("host", transportHeaders.host)
+        transportHeaders.headers?.let { put("headers", it) }
     }
 }
 
@@ -202,4 +200,38 @@ private fun String?.toXrayJsonObjectOrNull(fieldName: String): JsonObject? {
     }
     return element as? JsonObject
         ?: proxyValidationError(ProxyServerValidationError.JsonObjectRequired, fieldName)
+}
+
+private data class XrayHttpTransportHeaders(
+    val host: String?,
+    val headers: JsonObject?,
+)
+
+private fun V2RayParameters.httpTransportHeaders(fieldName: String): XrayHttpTransportHeaders {
+    val explicitHost = host?.trim()?.takeIf(String::isNotEmpty)
+    val parsedHeaders = headers.toXrayJsonObjectOrNull(fieldName)
+        ?: return XrayHttpTransportHeaders(host = explicitHost, headers = null)
+    var hostHeader: String? = null
+    val filteredHeaders = buildJsonObject {
+        parsedHeaders.forEach { (name, value) ->
+            if (name.equals("Host", ignoreCase = true)) {
+                if (hostHeader.isNullOrBlank()) {
+                    hostHeader = value.headerStringOrNull()
+                }
+            } else {
+                put(name, value)
+            }
+        }
+    }
+    return XrayHttpTransportHeaders(
+        host = explicitHost ?: hostHeader,
+        headers = filteredHeaders.takeIf { it.isNotEmpty() },
+    )
+}
+
+private fun JsonElement.headerStringOrNull(): String? {
+    return (this as? JsonPrimitive)
+        ?.contentOrNull
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
 }

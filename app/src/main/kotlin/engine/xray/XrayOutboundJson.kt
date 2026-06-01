@@ -53,7 +53,7 @@ internal fun buildXrayObservatory(selectors: List<String>): JsonObject? {
     if (selectors.isEmpty()) return null
     return buildJsonObject {
         put("subjectSelector", selectors.distinct().toJsonStringArray())
-        put("probeUrl", XrayObservatoryProbeUrl)
+        put("probeURL", XrayObservatoryProbeUrl)
         put("probeInterval", "3m")
         put("enableConcurrency", true)
     }
