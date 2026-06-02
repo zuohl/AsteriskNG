@@ -68,6 +68,7 @@ internal fun ProxyAppListPageEffects(
     selectedAppKeys: Set<String>,
     isVpnServiceMode: Boolean,
     vpnServiceUserId: Int?,
+    selfPackageName: String,
     selectedUserIndex: Int,
     userTabIds: List<Int>,
     userPagerState: PagerState,
@@ -97,6 +98,7 @@ internal fun ProxyAppListPageEffects(
         pageState = pageState,
         selectedAppKeys = selectedAppKeys,
         isVpnServiceMode = isVpnServiceMode,
+        selfPackageName = selfPackageName,
         packageCatalog = packageCatalog,
         tipNotifier = tipNotifier,
     )
@@ -221,12 +223,13 @@ private fun ProxyAppListPackageEffect(
     pageState: ProxyAppListPageState,
     selectedAppKeys: Set<String>,
     isVpnServiceMode: Boolean,
+    selfPackageName: String,
     packageCatalog: AndroidPackageProvider,
     tipNotifier: AndroidToastTipNotifier,
 ) {
     val loadFailedMessage = stringResource(R.string.proxy_app_list_load_failed)
 
-    LaunchedEffect(pageState.showSystemApps, pageState.refreshSeed, isVpnServiceMode) {
+    LaunchedEffect(pageState.showSystemApps, pageState.refreshSeed, isVpnServiceMode, selfPackageName) {
         val packageFilterKey = pageState.showSystemApps to isVpnServiceMode
         val replacingAppList = pageState.loadedPackageFilterKey != packageFilterKey
         val selectedAppKeysOnRefresh = selectedAppKeys
@@ -242,6 +245,7 @@ private fun ProxyAppListPackageEffect(
             pageState.appPackages = packageCatalog.loadProxyAppListPackages(
                 showSystemApps = pageState.showSystemApps,
                 currentUserOnly = isVpnServiceMode,
+                excludedPackageName = selfPackageName,
             ).sortedForProxyAppListRefresh(selectedAppKeysOnRefresh)
             pageState.loadedPackageFilterKey = packageFilterKey
         } catch (error: CancellationException) {

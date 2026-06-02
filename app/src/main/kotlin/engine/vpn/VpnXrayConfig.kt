@@ -6,9 +6,13 @@ package engine.vpn
 import android.content.Context
 import android.os.Process
 import app.effectiveLocalDnsEnabled
+import engine.proxy.LocalProxyOptions
+import engine.proxy.buildLocalSocksInbound
+import engine.proxy.toLocalProxyOptions
 import engine.xray.XrayConfigFactory
 import engine.xray.XrayConfigRequest
 import engine.xray.XrayCoreLogPaths
+import engine.xray.XrayTags
 import engine.xray.buildXrayOutboundPlan
 import engine.xray.prepareXrayCoreLogPaths
 import features.resources.runtime.prepareXrayResourceFilePaths
@@ -27,7 +31,7 @@ internal data class VpnServiceStartConfig(
     val dnsServers: List<String>,
     val xrayConfigJson: String,
     val applicationPolicy: VpnApplicationPolicy,
-    val localProxyOptions: VpnLocalProxyOptions,
+    val localProxyOptions: LocalProxyOptions,
     val appendHttpProxyOptions: VpnAppendHttpProxyOptions,
     val coreLogPaths: XrayCoreLogPaths,
     val enableAccessLog: Boolean = false,
@@ -40,7 +44,7 @@ internal object VpnXrayConfigFactory {
         val coreLogPaths = context.prepareXrayCoreLogPaths()
         val resourceFilePaths = context.prepareXrayResourceFilePaths()
         val tunOptions = appState.toTunOptions()
-        val localProxyOptions = appState.toVpnLocalProxyOptions()
+        val localProxyOptions = appState.toLocalProxyOptions()
         val appendHttpProxyOptions = appState.toVpnAppendHttpProxyOptions(localProxyOptions)
         val outboundPlan = appState.buildXrayOutboundPlan(request.selectedServer)
         val dnsHosts = appState.xrayDnsHosts(outboundPlan.dnsHostServers)
@@ -60,7 +64,7 @@ internal object VpnXrayConfigFactory {
                     appState = appState,
                     selectedServer = request.selectedServer,
                     inbounds = buildList {
-                        add(buildVpnLocalSocksInbound(appState, localProxyOptions))
+                        add(buildLocalSocksInbound(appState, XrayTags.LOCAL_SOCKS_INBOUND, localProxyOptions))
                         if (appendHttpProxyOptions.enabled) {
                             add(buildVpnAppendHttpInbound(appendHttpProxyOptions))
                         }

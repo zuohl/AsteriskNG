@@ -37,7 +37,6 @@ internal fun inboundProxySummary(
     useTun2SocksProxyPort: Boolean,
     transparentProxyPort: String,
     socks5ProxyPort: String,
-    enableSocks5Proxy: Boolean,
     enableHttpProxy: Boolean,
 ): String {
     val primaryInbound = if (useTun2SocksProxyPort) {
@@ -48,9 +47,6 @@ internal fun inboundProxySummary(
             .formatTemplate("port" to transparentProxyPort)
     }
     val enabledInbounds = mutableListOf<String>()
-    if (!useTun2SocksProxyPort && enableSocks5Proxy) {
-        enabledInbounds += stringResource(R.string.settings_socks5_proxy)
-    }
     if (enableHttpProxy) {
         enabledInbounds += stringResource(R.string.settings_http_proxy)
     }
@@ -67,12 +63,8 @@ internal fun inboundProxySummary(
 @Composable
 internal fun localProxySettingsSummary(
     port: String,
-    enableDynamicPort: Boolean,
     listenAllInterfaces: Boolean,
 ): String {
-    if (enableDynamicPort) {
-        return stringResource(R.string.settings_local_proxy_summary_dynamic)
-    }
     val summary = if (listenAllInterfaces) {
         stringResource(R.string.settings_local_proxy_summary_all_interfaces)
     } else {

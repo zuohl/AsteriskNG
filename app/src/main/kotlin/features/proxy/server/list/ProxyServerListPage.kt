@@ -287,7 +287,12 @@ fun ProxyServerListPage(
                             )
                         ) {
                             is ProxyServiceResult.Success -> {
-                                updateAppState { state -> state.copy(proxyRunning = result.proxyRunning) }
+                                updateAppState { state ->
+                                    state.copy(
+                                        proxyRunning = result.proxyRunning,
+                                        localProxyPort = result.appState?.localProxyPort ?: state.localProxyPort,
+                                    )
+                                }
                                 tipNotifier.show(
                                     if (result.proxyRunning) messages.serviceStarted else messages.serviceStopped,
                                 )

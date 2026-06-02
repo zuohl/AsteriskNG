@@ -30,6 +30,7 @@ import app.modes.RunModeTun2Socks
 import app.modes.RunModeVpnService
 import app.ProjectInfo
 import app.R
+import engine.proxy.withResolvedDynamicLocalProxyPort
 import features.settings.sheets.externalInterfacesSummary
 import features.settings.sheets.fragmentSettingsSummary
 import features.settings.sheets.ignoredInterfacesSummary
@@ -147,12 +148,10 @@ private fun SettingsContent(
         useTun2SocksProxyPort = appState.runMode == RunModeTun2Socks,
         transparentProxyPort = appState.transparentProxyPort,
         socks5ProxyPort = appState.socks5ProxyPort,
-        enableSocks5Proxy = appState.enableSocks5Proxy,
         enableHttpProxy = appState.enableHttpProxy,
     )
     val localProxySettingsSummary = localProxySettingsSummary(
         port = appState.localProxyPort,
-        enableDynamicPort = appState.enableDynamicLocalProxyPort,
         listenAllInterfaces = appState.localProxyListenAllInterfaces,
     )
     val externalInterfacesSummary = externalInterfacesSummary(appState.externalInterfaces)
@@ -301,10 +300,18 @@ private fun SettingsContent(
                             scope.launch {
                                 rootBootScriptSwitchInProgress = true
                                 try {
-                                    when (val result = rootBootScriptUseCase.setEnabled(appState, enabled)) {
+                                    val bootScriptState = if (enabled) {
+                                        appState.withResolvedDynamicLocalProxyPort()
+                                    } else {
+                                        appState
+                                    }
+                                    when (val result = rootBootScriptUseCase.setEnabled(bootScriptState, enabled)) {
                                         RootBootScriptResult.Success -> {
                                             updateAppState { state ->
-                                                state.copy(enableRootBootScript = enabled)
+                                                state.copy(
+                                                    enableRootBootScript = enabled,
+                                                    localProxyPort = bootScriptState.localProxyPort,
+                                                )
                                             }
                                         }
 

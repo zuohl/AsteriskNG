@@ -17,6 +17,8 @@ import app.modes.ProxyAppListModeBlacklist
 import app.modes.ProxyAppListModeGlobal
 import app.modes.ProxyAppListModeWhitelist
 import engine.network.NetworkDefaults
+import engine.proxy.LocalProxyLoopbackAddress
+import engine.proxy.LocalProxyRuntime
 import engine.xray.clearCoreLogs
 import engine.xray.startCoreLogTailers
 import features.logs.AndroidAppLogger
@@ -75,7 +77,7 @@ class AsteriskVpnService : VpnService() {
             config = config,
             tunFd = tunFileDescriptor?.fd ?: error(getString(R.string.error_vpn_tun_fd_unavailable)),
         )
-        VpnLocalProxyRuntime.update(config.localProxyOptions)
+        LocalProxyRuntime.update(config.localProxyOptions)
         running = true
     }
 
@@ -204,7 +206,7 @@ class AsteriskVpnService : VpnService() {
             AndroidAppLogger.warn(LogTag, "Failed to close VPN TUN file descriptor", error)
         }
         tunFileDescriptor = null
-        VpnLocalProxyRuntime.clear()
+        LocalProxyRuntime.clear()
         running = false
     }
 

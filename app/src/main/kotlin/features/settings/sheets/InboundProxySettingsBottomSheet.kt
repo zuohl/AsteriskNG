@@ -13,13 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.R
-import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import top.yukonga.miuix.kmp.preference.SwitchPreference
-
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
 @Composable
 internal fun ProxySettingsBottomSheet(
@@ -27,17 +26,15 @@ internal fun ProxySettingsBottomSheet(
     useTun2SocksProxyPort: Boolean,
     lockInboundSettings: Boolean,
     transparentProxyPort: String,
-    enableSocks5Proxy: Boolean,
     socks5ProxyPort: String,
     enableHttpProxy: Boolean,
     httpProxyPort: String,
     onTransparentProxyPortChange: (String) -> Unit,
-    onEnableSocks5ProxyChange: (Boolean) -> Unit,
     onSocks5ProxyPortChange: (String) -> Unit,
     onEnableHttpProxyChange: (Boolean) -> Unit,
     onHttpProxyPortChange: (String) -> Unit,
     onDismissRequest: () -> Unit,
-    onSave: (String, Boolean, String, Boolean, String) -> Unit,
+    onSave: (String, String, Boolean, String) -> Unit,
 ) {
     WindowBottomSheet(
         show = show,
@@ -54,7 +51,6 @@ internal fun ProxySettingsBottomSheet(
                 onClick = {
                     onSave(
                         transparentProxyPort,
-                        enableSocks5Proxy,
                         socks5ProxyPort,
                         enableHttpProxy,
                         httpProxyPort,
@@ -74,7 +70,7 @@ internal fun ProxySettingsBottomSheet(
                         } else {
                             onSocks5ProxyPortChange
                         },
-                        label = stringResource(R.string.settings_socks5_proxy_port),
+                        label = stringResource(R.string.settings_tun2socks_socks5_port),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 12.dp),
@@ -94,34 +90,6 @@ internal fun ProxySettingsBottomSheet(
                             .padding(bottom = 12.dp),
                         enabled = !lockInboundSettings,
                     )
-                }
-                if (!useTun2SocksProxyPort) {
-                    SwitchPreference(
-                        title = stringResource(R.string.settings_socks5_proxy),
-                        summary = stringResource(R.string.settings_socks5_proxy_summary),
-                        checked = enableSocks5Proxy,
-                        onCheckedChange = onEnableSocks5ProxyChange,
-                        enabled = !lockInboundSettings,
-                    )
-                    AnimatedVisibility(
-                        visible = enableSocks5Proxy,
-                        enter = fadeIn() + expandVertically(),
-                        exit = shrinkVertically() + fadeOut(),
-                    ) {
-                        ProxyPortTextField(
-                            value = socks5ProxyPort,
-                            onValueChange = if (lockInboundSettings) {
-                                {}
-                            } else {
-                                onSocks5ProxyPortChange
-                            },
-                            label = stringResource(R.string.settings_socks5_proxy_port),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 12.dp),
-                            enabled = !lockInboundSettings,
-                        )
-                    }
                 }
                 SwitchPreference(
                     title = stringResource(R.string.settings_http_proxy),

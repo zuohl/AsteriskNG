@@ -104,6 +104,7 @@ private fun StringBuilder.appendIptablesVariantSetupRules(
     variant.dummyInterface?.let { dummyInterface ->
         appendDummyPreroutingRules(variant.command, dummyInterface, port)
     }
+    appendOutputUidReturnRules(variant.command, variant.outputChain, config.forcedBypassUids)
     appendUdpDnsMarkRule(variant.command, variant.outputChain, config.mark, ownerBypassGid = RootXrayGid)
     appendDestinationMarkRules(variant.command, variant.outputChain, variant.proxyPrivateCidrs, config.mark)
     appendOutputApplicationBypassRules(

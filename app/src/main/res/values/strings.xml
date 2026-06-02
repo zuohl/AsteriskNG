@@ -90,7 +90,6 @@
     <string name="settings_local_proxy_port_invalid">Port must be 1–65535</string>
     <string name="settings_local_proxy_summary_fixed">127.0.0.1:{port}</string>
     <string name="settings_local_proxy_summary_all_interfaces">0.0.0.0:{port}</string>
-    <string name="settings_local_proxy_summary_dynamic">Dynamic port</string>
     <string name="settings_vpn_append_http_proxy">Append HTTP proxy</string>
     <string name="settings_vpn_append_http_proxy_summary">Supported apps use HTTP proxy directly</string>
     <string name="settings_tun">TUN settings</string>
@@ -106,7 +105,7 @@
     <string name="settings_tun_ipv6_cidr_invalid">Invalid IPv6 CIDR</string>
     <string name="settings_inbound">Inbound proxy settings</string>
     <string name="settings_inbound_tproxy_port">Transparent proxy port: {port}</string>
-    <string name="settings_inbound_socks5_port">SOCKS5 proxy port: {port}</string>
+    <string name="settings_inbound_socks5_port">TUN2SOCKS SOCKS5 port: {port}</string>
     <string name="settings_inbound_selected">Enabled: {inbounds}</string>
     <string name="settings_external_interfaces">Tethering sharing</string>
     <string name="settings_external_interfaces_summary">Select which tethering types accept external inbound traffic</string>
@@ -205,9 +204,7 @@
     <string name="settings_about_project">About project</string>
     <string name="settings_open_source_licenses">Open source licenses</string>
     <string name="settings_transparent_proxy_port">Transparent proxy port</string>
-    <string name="settings_socks5_proxy">SOCKS5 proxy</string>
-    <string name="settings_socks5_proxy_summary">Enable SOCKS5 proxy inbound</string>
-    <string name="settings_socks5_proxy_port">SOCKS5 proxy port</string>
+    <string name="settings_tun2socks_socks5_port">TUN2SOCKS SOCKS5 port</string>
     <string name="settings_http_proxy">HTTP proxy</string>
     <string name="settings_http_proxy_summary">Enable HTTP proxy inbound</string>
     <string name="settings_http_proxy_port">HTTP proxy port</string>

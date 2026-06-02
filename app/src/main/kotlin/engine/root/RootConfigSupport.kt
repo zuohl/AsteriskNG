@@ -97,43 +97,17 @@ private fun AppState.toRootStartConfig(
 }
 
 internal fun AppState.buildRootSharedProxyInbounds(
-    socksInboundTag: String,
     httpInboundTag: String,
-    includeSocks5Proxy: Boolean = true,
 ): List<JsonObject> {
     return buildList {
-        socks5ProxyPort.toPortOrNull()
-            ?.takeIf { includeSocks5Proxy && enableSocks5Proxy }
-            ?.let { port -> add(buildRootSocksProxyInbound(socksInboundTag, port)) }
         httpProxyPort.toPortOrNull()
             ?.takeIf { enableHttpProxy }
             ?.let { port -> add(buildRootHttpProxyInbound(httpInboundTag, port)) }
     }
 }
 
-internal fun AppState.rootSocks5ProxyPortValue(): Int {
+internal fun AppState.tun2SocksInternalProxyPortValue(): Int {
     return socks5ProxyPort.toPortOrNull() ?: DefaultTun2SocksProxyPort
-}
-
-private fun buildRootSocksProxyInbound(
-    tag: String,
-    port: Int,
-): JsonObject {
-    return buildJsonObject {
-        put("tag", tag)
-        put("listen", RootSharedProxyListenAddress)
-        put("port", port)
-        put("protocol", XrayProtocols.SOCKS)
-        put(
-            "settings",
-            buildJsonObject {
-                put("auth", "noauth")
-                put("udp", true)
-                put("ip", RootSharedProxyListenAddress)
-                put("userLevel", 0)
-            },
-        )
-    }
 }
 
 private fun buildRootHttpProxyInbound(

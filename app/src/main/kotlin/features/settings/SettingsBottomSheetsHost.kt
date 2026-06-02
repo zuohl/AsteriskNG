@@ -33,7 +33,6 @@ internal fun SettingsBottomSheetsHost(
         useTun2SocksProxyPort = appState.runMode == RunModeTun2Socks,
         lockInboundSettings = (appState.runMode == RunModeTproxy || appState.runMode == RunModeTun2Socks) && appState.proxyRunning,
         transparentProxyPort = sheetState.proxySettingsDraft.transparentProxyPort,
-        enableSocks5Proxy = sheetState.proxySettingsDraft.enableSocks5Proxy,
         socks5ProxyPort = sheetState.proxySettingsDraft.socks5ProxyPort,
         enableHttpProxy = sheetState.proxySettingsDraft.enableHttpProxy,
         httpProxyPort = sheetState.proxySettingsDraft.httpProxyPort,
@@ -41,9 +40,6 @@ internal fun SettingsBottomSheetsHost(
             sheetState.proxySettingsDraft = sheetState.proxySettingsDraft.copy(
                 transparentProxyPort = it,
             )
-        },
-        onEnableSocks5ProxyChange = {
-            sheetState.proxySettingsDraft = sheetState.proxySettingsDraft.copy(enableSocks5Proxy = it)
         },
         onSocks5ProxyPortChange = {
             sheetState.proxySettingsDraft = sheetState.proxySettingsDraft.copy(
@@ -59,20 +55,14 @@ internal fun SettingsBottomSheetsHost(
             )
         },
         onDismissRequest = { sheetState.showProxySettings = false },
-        onSave = { transparentProxyPort, enableSocks5Proxy, socks5ProxyPort, enableHttpProxy, httpProxyPort ->
+        onSave = { transparentProxyPort, socks5ProxyPort, enableHttpProxy, httpProxyPort ->
             updateAppState { state ->
                 val lockInboundSettings = (state.runMode == RunModeTproxy || state.runMode == RunModeTun2Socks) && state.proxyRunning
-                val useTun2SocksProxyPort = state.runMode == RunModeTun2Socks
                 state.copy(
                     transparentProxyPort = if (lockInboundSettings) {
                         state.transparentProxyPort
                     } else {
                         transparentProxyPort
-                    },
-                    enableSocks5Proxy = when {
-                        lockInboundSettings -> state.enableSocks5Proxy
-                        useTun2SocksProxyPort -> state.enableSocks5Proxy
-                        else -> enableSocks5Proxy
                     },
                     socks5ProxyPort = if (lockInboundSettings) state.socks5ProxyPort else socks5ProxyPort,
                     enableHttpProxy = if (lockInboundSettings) state.enableHttpProxy else enableHttpProxy,

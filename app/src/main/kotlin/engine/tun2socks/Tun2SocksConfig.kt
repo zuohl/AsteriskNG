@@ -6,13 +6,16 @@ package engine.tun2socks
 import android.content.Context
 import app.AppState
 import app.effectiveFakeDnsEnabled
+import engine.proxy.LocalProxyOptions
+import engine.proxy.buildLocalSocksInbound
+import engine.proxy.toLocalProxyOptions
 import engine.root.RootConfigBuildContext
 import engine.root.RootIptablesConfig
 import engine.root.RootModeStartConfig
 import engine.root.RootRuntimeLayout
 import engine.root.RootStartConfig
 import engine.root.buildRootSharedProxyInbounds
-import engine.root.rootSocks5ProxyPortValue
+import engine.root.tun2SocksInternalProxyPortValue
 import engine.root.toRootRuntimeLayout
 import engine.vpn.TunOptions
 import engine.vpn.toTunOptions
@@ -30,6 +33,7 @@ import java.io.File
 
 internal data class Tun2SocksStartConfig(
     override val root: RootStartConfig,
+    override val localProxyOptions: LocalProxyOptions,
     val hevSocks5TunnelConfig: HevSocks5TunnelConfig,
     val iptablesConfig: RootIptablesConfig,
 ) : RootModeStartConfig
@@ -54,13 +58,15 @@ internal val Tun2SocksBaseIptablesConfig = RootIptablesConfig(
 internal fun RootConfigBuildContext.buildTun2SocksStartConfig(): Tun2SocksStartConfig {
     val appState = this.appState
     val tunOptions = appState.toTunOptions()
-    val socks5ProxyPort = appState.rootSocks5ProxyPortValue()
+    val localProxyOptions = appState.toLocalProxyOptions()
+    val socks5ProxyPort = appState.tun2SocksInternalProxyPortValue()
     val rootStartConfig = buildRootStartConfig(
-        inbounds = appState.buildTun2SocksInbounds(socks5ProxyPort),
+        inbounds = appState.buildTun2SocksInbounds(localProxyOptions, socks5ProxyPort),
         dnsHijackInboundTags = listOf(XrayTags.TUN2SOCKS_INBOUND),
     )
     return Tun2SocksStartConfig(
         root = rootStartConfig,
+        localProxyOptions = localProxyOptions,
         hevSocks5TunnelConfig = buildHevSocks5TunnelConfig(
             runtimeLayout = rootStartConfig.runtimeLayout,
             coreLogPaths = rootStartConfig.coreLogPaths,
@@ -80,20 +86,22 @@ internal fun Context.prepareHevSocks5TunnelConfig(appState: AppState): HevSocks5
     return buildHevSocks5TunnelConfig(
         runtimeLayout = runtimeLayout,
         coreLogPaths = prepareXrayCoreLogPaths(),
-        socks5ProxyPort = appState.rootSocks5ProxyPortValue(),
+        socks5ProxyPort = appState.tun2SocksInternalProxyPortValue(),
         tunOptions = appState.toTunOptions(),
         enableIpv6 = appState.enableIpv6,
     )
 }
 
-private fun AppState.buildTun2SocksInbounds(socks5ProxyPort: Int): List<JsonObject> {
+private fun AppState.buildTun2SocksInbounds(
+    localProxyOptions: LocalProxyOptions,
+    socks5ProxyPort: Int,
+): List<JsonObject> {
     return buildList {
         add(buildTun2SocksInbound(this@buildTun2SocksInbounds, socks5ProxyPort))
+        add(buildLocalSocksInbound(this@buildTun2SocksInbounds, XrayTags.LOCAL_SOCKS_INBOUND, localProxyOptions))
         addAll(
             buildRootSharedProxyInbounds(
-                socksInboundTag = XrayTags.TUN2SOCKS_INBOUND,
                 httpInboundTag = XrayTags.TUN2SOCKS_HTTP_INBOUND,
-                includeSocks5Proxy = false,
             ),
         )
     }

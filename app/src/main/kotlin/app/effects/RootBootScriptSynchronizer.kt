@@ -9,6 +9,7 @@ import app.AppState
 import app.modes.RunModeTproxy
 import app.modes.RunModeTun2Socks
 import data.AndroidAppStateStore
+import engine.proxy.withResolvedDynamicLocalProxyPort
 import features.logs.AndroidAppLogger
 import features.proxy.server.model.ProxyServer
 import features.routing.model.RouteRule
@@ -29,7 +30,13 @@ internal fun RootBootScriptSynchronizer(
             .distinctUntilChanged { previous, next -> previous.signature == next.signature }
             .conflate()
             .collect { refresh ->
-                val state = refresh.appState
+                val state = refresh.appState.withResolvedDynamicLocalProxyPort()
+                if (state != refresh.appState) {
+                    stateStore.update { currentState ->
+                        if (currentState == refresh.appState) state else currentState
+                    }
+                    return@collect
+                }
                 if (!state.enableRootBootScript || (state.runMode != RunModeTproxy && state.runMode != RunModeTun2Socks)) {
                     return@collect
                 }
@@ -87,8 +94,12 @@ private data class RootBootScriptSignature(
     val directDnsDomains: List<String>,
     val enableDirectDnsForProxyServerDomains: Boolean,
     val dnsHosts: List<String>,
+    val localProxyPort: String,
+    val enableDynamicLocalProxyPort: Boolean,
+    val localProxyListenAllInterfaces: Boolean,
+    val localProxyUsername: String,
+    val localProxyPassword: String,
     val transparentProxyPort: String,
-    val enableSocks5Proxy: Boolean,
     val socks5ProxyPort: String,
     val enableHttpProxy: Boolean,
     val httpProxyPort: String,
@@ -143,8 +154,12 @@ private fun AppState.toRootBootScriptRefresh(): RootBootScriptRefresh {
             directDnsDomains = directDnsDomains,
             enableDirectDnsForProxyServerDomains = enableDirectDnsForProxyServerDomains,
             dnsHosts = dnsHosts,
+            localProxyPort = localProxyPort,
+            enableDynamicLocalProxyPort = enableDynamicLocalProxyPort,
+            localProxyListenAllInterfaces = localProxyListenAllInterfaces,
+            localProxyUsername = localProxyUsername,
+            localProxyPassword = localProxyPassword,
             transparentProxyPort = transparentProxyPort,
-            enableSocks5Proxy = enableSocks5Proxy,
             socks5ProxyPort = socks5ProxyPort,
             enableHttpProxy = enableHttpProxy,
             httpProxyPort = httpProxyPort,

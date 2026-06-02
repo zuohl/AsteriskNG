@@ -74,17 +74,18 @@ class AndroidProxyEngine(
     }
 
     private suspend fun startUnlocked(request: ProxyEngineStartRequest): ProxyEngineStatus = withContext(Dispatchers.Default) {
-        val nextEngine = when (request.appState.runMode) {
+        val resolvedRequest = request.copy(appState = request.appState.withResolvedDynamicLocalProxyPort())
+        val nextEngine = when (resolvedRequest.appState.runMode) {
             RunModeTproxy -> tproxyEngine
             RunModeTun2Socks -> tun2SocksEngine
             else -> vpnXrayEngine
         }
-        val currentEngine = activeEngine ?: findEngineToStop(request.appState.runMode)
+        val currentEngine = activeEngine ?: findEngineToStop(resolvedRequest.appState.runMode)
         if (currentEngine != null && currentEngine !== nextEngine) {
             currentEngine.stop()
         }
         activeEngine = nextEngine
-        nextEngine.start(request)
+        nextEngine.start(resolvedRequest).copy(appState = resolvedRequest.appState)
     }
 
     private suspend fun stopUnlocked(preferredRunMode: Int? = null): ProxyEngineStatus = withContext(Dispatchers.Default) {

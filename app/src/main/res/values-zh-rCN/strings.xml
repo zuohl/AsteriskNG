@@ -90,7 +90,6 @@
     <string name="settings_local_proxy_port_invalid">端口范围应为 1–65535</string>
     <string name="settings_local_proxy_summary_fixed">127.0.0.1:{port}</string>
     <string name="settings_local_proxy_summary_all_interfaces">0.0.0.0:{port}</string>
-    <string name="settings_local_proxy_summary_dynamic">动态端口</string>
     <string name="settings_vpn_append_http_proxy">追加 HTTP 代理</string>
     <string name="settings_vpn_append_http_proxy_summary">让受支持的应用直接使用 HTTP 代理</string>
     <string name="settings_tun">TUN 设置</string>
@@ -106,7 +105,7 @@
     <string name="settings_tun_ipv6_cidr_invalid">无效 IPv6 CIDR</string>
     <string name="settings_inbound">入站代理设置</string>
     <string name="settings_inbound_tproxy_port">透明代理端口：{port}</string>
-    <string name="settings_inbound_socks5_port">SOCKS5 代理端口：{port}</string>
+    <string name="settings_inbound_socks5_port">TUN2SOCKS SOCKS5 端口：{port}</string>
     <string name="settings_inbound_selected">已启用：{inbounds}</string>
     <string name="settings_external_interfaces">热点共享设置</string>
     <string name="settings_external_interfaces_summary">选择允许外部入站流量进入的热点共享类型</string>
@@ -205,9 +204,7 @@
     <string name="settings_about_project">关于项目</string>
     <string name="settings_open_source_licenses">开源许可</string>
     <string name="settings_transparent_proxy_port">透明代理端口</string>
-    <string name="settings_socks5_proxy">SOCKS5 代理</string>
-    <string name="settings_socks5_proxy_summary">启用 SOCKS5 代理入站</string>
-    <string name="settings_socks5_proxy_port">SOCKS5 代理端口</string>
+    <string name="settings_tun2socks_socks5_port">TUN2SOCKS SOCKS5 端口</string>
     <string name="settings_http_proxy">HTTP 代理</string>
     <string name="settings_http_proxy_summary">启用 HTTP 代理入站</string>
     <string name="settings_http_proxy_port">HTTP 代理端口</string>

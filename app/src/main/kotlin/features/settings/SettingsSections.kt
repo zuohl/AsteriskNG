@@ -268,6 +268,11 @@ internal fun SettingsProxyModeSections(
                     )
                 }
                 ArrowPreference(
+                    title = stringResource(R.string.settings_local_proxy),
+                    summary = localProxySettingsSummary,
+                    onClick = onOpenLocalProxySettings,
+                )
+                ArrowPreference(
                     title = stringResource(R.string.settings_inbound),
                     summary = inboundProxySummary,
                     onClick = onOpenProxySettings,

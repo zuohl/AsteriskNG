@@ -454,7 +454,12 @@ private fun restartSelectedProxyService(
             )
         ) {
             is ProxyServiceResult.Success -> {
-                updateAppState { state -> state.copy(proxyRunning = result.proxyRunning) }
+                updateAppState { state ->
+                    state.copy(
+                        proxyRunning = result.proxyRunning,
+                        localProxyPort = result.appState?.localProxyPort ?: state.localProxyPort,
+                    )
+                }
                 tipNotifier.show(messages.serviceRestarted)
             }
 

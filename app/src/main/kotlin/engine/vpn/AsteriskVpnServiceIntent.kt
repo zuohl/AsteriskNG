@@ -6,6 +6,8 @@ package engine.vpn
 import android.content.Context
 import android.content.Intent
 import app.modes.ProxyAppListModeGlobal
+import engine.proxy.LocalProxyLoopbackAddress
+import engine.proxy.LocalProxyOptions
 import engine.xray.XrayCoreLogPaths
 
 internal object AsteriskVpnServiceIntents {
@@ -47,7 +49,7 @@ internal fun Intent.readVpnServiceStartConfig(): VpnServiceStartConfig? {
             mode = getIntExtra(EXTRA_PROXY_APP_LIST_MODE, ProxyAppListModeGlobal),
             packageNames = getStringArrayExtra(EXTRA_PROXY_APP_LIST_PACKAGES)?.toList().orEmpty(),
         ),
-        localProxyOptions = VpnLocalProxyOptions(
+        localProxyOptions = LocalProxyOptions(
             listenAddress = getStringExtra(EXTRA_LOCAL_PROXY_LISTEN_ADDRESS).orEmpty().ifBlank {
                 LocalProxyLoopbackAddress
             },

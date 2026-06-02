@@ -133,7 +133,12 @@ class ProxyQuickSettingsTileService : TileService() {
         val selectedServer = state.proxyServers.firstOrNull { server -> server.id == state.selectedProxyServerId }
         when (val result = proxyServiceUseCase.toggle(state, selectedServer)) {
             is ProxyServiceResult.Success -> {
-                stateStore.update { currentState -> currentState.copy(proxyRunning = result.proxyRunning) }
+                stateStore.update { currentState ->
+                    currentState.copy(
+                        proxyRunning = result.proxyRunning,
+                        localProxyPort = result.appState?.localProxyPort ?: currentState.localProxyPort,
+                    )
+                }
                 showToast(
                     if (result.proxyRunning) {
                         getString(R.string.proxy_server_list_service_started)

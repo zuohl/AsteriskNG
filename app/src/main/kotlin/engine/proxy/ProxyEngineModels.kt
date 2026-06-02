@@ -14,4 +14,5 @@ data class ProxyEngineStartRequest(
 data class ProxyEngineStatus(
     val running: Boolean,
     val runMode: Int? = null,
+    val appState: AppState? = null,
 )

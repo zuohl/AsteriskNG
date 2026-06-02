@@ -10,8 +10,8 @@ import app.CustomResourceFileState
 import app.ResourceFileKind
 import app.ResourceFilesStatus
 import app.ResourceFileUpdateSource
-import engine.vpn.LocalProxyLoopbackAddress
-import engine.vpn.VpnLocalProxyRuntime
+import engine.proxy.LocalProxyLoopbackAddress
+import engine.proxy.LocalProxyRuntime
 import engine.network.isPort
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -191,10 +191,10 @@ private class ResourceFileDownloadFailedException(
 
 private fun ResourceFileUpdateOptions.toDownloadProxy(): AndroidResourceFileDownloadProxy? {
     if (!useRunningProxy) return null
-    val runtimeOptions = VpnLocalProxyRuntime.current()
+    val runtimeOptions = LocalProxyRuntime.current()
     val port = runtimeOptions?.port
         ?: fallbackProxyPort?.takeIf(Int::isPort)
-        ?: return null
+        ?: error("Local proxy port is unavailable")
     return AndroidResourceFileDownloadProxy(
         host = LocalProxyLoopbackAddress,
         port = port,

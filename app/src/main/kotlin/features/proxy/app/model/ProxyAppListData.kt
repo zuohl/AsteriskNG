@@ -60,11 +60,13 @@ internal data class ProxyAppListPreparedData(
 internal suspend fun AndroidPackageProvider.loadProxyAppListPackages(
     showSystemApps: Boolean,
     currentUserOnly: Boolean,
+    excludedPackageName: String,
 ): List<AppPackageEntry> = withContext(Dispatchers.Default) {
     val scope = if (showSystemApps) ANDROID_PACKAGE_SCOPE_ALL else ANDROID_PACKAGE_SCOPE_USER
     if (currentUserOnly) {
         return@withContext getCurrentUserPackagesInfo(scope)
             .map(InstalledPackageInfo::toAppPackageEntry)
+            .filterNot { entry -> entry.packageName == excludedPackageName }
             .distinctBy { entry -> "${entry.userId}:${entry.uid}:${entry.packageName}" }
             .sortedWith(
                 compareBy<AppPackageEntry> { entry -> entry.userId ?: 0 }
@@ -81,6 +83,7 @@ internal suspend fun AndroidPackageProvider.loadProxyAppListPackages(
 
     getPackagesInfo(packageNames)
         .map(InstalledPackageInfo::toAppPackageEntry)
+        .filterNot { entry -> entry.packageName == excludedPackageName }
         .distinctBy { entry -> "${entry.userId}:${entry.uid}:${entry.packageName}" }
         .sortedWith(
             compareBy<AppPackageEntry> { entry -> entry.userId ?: 0 }

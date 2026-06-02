@@ -4,6 +4,7 @@
 package engine.root
 
 import android.content.Context
+import engine.proxy.LocalProxyRuntime
 import engine.proxy.ProxyEngineStartRequest
 import engine.proxy.ProxyEngineStatus
 import engine.proxy.mode.AndroidModeProxyEngine
@@ -42,6 +43,7 @@ internal class RootModeEngine<Config : RootModeStartConfig>(
         logFileTailers = config.root.coreLogPaths.startCoreLogTailers(config.root.enableAccessLog)
         runCatching {
             runner.start(config)
+            LocalProxyRuntime.update(config.localProxyOptions)
             if (rootContext.appState.enableRootBootScript) {
                 runner.installBootScript(config)
             } else {
@@ -50,6 +52,7 @@ internal class RootModeEngine<Config : RootModeStartConfig>(
         }.onFailure { error ->
             runCatching { runner.stop(config.root.runtimeLayout) }
                 .onFailure { stopError -> AndroidAppLogger.warn(logTag, "Failed to clean up $modeName after startup failure", stopError) }
+            LocalProxyRuntime.clear()
             logFileTailers.forEach { tailer -> tailer.stop() }
             logFileTailers = emptyList()
             AndroidAppLogger.error(logTag, "Failed to start $modeName mode", error)
@@ -69,6 +72,7 @@ internal class RootModeEngine<Config : RootModeStartConfig>(
         }.onFailure { error ->
             AndroidAppLogger.warn(logTag, "Failed to stop $modeName mode", error)
         }
+        LocalProxyRuntime.clear()
         return status()
     }
 

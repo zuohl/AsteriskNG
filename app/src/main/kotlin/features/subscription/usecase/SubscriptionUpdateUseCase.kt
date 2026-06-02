@@ -5,7 +5,6 @@ package features.subscription.usecase
 
 import app.AppState
 import app.SubscriptionGroupState
-import app.modes.RunModeVpnService
 import features.logs.AndroidAppLogger
 import features.proxy.server.usecase.ProxyServerImportSource
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdate
@@ -93,7 +92,7 @@ private suspend fun updateSubscriptionGroup(
 
 internal fun AppState.toSubscriptionFetchOptions(group: SubscriptionGroupState): AndroidSubscriptionFetchOptions {
     return AndroidSubscriptionFetchOptions(
-        useRunningProxy = group.updateViaProxy && proxyRunning && runMode == RunModeVpnService,
+        useRunningProxy = group.updateViaProxy,
         fallbackProxyPort = localProxyPort.toPortOrNull(),
         fallbackProxyUsername = localProxyUsername,
         fallbackProxyPassword = localProxyPassword,

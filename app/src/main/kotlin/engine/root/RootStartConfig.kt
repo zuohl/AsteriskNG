@@ -3,6 +3,7 @@
 
 package engine.root
 
+import engine.proxy.LocalProxyOptions
 import engine.xray.XrayCoreLogPaths
 import engine.xray.logDirectoryPath
 import java.io.File
@@ -21,6 +22,7 @@ internal data class RootStartConfig(
 
 internal interface RootModeStartConfig {
     val root: RootStartConfig
+    val localProxyOptions: LocalProxyOptions
 }
 
 internal val RootStartConfig.startupScriptPath: String

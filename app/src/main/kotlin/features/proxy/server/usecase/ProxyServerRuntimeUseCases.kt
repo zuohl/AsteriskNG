@@ -60,7 +60,10 @@ internal fun restartProxyServiceAfterSelection(
                 )
                 updateAppState { state ->
                     if (state.selectedProxyServerId == serverId) {
-                        state.copy(proxyRunning = restartedStatus.running)
+                        state.copy(
+                            proxyRunning = restartedStatus.running,
+                            localProxyPort = restartedStatus.appState?.localProxyPort ?: state.localProxyPort,
+                        )
                     } else {
                         state
                     }

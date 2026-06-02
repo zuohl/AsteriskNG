@@ -30,7 +30,7 @@ internal class ProxyServiceUseCase(
         return runCatching {
             proxyEngine.restart(ProxyEngineStartRequest(state, server))
         }.fold(
-            onSuccess = { status -> ProxyServiceResult.Success(proxyRunning = status.running) },
+            onSuccess = { status -> ProxyServiceResult.Success(proxyRunning = status.running, appState = status.appState) },
             onFailure = { error -> ProxyServiceResult.Failed(error) },
         )
     }
@@ -43,21 +43,24 @@ internal class ProxyServiceUseCase(
         return runCatching {
             proxyEngine.start(ProxyEngineStartRequest(state, server))
         }.fold(
-            onSuccess = { status -> ProxyServiceResult.Success(proxyRunning = status.running) },
+            onSuccess = { status -> ProxyServiceResult.Success(proxyRunning = status.running, appState = status.appState) },
             onFailure = { error -> ProxyServiceResult.Failed(error) },
         )
     }
 
     private suspend fun stop(runMode: Int): ProxyServiceResult {
         return runCatching { proxyEngine.stop(runMode) }.fold(
-            onSuccess = { status -> ProxyServiceResult.Success(proxyRunning = status.running) },
+            onSuccess = { status -> ProxyServiceResult.Success(proxyRunning = status.running, appState = status.appState) },
             onFailure = { error -> ProxyServiceResult.Failed(error) },
         )
     }
 }
 
 internal sealed interface ProxyServiceResult {
-    data class Success(val proxyRunning: Boolean) : ProxyServiceResult
+    data class Success(
+        val proxyRunning: Boolean,
+        val appState: AppState? = null,
+    ) : ProxyServiceResult
 
     data object MissingServer : ProxyServiceResult
 

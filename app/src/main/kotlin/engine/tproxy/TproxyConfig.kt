@@ -5,6 +5,9 @@ package engine.tproxy
 
 import app.AppState
 import app.effectiveFakeDnsEnabled
+import engine.proxy.LocalProxyOptions
+import engine.proxy.buildLocalSocksInbound
+import engine.proxy.toLocalProxyOptions
 import engine.network.toPortOrNull
 import engine.root.RootConfigBuildContext
 import engine.root.RootIptablesConfig
@@ -21,6 +24,7 @@ import kotlinx.serialization.json.put
 
 internal data class TproxyStartConfig(
     override val root: RootStartConfig,
+    override val localProxyOptions: LocalProxyOptions,
     val tproxyPort: Int,
     val iptablesConfig: RootIptablesConfig,
 ) : RootModeStartConfig
@@ -36,9 +40,10 @@ internal fun RootConfigBuildContext.buildTproxyStartConfig(): TproxyStartConfig 
     val tproxyPort = appState.tproxyPortValue()
     return TproxyStartConfig(
         root = buildRootStartConfig(
-            inbounds = appState.buildTproxyInbounds(tproxyPort),
+            inbounds = appState.buildTproxyInbounds(appState.toLocalProxyOptions(), tproxyPort),
             dnsHijackInboundTags = listOf(XrayTags.TPROXY_INBOUND),
         ),
+        localProxyOptions = appState.toLocalProxyOptions(),
         tproxyPort = tproxyPort,
         iptablesConfig = buildRootIptablesConfig(
             base = TproxyBaseIptablesConfig,
@@ -47,12 +52,15 @@ internal fun RootConfigBuildContext.buildTproxyStartConfig(): TproxyStartConfig 
     )
 }
 
-private fun AppState.buildTproxyInbounds(tproxyPort: Int): List<JsonObject> {
+private fun AppState.buildTproxyInbounds(
+    localProxyOptions: LocalProxyOptions,
+    tproxyPort: Int,
+): List<JsonObject> {
     return buildList {
         add(buildTproxyTunnelInbound(this@buildTproxyInbounds, tproxyPort))
+        add(buildLocalSocksInbound(this@buildTproxyInbounds, XrayTags.LOCAL_SOCKS_INBOUND, localProxyOptions))
         addAll(
             buildRootSharedProxyInbounds(
-                socksInboundTag = XrayTags.TPROXY_SOCKS_INBOUND,
                 httpInboundTag = XrayTags.TPROXY_HTTP_INBOUND,
             ),
         )

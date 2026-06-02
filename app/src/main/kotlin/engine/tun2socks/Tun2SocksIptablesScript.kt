@@ -117,6 +117,7 @@ private fun StringBuilder.appendOutputTrafficMarkRules(
     config: RootIptablesConfig,
     variant: Tun2SocksIptablesVariant,
 ) {
+    appendOutputUidReturnRules(variant.command, variant.outputChain, config.forcedBypassUids)
     appendUdpDnsMarkRule(
         command = variant.command,
         chain = variant.outputChain,

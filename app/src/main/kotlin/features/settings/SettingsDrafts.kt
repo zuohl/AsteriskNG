@@ -9,7 +9,6 @@ import features.settings.sheets.sanitizeMuxUdp443Index
 
 internal data class ProxySettingsDraft(
     val transparentProxyPort: String = "",
-    val enableSocks5Proxy: Boolean = false,
     val socks5ProxyPort: String = "",
     val enableHttpProxy: Boolean = false,
     val httpProxyPort: String = "",
@@ -18,7 +17,6 @@ internal data class ProxySettingsDraft(
 internal fun AppState.toProxySettingsDraft(): ProxySettingsDraft {
     return ProxySettingsDraft(
         transparentProxyPort = transparentProxyPort,
-        enableSocks5Proxy = enableSocks5Proxy,
         socks5ProxyPort = socks5ProxyPort,
         enableHttpProxy = enableHttpProxy,
         httpProxyPort = httpProxyPort,

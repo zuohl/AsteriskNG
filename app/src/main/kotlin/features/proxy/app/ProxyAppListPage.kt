@@ -25,9 +25,11 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import app.R
@@ -55,6 +57,7 @@ fun ProxyAppListPage(
 ) {
     val pageState = rememberProxyAppListPageState()
     val appState by LocalAppStateStore.current.collectAppState()
+    val selfPackageName = LocalContext.current.applicationContext.packageName
     val updateAppState = LocalUpdateAppState.current
     val isWideScreen = LocalIsWideScreen.current
     val services = LocalAppServices.current
@@ -89,11 +92,21 @@ fun ProxyAppListPage(
         ANDROID_APP_ICON_SIZE_DP.dp.roundToPx()
     }
 
+    LaunchedEffect(selfPackageName, appState.proxyAppListSelectedApps) {
+        val prunedSelection = appState.proxyAppListSelectedApps.filterNot { key ->
+            key == selfPackageName || key.substringAfter(':') == selfPackageName
+        }
+        if (prunedSelection != appState.proxyAppListSelectedApps) {
+            updateAppState { state -> state.copy(proxyAppListSelectedApps = prunedSelection) }
+        }
+    }
+
     ProxyAppListPageEffects(
         pageState = pageState,
         selectedAppKeys = selectedAppKeys,
         isVpnServiceMode = isVpnServiceMode,
         vpnServiceUserId = vpnServiceUserId,
+        selfPackageName = selfPackageName,
         selectedUserIndex = selectedUserIndex,
         userTabIds = userTabIds,
         userPagerState = userPagerState,

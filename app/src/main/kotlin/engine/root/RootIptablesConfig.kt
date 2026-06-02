@@ -4,6 +4,7 @@
 package engine.root
 
 import android.content.Context
+import android.os.Process
 import app.AppState
 import app.modes.ProxyAppListModeGlobal
 import utils.toTrimmedNonEmptyDistinctList
@@ -20,6 +21,7 @@ internal data class RootIptablesConfig(
     val proxyPrivateIpv6Cidrs: List<String> = emptyList(),
     val bypassPrivateIpv4Cidrs: List<String> = emptyList(),
     val bypassPrivateIpv6Cidrs: List<String> = emptyList(),
+    val forcedBypassUids: List<Int> = emptyList(),
     val proxyAppListMode: Int = ProxyAppListModeGlobal,
     val proxyApplicationUids: List<Int> = emptyList(),
 )
@@ -50,6 +52,7 @@ internal fun RootIptablesConfig.withAppSettings(
         proxyPrivateIpv6Cidrs = proxyPrivateCidrs.ipv6Cidrs(),
         bypassPrivateIpv4Cidrs = bypassPrivateCidrs.ipv4Cidrs(),
         bypassPrivateIpv6Cidrs = bypassPrivateCidrs.ipv6Cidrs(),
+        forcedBypassUids = listOf(Process.myUid()),
         proxyAppListMode = appListMode,
         proxyApplicationUids = if (appListMode == ProxyAppListModeGlobal) {
             emptyList()

@@ -15,7 +15,6 @@ import app.LocalAppServices
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
-import app.modes.RunModeVpnService
 import app.collectAppState
 import app.resourceFileUpdateSource
 import app.uniqueCustomResourceFileName
@@ -381,7 +380,7 @@ fun ResourceManagementPage(
 
 private fun AppState.resourceFileUpdateOptions(): ResourceFileUpdateOptions {
     return ResourceFileUpdateOptions(
-        useRunningProxy = proxyRunning && runMode == RunModeVpnService,
+        useRunningProxy = true,
         fallbackProxyPort = localProxyPort.toPortOrNull(),
         fallbackProxyUsername = localProxyUsername,
         fallbackProxyPassword = localProxyPassword,
