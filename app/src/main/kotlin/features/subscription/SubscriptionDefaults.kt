@@ -4,7 +4,7 @@
 package features.subscription
 
 const val DefaultSubscriptionGroupId = 1
-const val DefaultSubscriptionUserAgent = "v2rayNG/2.2.1"
+const val DefaultSubscriptionUserAgent = "v2rayNG/2.2.2"
 const val ClashMetaSubscriptionUserAgent = "clash.meta"
 const val FlClashXSubscriptionUserAgent = "FlClash X/v0.4.0-pre.12 Platform/android"
 const val AutoSubscriptionCheckIntervalMillis = 60L * 1000L
