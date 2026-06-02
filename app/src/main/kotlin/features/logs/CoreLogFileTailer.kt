@@ -68,7 +68,7 @@ internal class CoreLogFileTailer(
                 failureLogged = false
             }.onFailure { error ->
                 if (!failureLogged) {
-                    AndroidAppLogger.warn(LogTag, "Failed to tail xray log file: ${file.absolutePath}", error)
+                    AndroidAppLogger.warn(LogTag, "Failed to tail Xray log file: ${file.absolutePath}", error)
                     failureLogged = true
                 }
             }

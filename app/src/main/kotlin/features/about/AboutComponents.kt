@@ -101,7 +101,7 @@ internal fun AboutRuntimeCard(
             summary = ProjectInfo.ANDROID_LIB_XRAY_LITE_VERSION,
         )
         BasicComponent(
-            title = "xray-core",
+            title = "Xray-core",
             summary = ProjectInfo.XRAY_CORE_VERSION,
         )
         BasicComponent(

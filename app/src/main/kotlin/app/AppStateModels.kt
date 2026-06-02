@@ -60,7 +60,7 @@ enum class ResourceFileKind(
             GeoIp,
             GeoSite,
             GeoIpOnlyCnPrivate -> fileName
-            XrayCore -> "xray-core $XrayCoreVersion"
+            XrayCore -> "Xray-core $XrayCoreVersion"
         }
 }
 

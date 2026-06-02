@@ -92,7 +92,7 @@ internal fun Context.prepareXrayCoreLogPaths(): XrayCoreLogPaths {
 internal fun XrayCoreLogPaths.logDirectoryPath(): String {
     return File(errorLogPath).parentFile?.absolutePath
         ?: File(accessLogPath).parentFile?.absolutePath
-        ?: error("xray log directory is unavailable")
+        ?: error("Xray log directory is unavailable")
 }
 
 internal fun Iterable<String>.toJsonStringArray(): JsonArray {

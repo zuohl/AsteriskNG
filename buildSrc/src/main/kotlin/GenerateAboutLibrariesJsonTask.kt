@@ -78,7 +78,7 @@ abstract class GenerateAboutLibrariesJsonTask : DefaultTask() {
             library(
                 "github:XTLS/Xray-core",
                 ProjectConfig.XRAY_CORE_VERSION,
-                "xray-core",
+                "Xray-core",
                 "An open platform for proxy and anti-censorship networking.",
                 "https://github.com/XTLS/Xray-core",
                 "https://github.com/XTLS/Xray-core",

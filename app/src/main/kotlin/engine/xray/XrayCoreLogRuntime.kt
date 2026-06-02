@@ -52,7 +52,7 @@ internal fun clearCoreLogFilesAsApp(logPaths: List<String>, logTag: String) {
                     writeText("")
                 }
             }.onFailure { error ->
-                AndroidAppLogger.warn(logTag, "Failed to clear xray log file: $logPath", error)
+                AndroidAppLogger.warn(logTag, "Failed to clear Xray log file: $logPath", error)
             }
         }
 }

@@ -61,7 +61,7 @@ internal class Tun2SocksRootRunner(
             description = "SOCKS5 port $socksPort and TUN device asterisk0",
             command = buildRootPortReadyCommand(socksPort) +
                 " && ip link show dev 'asterisk0' >/dev/null 2>&1",
-            failureMessage = "xray-core started but SOCKS5 port $socksPort or TUN device asterisk0 is not ready",
+            failureMessage = "Xray-core started but SOCKS5 port $socksPort or TUN device asterisk0 is not ready",
         )
     }
 

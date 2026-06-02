@@ -198,7 +198,7 @@ private fun ResourceFileKind.bundledAssetPath(): String {
         ResourceFileKind.GeoIp -> fileName
         ResourceFileKind.GeoSite -> fileName
         ResourceFileKind.GeoIpOnlyCnPrivate -> fileName
-        ResourceFileKind.XrayCore -> error("xray-core is restored from native libraries")
+        ResourceFileKind.XrayCore -> error("Xray-core is restored from native libraries")
     }
 }
 

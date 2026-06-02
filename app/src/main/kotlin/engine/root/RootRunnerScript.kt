@@ -110,11 +110,11 @@ internal fun RootStartConfig.buildBootStartDaemonCommand(): String {
             export XRAY_LOCATION_ASSET=$${runtimeLayout.dataDir.shellQuote()}
             ulimit -SHn 1000000 || true
             chmod 755 $${setuidgidPath.shellQuote()}
-            echo "+ start xray-core as uid=$${RootXrayUid} gid=$${RootXrayGid}"
-            echo "+ xray stdout/stderr: $${coreLogPaths.errorLogPath.shellQuote()}"
+            echo "+ start Xray-core as uid=$${RootXrayUid} gid=$${RootXrayGid}"
+            echo "+ Xray stdout/stderr: $${coreLogPaths.errorLogPath.shellQuote()}"
             $${setuidgidPath.shellQuote()} $${RootXrayUid.toString().shellQuote()} $${RootXrayGid.toString().shellQuote()} $${runtimeLayout.xrayCorePath.shellQuote()} run -config $${configPath.shellQuote()} >> $${coreLogPaths.errorLogPath.shellQuote()} 2>&1 < /dev/null &
             echo $! > $${runtimeLayout.pidPath.shellQuote()}
-            echo "xray-core pid: $(cat $${runtimeLayout.pidPath.shellQuote()})"
+            echo "Xray-core pid: $(cat $${runtimeLayout.pidPath.shellQuote()})"
             """,
         )
     }

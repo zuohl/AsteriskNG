@@ -106,7 +106,7 @@ private fun logGeneratedXrayConfig(config: JsonObject) {
     val chunks = json.chunked(LogChunkSize)
     chunks.forEachIndexed { index, chunk ->
         val progress = if (chunks.size == 1) "" else " (${index + 1}/${chunks.size})"
-        AndroidAppLogger.info(LogTag, "Generated xray config JSON$progress:\n$chunk")
+        AndroidAppLogger.info(LogTag, "Generated Xray config JSON$progress:\n$chunk")
     }
 }
 

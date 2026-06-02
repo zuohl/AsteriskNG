@@ -59,7 +59,7 @@ private fun <Config : RootModeStartConfig> Config.buildRootStartupScript(
         )
         appendScript("section \"Prepare core logs\"")
         append(root.coreLogPaths.buildPrepareCoreLogFilesCommand())
-        appendScript("section \"Start xray-core\"")
+        appendScript("section \"Start Xray-core\"")
         append(root.buildBootStartDaemonCommand())
         val postCoreStartCommand = buildPostCoreStartCommand(this@buildRootStartupScript)
         if (postCoreStartCommand.isNotBlank()) {
@@ -146,7 +146,7 @@ private fun <Config : RootModeStartConfig> StringBuilder.appendRootStartupPreamb
         dump_failure_diagnostics() {
             diagnostics_dumped=1
             echo
-            echo "Recent xray error log:"
+            echo "Recent Xray error log:"
             tail -n 80 $${config.root.coreLogPaths.errorLogPath.shellQuote()} || true
         """,
     )

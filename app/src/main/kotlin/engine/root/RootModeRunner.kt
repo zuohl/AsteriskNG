@@ -28,7 +28,7 @@ internal abstract class RootModeRunner<Config : RootModeStartConfig>(
         writeRootConfigFile(config.root)
         prepareModeRuntimeFiles(config)
         runRootCommand(config.root.buildPrepareRuntimeCommand(), "Failed to prepare $modeName environment")
-        runRootCommand(config.root.buildStartDaemonCommand(), "Failed to start xray-core daemon")
+        runRootCommand(config.root.buildStartDaemonCommand(), "Failed to start Xray-core daemon")
         runRootCommandIfNotBlank(
             command = buildPostCoreStartCommand(config),
             failureMessage = "Failed to start $modeName helper runtime",
@@ -39,7 +39,7 @@ internal abstract class RootModeRunner<Config : RootModeStartConfig>(
             failStartup(config, readinessCheck.failureMessage)
         }
         if (!isRunning(config.root.runtimeLayout)) {
-            failStartup(config, "xray-core process exited or did not match the expected $modeName runtime state")
+            failStartup(config, "Xray-core process exited or did not match the expected $modeName runtime state")
         }
         if (!isModeRuntimeRunning(config)) {
             failStartup(config, "$modeName helper runtime exited or did not match the expected runtime state")
@@ -84,7 +84,7 @@ internal abstract class RootModeRunner<Config : RootModeStartConfig>(
         if (command.isBlank()) {
             return@withContext
         }
-        runRootCommand(command, "Failed to prepare xray log files")
+        runRootCommand(command, "Failed to prepare Xray log files")
     }
 
     suspend fun ownsRuntime(runtimeLayout: RootRuntimeLayout): Boolean = withContext(Dispatchers.IO) {
@@ -164,7 +164,7 @@ internal abstract class RootModeRunner<Config : RootModeStartConfig>(
         val errorLog = config.root.collectRootErrorLogTail(rootAccess)
         val processDiagnostics = config.root.collectRootProcessDiagnostics(rootAccess)
         val modeDiagnostics = collectReadinessDiagnostics(config)
-        runRootCommand(buildStopCommand(config.root.runtimeLayout), "Failed to clean up after xray-core startup failure")
+        runRootCommand(buildStopCommand(config.root.runtimeLayout), "Failed to clean up after Xray-core startup failure")
         error(
             buildRootDiagnosticMessage(
                 message,

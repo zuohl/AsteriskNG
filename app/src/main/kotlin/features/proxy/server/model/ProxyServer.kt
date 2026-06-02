@@ -224,7 +224,7 @@ data class V2RayParameters(
                 this.extra = url.parameters["extra"]
             }
 
-            "http", "h2", "h3" -> throw ParseException("Unsupported xray transport type: ${this.type}")
+            "http", "h2", "h3" -> throw ParseException("Unsupported Xray transport type: ${this.type}")
             else -> throw ParseException("Unknown v2ray transport type: ${this.type}")
         }
         when (this.security) {
