@@ -229,7 +229,7 @@ jobs:
           fi
 
           version_code="$(git rev-list --count HEAD)"
-          mkdir -p release-artifacts
+          mkdir -p release-artifacts github-release-artifacts
 
           shopt -s nullglob
           for apk in signed-apks/*.apk; do
@@ -244,16 +244,22 @@ jobs:
             esac
 
             cp "$apk" "release-artifacts/AsteriskNG_${version_name}-${version_code}-${abi}.apk"
+            cp "$apk" "github-release-artifacts/AsteriskNG-${abi}.apk"
           done
 
           if ! find release-artifacts -type f -name "*.apk" | grep -q .; then
             echo "::error::No release APKs were found under signed-apks."
             exit 1
           fi
+          if ! find github-release-artifacts -type f -name "*.apk" | grep -q .; then
+            echo "::error::No GitHub Release APKs were found under signed-apks."
+            exit 1
+          fi
 
           echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
           echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
           ls -lh release-artifacts
+          ls -lh github-release-artifacts
 
       - name: Upload GitHub artifact
         uses: actions/upload-artifact@v4
@@ -348,7 +354,7 @@ jobs:
             echo
             echo "### APK artifacts"
             echo
-            find release-artifacts -maxdepth 1 -type f -name "*.apk" -printf "- %f\n" | sort
+            find github-release-artifacts -maxdepth 1 -type f -name "*.apk" -printf "- %f\n" | sort
           } > release-notes.md
 
           echo "previous_tag=$previous_tag" >> "$GITHUB_OUTPUT"
@@ -364,13 +370,13 @@ jobs:
           set -euo pipefail
 
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-            gh release upload "$TAG_NAME" release-artifacts/*.apk --clobber
+            gh release upload "$TAG_NAME" github-release-artifacts/*.apk --clobber
             gh release edit "$TAG_NAME" \
               --title "AsteriskNG $TAG_NAME" \
               --notes-file release-notes.md \
               --latest
           else
-            gh release create "$TAG_NAME" release-artifacts/*.apk \
+            gh release create "$TAG_NAME" github-release-artifacts/*.apk \
               --title "AsteriskNG $TAG_NAME" \
               --notes-file release-notes.md \
               --latest
