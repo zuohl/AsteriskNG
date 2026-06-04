@@ -15,6 +15,7 @@ internal data class ProxyServerListMessages(
     val noTestableServers: String,
     val latencyDoneTemplate: String,
     val realConnectionDoneTemplate: String,
+    val subscriptionInstallExistingUrlTemplate: String,
     val sortDone: String,
     val subscriptionUpdateResultTemplate: String,
     val subscriptionUpdateResultWithFailedTemplate: String,
@@ -42,6 +43,7 @@ internal fun proxyServerListMessages(): ProxyServerListMessages {
         noTestableServers = stringResource(R.string.proxy_server_list_no_testable),
         latencyDoneTemplate = stringResource(R.string.proxy_server_list_latency_done),
         realConnectionDoneTemplate = stringResource(R.string.proxy_server_list_real_connection_done),
+        subscriptionInstallExistingUrlTemplate = stringResource(R.string.subscription_install_existing_url),
         sortDone = stringResource(R.string.common_complete),
         subscriptionUpdateResultTemplate = stringResource(R.string.proxy_server_list_subscription_update_result),
         subscriptionUpdateResultWithFailedTemplate =

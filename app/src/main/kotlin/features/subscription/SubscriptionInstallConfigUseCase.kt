@@ -13,7 +13,9 @@ import features.proxy.server.usecase.withUpdatedSubscriptionServers
 import features.subscription.runtime.AndroidSubscriptionFetcher
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
+import features.subscription.usecase.subscriptionUpdateMessage
 import io.ktor.http.Url
+import ui.text.formatTemplate
 import utils.decodeUrlComponentPreservingPlus
 
 internal data class SubscriptionInstallConfig(
@@ -22,14 +24,19 @@ internal data class SubscriptionInstallConfig(
     val userAgent: String,
 )
 
+internal data class SubscriptionInstallResult(
+    val updateResult: ProxyServerListSubscriptionUpdateResult,
+    val existingGroupName: String?,
+)
+
 internal class SubscriptionInstallConfigUseCase(
     private val stateStore: AndroidAppStateStore,
     private val subscriptionFetcher: AndroidSubscriptionFetcher,
 ) {
-    suspend fun install(config: SubscriptionInstallConfig): ProxyServerListSubscriptionUpdateResult {
-        val group = stateStore.prepareSubscriptionInstallGroup(config)
+    suspend fun install(config: SubscriptionInstallConfig): SubscriptionInstallResult {
+        val preparedGroup = stateStore.prepareSubscriptionInstallGroup(config)
         val result = updateSubscriptions(
-            groups = listOf(group),
+            groups = listOf(preparedGroup.group),
             subscriptionFetcher = subscriptionFetcher,
             fetchOptions = { stateStore.state.value.toSubscriptionFetchOptions(it) },
         )
@@ -41,8 +48,29 @@ internal class SubscriptionInstallConfigUseCase(
                 )
             }
         }
-        return result
+        return SubscriptionInstallResult(
+            updateResult = result,
+            existingGroupName = preparedGroup.existingGroupName,
+        )
     }
+}
+
+internal fun subscriptionInstallMessage(
+    result: SubscriptionInstallResult,
+    existingUrlTemplate: String,
+    successTemplate: String,
+    failedTemplate: String,
+): String {
+    val updateMessage = subscriptionUpdateMessage(
+        result = result.updateResult,
+        successTemplate = successTemplate,
+        failedTemplate = failedTemplate,
+    )
+    val existingGroupName = result.existingGroupName ?: return updateMessage
+    return listOf(
+        existingUrlTemplate.formatTemplate("name" to existingGroupName),
+        updateMessage,
+    ).joinToString(separator = "\n")
 }
 
 internal fun Intent.toSubscriptionInstallConfigOrNull(): SubscriptionInstallConfig? {
@@ -103,15 +131,26 @@ private fun Url.toRawHttpsSubscriptionInstallConfigOrNull(rawValue: String): Sub
 
 private fun AndroidAppStateStore.prepareSubscriptionInstallGroup(
     config: SubscriptionInstallConfig,
-): SubscriptionGroupState {
-    var savedGroup: SubscriptionGroupState? = null
+): PreparedSubscriptionInstallGroup {
+    var preparedGroup: PreparedSubscriptionInstallGroup? = null
     update { state ->
+        val existingGroup = state.existingSubscriptionGroupByUrl(config.url)
+        if (existingGroup != null) {
+            preparedGroup = PreparedSubscriptionInstallGroup(
+                group = existingGroup,
+                existingGroupName = existingGroup.name,
+            )
+            return@update state
+        }
         val reusableGroup = state.reusableDefaultSubscriptionGroup()
         val group = reusableGroup?.copy(
             url = config.url,
             userAgent = config.userAgent,
         ) ?: state.newSubscriptionGroup(config)
-        savedGroup = group
+        preparedGroup = PreparedSubscriptionInstallGroup(
+            group = group,
+            existingGroupName = null,
+        )
         if (reusableGroup == null) {
             state.copy(
                 subscriptionGroups = state.subscriptionGroups + group,
@@ -125,7 +164,16 @@ private fun AndroidAppStateStore.prepareSubscriptionInstallGroup(
             )
         }
     }
-    return checkNotNull(savedGroup)
+    return checkNotNull(preparedGroup)
+}
+
+private data class PreparedSubscriptionInstallGroup(
+    val group: SubscriptionGroupState,
+    val existingGroupName: String?,
+)
+
+private fun AppState.existingSubscriptionGroupByUrl(url: String): SubscriptionGroupState? {
+    return subscriptionGroups.firstOrNull { group -> group.url == url }
 }
 
 private fun AppState.reusableDefaultSubscriptionGroup(): SubscriptionGroupState? {

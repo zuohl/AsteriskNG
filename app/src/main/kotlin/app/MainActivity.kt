@@ -29,8 +29,8 @@ import features.settings.locale.localizedAppContext
 import features.subscription.SubscriptionInstallConfigUseCase
 import features.subscription.isSubscriptionInstallConfigUri
 import features.subscription.runtime.AndroidSubscriptionFetcher
+import features.subscription.subscriptionInstallMessage
 import features.subscription.toSubscriptionInstallConfigOrNull
-import features.subscription.usecase.subscriptionUpdateMessage
 import kotlinx.coroutines.launch
 import ui.feedback.AndroidToastTipNotifier
 
@@ -189,8 +189,9 @@ class MainActivity : ComponentActivity() {
                 subscriptionInstallConfigUseCase.install(config)
             }.onSuccess { result ->
                 tipNotifier.show(
-                    subscriptionUpdateMessage(
+                    subscriptionInstallMessage(
                         result = result,
+                        existingUrlTemplate = getString(R.string.subscription_install_existing_url),
                         successTemplate = getString(R.string.proxy_server_list_subscription_update_result),
                         failedTemplate = getString(R.string.proxy_server_list_subscription_update_result_with_failed),
                     ),

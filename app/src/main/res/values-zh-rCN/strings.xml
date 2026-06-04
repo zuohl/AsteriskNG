@@ -511,6 +511,7 @@
     <string name="subscription_auto_update_interval">自动更新间隔（小时）</string>
     <string name="subscription_update_via_proxy">使用代理更新</string>
     <string name="subscription_update_via_proxy_summary">通过本地代理请求订阅地址</string>
+    <string name="subscription_install_existing_url">订阅地址已存在于“{name}”，正在更新该分组</string>
     <string name="subscription_install_config_invalid">无效的订阅链接</string>
     <string name="subscription_install_config_failed">导入订阅失败</string>
 </resources>

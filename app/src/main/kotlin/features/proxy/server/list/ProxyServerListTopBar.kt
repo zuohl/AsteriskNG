@@ -33,6 +33,7 @@ import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.SubscriptionInstallConfigUseCase
 import features.subscription.runtime.AndroidSubscriptionFetchOptions
 import features.subscription.runtime.AndroidSubscriptionFetcher
+import features.subscription.subscriptionInstallMessage
 import features.subscription.usecase.subscriptionUpdateMessage
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
@@ -274,8 +275,9 @@ private suspend fun installSubscriptionFromText(
         ).install(config)
     }.onSuccess { result ->
         tipNotifier.show(
-            subscriptionUpdateMessage(
+            subscriptionInstallMessage(
                 result = result,
+                existingUrlTemplate = messages.subscriptionInstallExistingUrlTemplate,
                 successTemplate = messages.subscriptionUpdateResultTemplate,
                 failedTemplate = messages.subscriptionUpdateResultWithFailedTemplate,
             ),

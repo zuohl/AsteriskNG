@@ -511,6 +511,7 @@
     <string name="subscription_auto_update_interval">Auto update interval (hours)</string>
     <string name="subscription_update_via_proxy">Update via proxy</string>
     <string name="subscription_update_via_proxy_summary">Use the local proxy for subscription requests</string>
+    <string name="subscription_install_existing_url">A matching subscription URL already exists in {name}; updating that group</string>
     <string name="subscription_install_config_invalid">Invalid subscription link</string>
     <string name="subscription_install_config_failed">Failed to import subscription</string>
 </resources>
