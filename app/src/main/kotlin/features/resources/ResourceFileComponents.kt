@@ -64,6 +64,7 @@ internal fun settingsResourceFileSourceOptions() = listOf(
     stringResource(R.string.settings_resource_files_source_loyalsoldier_github),
     stringResource(R.string.settings_resource_files_source_v2fly_github),
     stringResource(R.string.settings_resource_files_source_chocolate4u_github),
+    stringResource(R.string.settings_resource_files_source_runetfreedom_github),
     stringResource(R.string.settings_resource_files_source_custom),
 )
 

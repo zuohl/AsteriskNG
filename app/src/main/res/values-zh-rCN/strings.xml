@@ -144,6 +144,7 @@
     <string name="settings_resource_files_source_loyalsoldier_github">Loyalsoldier（GitHub）</string>
     <string name="settings_resource_files_source_v2fly_github">V2Fly（GitHub）</string>
     <string name="settings_resource_files_source_chocolate4u_github">Chocolate4U（GitHub）</string>
+    <string name="settings_resource_files_source_runetfreedom_github">RunetFreedom（GitHub）</string>
     <string name="settings_resource_files_source_custom">自定义</string>
     <string name="settings_resource_files_source_custom_title">自定义 geodata 地址</string>
     <string name="settings_resource_files_update">更新资源文件</string>

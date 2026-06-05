@@ -11,9 +11,12 @@ import features.resources.ResourceFileGeoIpOnlyCnPrivateName
 import features.resources.ResourceFileGeoSiteName
 import features.resources.ResourceFileLoyalsoldierGeoIpUrl
 import features.resources.ResourceFileLoyalsoldierGeoSiteUrl
+import features.resources.ResourceFileRunetFreedomGeoIpUrl
+import features.resources.ResourceFileRunetFreedomGeoSiteUrl
 import features.resources.ResourceFileSourceChocolate4UGithub
 import features.resources.ResourceFileSourceCustom
 import features.resources.ResourceFileSourceLoyalsoldierGithub
+import features.resources.ResourceFileSourceRunetFreedomGithub
 import features.resources.ResourceFileSourceV2FlyGithub
 import features.resources.ResourceFileV2FlyGeoIpUrl
 import features.resources.ResourceFileV2FlyGeoIpOnlyCnPrivateUrl
@@ -117,6 +120,12 @@ val ResourceFileUpdateSources = listOf(
         id = ResourceFileSourceChocolate4UGithub,
         geoIpUrl = ResourceFileChocolate4UGeoIpUrl,
         geoSiteUrl = ResourceFileChocolate4UGeoSiteUrl,
+        geoIpOnlyCnPrivateUrl = ResourceFileV2FlyGeoIpOnlyCnPrivateUrl,
+    ),
+    ResourceFileUpdateSource(
+        id = ResourceFileSourceRunetFreedomGithub,
+        geoIpUrl = ResourceFileRunetFreedomGeoIpUrl,
+        geoSiteUrl = ResourceFileRunetFreedomGeoSiteUrl,
         geoIpOnlyCnPrivateUrl = ResourceFileV2FlyGeoIpOnlyCnPrivateUrl,
     ),
 )

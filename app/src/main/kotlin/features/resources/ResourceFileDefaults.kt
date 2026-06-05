@@ -8,7 +8,8 @@ import app.ProjectInfo
 const val ResourceFileSourceLoyalsoldierGithub = 0
 const val ResourceFileSourceV2FlyGithub = 1
 const val ResourceFileSourceChocolate4UGithub = 2
-const val ResourceFileSourceCustom = 3
+const val ResourceFileSourceRunetFreedomGithub = 3
+const val ResourceFileSourceCustom = 4
 
 const val ResourceFileGeoIpName = "geoip.dat"
 const val ResourceFileGeoSiteName = "geosite.dat"
@@ -27,5 +28,9 @@ const val ResourceFileChocolate4UGeoIpUrl =
     "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geoip.dat"
 const val ResourceFileChocolate4UGeoSiteUrl =
     "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geosite.dat"
+const val ResourceFileRunetFreedomGeoIpUrl =
+    "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat"
+const val ResourceFileRunetFreedomGeoSiteUrl =
+    "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat"
 
 const val XrayCoreVersion = ProjectInfo.XRAY_CORE_VERSION
