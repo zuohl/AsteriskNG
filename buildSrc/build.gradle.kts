@@ -3,7 +3,7 @@ plugins {
 }
 
 kotlin{
-    jvmToolchain(25)
+    jvmToolchain(26)
 }
 
 repositories {
