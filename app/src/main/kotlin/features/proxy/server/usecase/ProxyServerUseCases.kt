@@ -56,9 +56,11 @@ internal fun AppState.withImportedProxyServers(
             server = server,
         )
     }
+    val nextServers = importedServers + proxyServers
     return copy(
-        proxyServers = importedServers + proxyServers,
+        proxyServers = nextServers,
         nextProxyServerId = maxOf(nextProxyServerId, nextServerId),
+        selectedProxyServerId = selectedProxyServerIdOrFirstAvailable(nextServers),
     )
 }
 
@@ -97,6 +99,7 @@ internal fun AppState.withSavedProxyServer(
         state = copy(
             proxyServers = nextServers,
             nextProxyServerId = maxOf(nextProxyServerId, serverId + 1),
+            selectedProxyServerId = selectedProxyServerIdOrFirstAvailable(nextServers),
         ),
         existingGroupId = existingGroupId,
         wasExisting = wasExisting,
@@ -125,6 +128,7 @@ internal fun AppState.withUpdatedSubscriptionServers(
     val selectedServerId = when {
         nextServers.any { server -> server.id == selectedProxyServerId } -> selectedProxyServerId
         else -> proxyServers.firstOrNull { server -> server.groupId !in updatedGroupIds }?.id
+            ?: nextServers.firstOrNull()?.id
             ?: selectedProxyServerId
     }
     return copy(
@@ -250,6 +254,14 @@ internal fun createProxyServer(action: ProxyServerListAddAction): ProxyServer<*>
         ProxyServerListAddAction.Wireguard -> Wireguard(port = "", reserved = "", address = "", mtu = "")
 
         ProxyServerListAddAction.Custom -> Custom()
+    }
+}
+
+private fun AppState.selectedProxyServerIdOrFirstAvailable(nextServers: List<ProxyServerState>): Int {
+    return if (nextServers.any { server -> server.id == selectedProxyServerId }) {
+        selectedProxyServerId
+    } else {
+        nextServers.firstOrNull()?.id ?: selectedProxyServerId
     }
 }
 

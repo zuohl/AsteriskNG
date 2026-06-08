@@ -47,7 +47,6 @@ import ui.components.rememberReorderableLazyListContentPaddingWithoutTop
 import ui.components.rememberReorderableScrollThresholdPadding
 import ui.feedback.AndroidToastTipNotifier
 import ui.layout.pageScrollModifiers
-import ui.text.formatTemplate
 
 @Composable
 internal fun ProxyServerListPager(
@@ -71,6 +70,7 @@ internal fun ProxyServerListPager(
     messages: ProxyServerListMessages,
     resultKey: String,
     onSelectedServerIdChange: (Int) -> Unit,
+    onDeleteServer: (ProxyServerState) -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -155,6 +155,7 @@ internal fun ProxyServerListPager(
                                 messages = messages,
                                 resultKey = resultKey,
                                 onSelectedServerIdChange = onSelectedServerIdChange,
+                                onDeleteServer = onDeleteServer,
                                 isDragging = isDragging,
                                 dragModifier = Modifier.longPressReorderDragHandle(
                                     scope = this,
@@ -200,6 +201,7 @@ private fun ProxyServerListItem(
     messages: ProxyServerListMessages,
     resultKey: String,
     onSelectedServerIdChange: (Int) -> Unit,
+    onDeleteServer: (ProxyServerState) -> Unit,
     isDragging: Boolean,
     modifier: Modifier = Modifier,
     dragModifier: Modifier,
@@ -258,26 +260,7 @@ private fun ProxyServerListItem(
             )
         },
         onDelete = {
-            var deleted = false
-            updateAppState { state ->
-                if (state.selectedProxyServerId == server.id) {
-                    state
-                } else {
-                    deleted = true
-                    state.copy(
-                        proxyServers = state.proxyServers.filterNot { it.id == server.id },
-                    )
-                }
-            }
-            scope.launch {
-                tipNotifier.show(
-                    if (deleted) {
-                        messages.deletedTemplate.formatTemplate("name" to server.server.getInfo().remarks)
-                    } else {
-                        messages.deleteSelectedBlocked
-                    },
-                )
-            }
+            onDeleteServer(server)
         },
     )
 }

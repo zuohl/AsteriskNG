@@ -46,6 +46,7 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
+import ui.text.formatTemplate
 
 private const val ProxyServerEditResultKey = "proxy-server-edit-result"
 
@@ -144,6 +145,54 @@ fun ProxyServerListPage(
             latencyResultTemplate = messages.latencyResultTemplate,
             latencyFailedMessage = messages.latencyFailed,
         )
+    }
+
+    fun deleteProxyServer(server: ProxyServerState) {
+        runProxyServiceOperation {
+            when (val stopResult = proxyServiceUseCase.stop(stateStore.state.value.runMode)) {
+                is ProxyServiceResult.Success -> {
+                    val remarks = server.server.getInfo().remarks
+                    var deleted = false
+                    var nextSelectedServerId = stateStore.state.value.selectedProxyServerId
+                    updateAppState { state ->
+                        val nextServers = state.proxyServers.filterNot { it.id == server.id }
+                        if (nextServers.size == state.proxyServers.size) {
+                            state.copy(
+                                proxyRunning = stopResult.proxyRunning,
+                                localProxyPort = stopResult.appState?.localProxyPort ?: state.localProxyPort,
+                            )
+                        } else {
+                            deleted = true
+                            val selectedProxyServerId = if (state.selectedProxyServerId == server.id) {
+                                nextServers.firstOrNull()?.id ?: state.selectedProxyServerId
+                            } else {
+                                state.selectedProxyServerId
+                            }
+                            nextSelectedServerId = selectedProxyServerId
+                            state.copy(
+                                proxyServers = nextServers,
+                                selectedProxyServerId = selectedProxyServerId,
+                                proxyRunning = stopResult.proxyRunning,
+                                localProxyPort = stopResult.appState?.localProxyPort ?: state.localProxyPort,
+                            )
+                        }
+                    }
+                    selectedServerId = nextSelectedServerId
+                    if (deleted) {
+                        tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to remarks))
+                    }
+                }
+
+                ProxyServiceResult.MissingServer -> {
+                    tipNotifier.show(messages.selectServerFirst)
+                }
+
+                is ProxyServiceResult.Failed -> {
+                    updateAppState { state -> state.copy(proxyRunning = false) }
+                    tipNotifier.showError(stopResult.error, messages.serviceStopped)
+                }
+            }
+        }
     }
 
     ProxyServerEditResultHandler(
@@ -273,6 +322,7 @@ fun ProxyServerListPage(
                 messages = messages,
                 resultKey = ProxyServerEditResultKey,
                 onSelectedServerIdChange = { selectedServerId = it },
+                onDeleteServer = ::deleteProxyServer,
             )
             ProxyServerListFloatingToolbar(
                 running = proxyRunning,
