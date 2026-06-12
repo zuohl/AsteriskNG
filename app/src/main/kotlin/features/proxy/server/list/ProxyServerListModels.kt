@@ -29,6 +29,7 @@ internal enum class ProxyServerListToolAction {
     CopyAllUrls,
     DeleteDuplicateServers,
     DeleteInvalidServers,
+    DeleteAllServers,
 }
 
 internal enum class ProxyServerListCopyAction {

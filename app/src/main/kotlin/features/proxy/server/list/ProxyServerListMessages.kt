@@ -33,6 +33,8 @@ internal data class ProxyServerListMessages(
     val noDuplicates: String,
     val invalidServersDeletedTemplate: String,
     val noInvalidServers: String,
+    val allServersDeletedTemplate: String,
+    val noServersToDelete: String,
 )
 
 @Composable
@@ -64,5 +66,7 @@ internal fun proxyServerListMessages(): ProxyServerListMessages {
         noDuplicates = stringResource(R.string.proxy_server_list_no_duplicates),
         invalidServersDeletedTemplate = stringResource(R.string.proxy_server_list_invalid_deleted),
         noInvalidServers = stringResource(R.string.proxy_server_list_no_invalid),
+        allServersDeletedTemplate = stringResource(R.string.proxy_server_list_all_deleted),
+        noServersToDelete = stringResource(R.string.proxy_server_list_no_servers_to_delete),
     )
 }
