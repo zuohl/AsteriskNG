@@ -28,6 +28,7 @@ internal enum class ProxyServerListToolAction {
     UpdateSubscriptions,
     CopyAllUrls,
     DeleteDuplicateServers,
+    DeleteInvalidServers,
 }
 
 internal data class ProxyServerListMenuEntry(

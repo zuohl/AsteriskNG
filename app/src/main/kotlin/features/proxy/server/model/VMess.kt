@@ -6,7 +6,6 @@ package features.proxy.server.model
 import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
-import io.ktor.http.parsing.ParseException
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -94,8 +93,16 @@ data class LegacyVMess(
         }
     }
 
-    override fun check() {
-        throw IllegalStateException("Legacy VMess url format not use in this program, only for parse, consider using convertToAEAD()")
+    override fun validateBasic(): List<ProxyServerValidationIssue> {
+        return runCatching { convertToAEAD().validateBasic() }.getOrElse {
+            listOf(proxyValidationIssue(ProxyServerValidationError.UnsupportedValue, "legacy VMess"))
+        }
+    }
+
+    override fun validateFull(): List<ProxyServerValidationIssue> {
+        return runCatching { convertToAEAD().validateFull() }.getOrElse {
+            listOf(proxyValidationIssue(ProxyServerValidationError.UnsupportedValue, "legacy VMess"))
+        }
     }
 
     fun convertToAEAD(): VMess {
@@ -155,7 +162,7 @@ data class VMess(
 
     override fun parse(url: Url): VMess {
         this.remarks = url.proxyUrlRemarks()
-        this.id = url.user ?: throw ParseException("Invalid VMessAEAD url")
+        this.id = url.user ?: ""
         this.server = url.host
         this.port = url.port.toString()
         this.encryption = url.parameters["encryption"] ?: "auto"
@@ -191,9 +198,14 @@ data class VMess(
         }
     }
 
-    override fun check() {
+    override fun validateBasic(): List<ProxyServerValidationIssue> = buildList {
         validateCommonServerFields(remarks, server, port)
-        validateXrayUserId(id)
+        validateRequired(id, "user ID")
+    }
+
+    override fun validateFull(): List<ProxyServerValidationIssue> = buildList {
+        addAll(validateBasic())
+        validateOptionalXrayUserId(id)
         validateAllowed(
             encryption.ifBlank { "auto" },
             "encryption method",

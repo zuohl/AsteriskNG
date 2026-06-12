@@ -59,7 +59,14 @@ private fun parseProxyServerUrlOrNull(
     index: Int,
     source: ProxyServerImportSource,
 ): ProxyServer<*>? {
-    return runCatching { ProxyServer.parse(url) }
+    return runCatching {
+        val server = ProxyServer.parse(url)
+        val issues = server.validateBasic()
+        if (issues.isNotEmpty()) {
+            throw IllegalArgumentException("Basic validation failed: ${issues.joinToString { it.error.name }}")
+        }
+        server
+    }
         .onFailure { error ->
             AndroidAppLogger.warn(
                 ProxyServerImportLogTag,

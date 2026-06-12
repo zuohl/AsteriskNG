@@ -7,14 +7,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import app.R
 import features.proxy.server.model.ProxyServerValidationError
-import features.proxy.server.model.ProxyServerValidationException
+import features.proxy.server.model.ProxyServerValidationIssue
 import androidx.compose.ui.res.stringResource
 import ui.text.formatTemplate
 
 @Composable
-internal fun rememberProxyServerValidationMessageResolver(
-    fallbackMessage: String,
-): (Throwable) -> String {
+internal fun rememberProxyServerValidationMessageResolver(): (ProxyServerValidationIssue) -> String {
     val messages = ProxyServerValidationMessages(
         requiredField = stringResource(R.string.proxy_validation_required_field),
         requiredFieldNames = mapOf(
@@ -85,8 +83,8 @@ internal fun rememberProxyServerValidationMessageResolver(
             stringResource(R.string.proxy_validation_shadowsocks_2022_key_length_invalid),
         vlessVisionFlowUnsupported = stringResource(R.string.proxy_validation_vless_vision_flow_unsupported),
     )
-    return remember(messages, fallbackMessage) {
-        { error -> messages.messageOf(error, fallbackMessage) }
+    return remember(messages) {
+        { issue -> messages.messageOf(issue) }
     }
 }
 
@@ -136,10 +134,9 @@ private data class ProxyServerValidationMessages(
     val shadowsocks2022KeyLengthInvalid: String,
     val vlessVisionFlowUnsupported: String,
 ) {
-    fun messageOf(error: Throwable, fallbackMessage: String): String {
-        val validationError = error as? ProxyServerValidationException ?: return fallbackMessage
-        val values = validationError.values
-        return when (validationError.error) {
+    fun messageOf(issue: ProxyServerValidationIssue): String {
+        val values = issue.values
+        return when (issue.error) {
             ProxyServerValidationError.RequiredField ->
                 requiredField.formatTemplate("field" to requiredFieldName(values.valueAt(0)))
             ProxyServerValidationError.ServerAddressContainsInvalidContent -> serverAddressContainsInvalidContent

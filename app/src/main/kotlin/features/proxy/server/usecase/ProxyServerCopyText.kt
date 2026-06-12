@@ -21,34 +21,48 @@ import features.subscription.DefaultSubscriptionGroupId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-internal suspend fun ProxyServerState.proxyServerCopyTextOrNull(
+internal sealed interface ProxyServerCopyTextResult {
+    data class Success(val text: String) : ProxyServerCopyTextResult
+    data object Unsupported : ProxyServerCopyTextResult
+    data object InvalidConfig : ProxyServerCopyTextResult
+}
+
+internal suspend fun ProxyServerState.proxyServerCopyText(
     context: Context,
     appState: AppState,
-): String? {
+): ProxyServerCopyTextResult {
     return when (server) {
         is ChainProxy,
         is StrategyGroup -> withContext(Dispatchers.IO) {
             runCatching {
-                context.generatedProxyServerXrayConfig(appState, this@proxyServerCopyTextOrNull)
-            }.getOrNull()
+                context.generatedProxyServerXrayConfig(appState, this@proxyServerCopyText)
+            }.fold(
+                onSuccess = { text -> ProxyServerCopyTextResult.Success(text) },
+                onFailure = { ProxyServerCopyTextResult.InvalidConfig },
+            )
         }
 
-        else -> runCatching { server.getCopyTextOrNull() }.getOrNull()
+        else -> runCatching { server.getCopyTextOrNull() }.fold(
+            onSuccess = { text ->
+                if (text == null) ProxyServerCopyTextResult.Unsupported else ProxyServerCopyTextResult.Success(text)
+            },
+            onFailure = { ProxyServerCopyTextResult.InvalidConfig },
+        )
     }
 }
 
-internal suspend fun ProxyServer<*>.proxyServerCopyTextOrNull(
+internal suspend fun ProxyServer<*>.proxyServerCopyText(
     context: Context,
     appState: AppState,
     serverId: Int?,
     groupId: Int?,
-): String? {
+): ProxyServerCopyTextResult {
     val copyServer = ProxyServerState(
         id = serverId ?: TemporaryCopyServerId,
         server = this,
         groupId = groupId ?: DefaultSubscriptionGroupId,
     )
-    return copyServer.proxyServerCopyTextOrNull(context, appState)
+    return copyServer.proxyServerCopyText(context, appState)
 }
 
 private fun Context.generatedProxyServerXrayConfig(

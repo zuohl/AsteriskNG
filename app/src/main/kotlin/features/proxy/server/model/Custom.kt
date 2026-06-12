@@ -36,29 +36,41 @@ data class Custom(
         configJson = other.configJson
     }
 
-    override fun check() {
+    override fun validateBasic(): List<ProxyServerValidationIssue> = validateFull()
+
+    override fun validateFull(): List<ProxyServerValidationIssue> = buildList {
         validateRemarks(remarks)
         validateCustomXrayConfigJson(configJson)
     }
 }
 
-internal fun validateCustomXrayConfigJson(value: String): JsonObject {
-    val config = parseCustomXrayConfigJsonObject(value)
-    val outbounds = config["outbounds"] as? JsonArray
-    if (outbounds.isNullOrEmpty()) {
-        proxyValidationError(ProxyServerValidationError.RequiredField, "custom JSON outbounds")
-    }
-    return config
-}
-
 internal fun parseCustomXrayConfigJsonObject(value: String): JsonObject {
     val text = value.trim()
-    validateRequired(text, "custom JSON")
+    if (text.isBlank()) {
+        throw IllegalArgumentException("custom JSON is required")
+    }
     val element = runCatching {
         CustomXrayConfigJson.parseToJsonElement(text)
     }.getOrNull()
     return element as? JsonObject
-        ?: proxyValidationError(ProxyServerValidationError.JsonObjectRequired, "custom JSON")
+        ?: throw IllegalArgumentException("custom JSON must be a JSON object")
+}
+
+private fun MutableList<ProxyServerValidationIssue>.validateCustomXrayConfigJson(value: String) {
+    val text = value.trim()
+    if (!validateRequired(text, "custom JSON")) return
+    val element = runCatching {
+        CustomXrayConfigJson.parseToJsonElement(text)
+    }.getOrNull()
+    val config = element as? JsonObject
+    if (config == null) {
+        addIssue(ProxyServerValidationError.JsonObjectRequired, "custom JSON")
+        return
+    }
+    val outbounds = config["outbounds"] as? JsonArray
+    if (outbounds.isNullOrEmpty()) {
+        addIssue(ProxyServerValidationError.RequiredField, "custom JSON outbounds")
+    }
 }
 
 internal fun formatCustomXrayConfigJson(value: String): String {

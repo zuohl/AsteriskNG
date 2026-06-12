@@ -46,7 +46,9 @@ data class StrategyGroup(
         filter = other.filter
     }
 
-    override fun check() {
+    override fun validateBasic(): List<ProxyServerValidationIssue> = validateFull()
+
+    override fun validateFull(): List<ProxyServerValidationIssue> = buildList {
         validateRemarks(remarks)
         validateAllowed(strategy, "strategy group type", StrategyGroupConstants.TYPES)
     }

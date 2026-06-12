@@ -79,8 +79,12 @@ data class HTTP(
         }
     }
 
-    override fun check() {
+    override fun validateBasic(): List<ProxyServerValidationIssue> = buildList {
         validateCommonServerFields(remarks, server, port)
+    }
+
+    override fun validateFull(): List<ProxyServerValidationIssue> = buildList {
+        addAll(validateBasic())
         validateOptionalUserPassword(user, password)
     }
 }

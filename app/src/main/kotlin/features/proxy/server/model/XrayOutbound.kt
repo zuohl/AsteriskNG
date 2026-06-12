@@ -38,11 +38,7 @@ data class OutboundObject(
 
 internal fun String.toXrayPort(): Int {
     return toPortOrNull()
-        ?: proxyValidationError(
-            ProxyServerValidationError.PortOutOfRange,
-            NetworkLimits.PORT_MIN,
-            NetworkLimits.PORT_MAX,
-        )
+        ?: throw IllegalArgumentException("Port must be ${NetworkLimits.PORT_MIN}-${NetworkLimits.PORT_MAX}")
 }
 
 internal fun JsonObjectBuilder.putIfNotBlank(name: String, value: String?) {
@@ -196,10 +192,10 @@ private fun String?.toXrayJsonObjectOrNull(fieldName: String): JsonObject? {
     val element: JsonElement = runCatching {
         Json.parseToJsonElement(value)
     }.getOrElse {
-        proxyValidationError(ProxyServerValidationError.JsonObjectRequired, fieldName)
+        throw IllegalArgumentException("$fieldName must be a JSON object")
     }
     return element as? JsonObject
-        ?: proxyValidationError(ProxyServerValidationError.JsonObjectRequired, fieldName)
+        ?: throw IllegalArgumentException("$fieldName must be a JSON object")
 }
 
 private data class XrayHttpTransportHeaders(

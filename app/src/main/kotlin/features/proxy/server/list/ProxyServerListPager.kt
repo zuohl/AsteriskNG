@@ -30,7 +30,9 @@ import app.collectProxyServerLatency
 import app.navigation.Navigator
 import app.navigation.Route
 import data.AndroidAppStateStore
-import features.proxy.server.usecase.proxyServerCopyTextOrNull
+import features.proxy.server.validation.rememberProxyServerValidationMessageResolver
+import features.proxy.server.usecase.ProxyServerCopyTextResult
+import features.proxy.server.usecase.proxyServerCopyText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
@@ -210,6 +212,7 @@ private fun ProxyServerListItem(
         serverId = server.id,
         initialLatency = server.latency,
     ).value
+    val validationMessageOf = rememberProxyServerValidationMessageResolver()
 
     ProxyServerListItemCard(
         latency = latency,
@@ -235,15 +238,29 @@ private fun ProxyServerListItem(
         },
         onShare = {
             scope.launch {
-                val copyText = server.proxyServerCopyTextOrNull(
-                    context = context,
-                    appState = stateStore.state.value,
-                )
-                if (copyText == null) {
-                    tipNotifier.show(messages.unsupported)
-                } else {
-                    clipboard.setPlainText(copyText)
-                    tipNotifier.show(messages.copied)
+                val basicIssues = server.server.validateBasic()
+                if (basicIssues.isNotEmpty()) {
+                    tipNotifier.show(validationMessageOf(basicIssues.first()))
+                    return@launch
+                }
+                when (
+                    val result = server.proxyServerCopyText(
+                        context = context,
+                        appState = stateStore.state.value,
+                    )
+                ) {
+                    is ProxyServerCopyTextResult.Success -> {
+                        clipboard.setPlainText(result.text)
+                        tipNotifier.show(messages.copied)
+                    }
+
+                    ProxyServerCopyTextResult.Unsupported -> {
+                        tipNotifier.show(messages.unsupported)
+                    }
+
+                    ProxyServerCopyTextResult.InvalidConfig -> {
+                        tipNotifier.show(messages.configInvalid)
+                    }
                 }
             }
         },

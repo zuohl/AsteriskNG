@@ -298,6 +298,7 @@
     <string name="proxy_server_list_sort_by_test_result">Sort by test result</string>
     <string name="proxy_server_list_copy_all_urls">Copy all server URLs</string>
     <string name="proxy_server_list_delete_duplicates">Delete duplicate proxy servers</string>
+    <string name="proxy_server_list_delete_invalid">Delete invalid proxy servers</string>
     <string name="proxy_server_list_start_proxy">Start proxy</string>
     <string name="proxy_server_list_stop_proxy">Stop proxy</string>
     <string name="proxy_server_list_scan_qr_code">Scan QR code</string>
@@ -335,12 +336,19 @@
     <string name="proxy_server_list_latency_result">{name} latency {latency}</string>
     <string name="proxy_server_list_latency_failed">Failed</string>
     <string name="proxy_server_list_import_result">Imported {serverCount} proxy servers</string>
+    <string name="proxy_server_config_invalid">Invalid config</string>
     <string name="proxy_server_list_duplicates_deleted">Deleted {count} duplicate proxy servers</string>
     <string name="proxy_server_list_no_duplicates">No duplicate proxy servers found</string>
+    <string name="proxy_server_list_invalid_deleted">Deleted {count} invalid proxy servers</string>
+    <string name="proxy_server_list_no_invalid">No invalid proxy servers found</string>
     <string name="error_proxy_server_import_file_open_failed">Failed to open import file</string>
 
     <!-- Proxy editor -->
     <string name="proxy_editor_validation_failed">Configuration validation failed</string>
+    <string name="proxy_editor_full_validation_warning_title">Configuration has issues</string>
+    <string name="proxy_editor_full_validation_warning_summary">Some checks did not pass. You can continue saving, but the config may not work correctly.</string>
+    <string name="proxy_editor_return_edit">Return to edit</string>
+    <string name="proxy_editor_continue_save">Continue saving</string>
     <string name="proxy_editor_strategy_group_title">Strategy group</string>
     <string name="proxy_editor_chain_proxy_title">Chain proxy</string>
     <string name="proxy_editor_custom_title">Custom</string>

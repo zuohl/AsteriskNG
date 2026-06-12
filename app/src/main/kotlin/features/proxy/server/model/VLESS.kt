@@ -6,7 +6,6 @@ package features.proxy.server.model
 import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
-import io.ktor.http.parsing.ParseException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -43,7 +42,7 @@ data class VLESS(
 
     override fun parse(url: Url): VLESS {
         this.remarks = url.proxyUrlRemarks()
-        this.id = url.user ?: throw ParseException("Invalid VLESS url")
+        this.id = url.user ?: ""
         this.server = url.host
         this.port = url.port.toString()
         this.encryption = url.parameters["encryption"] ?: "none"
@@ -86,15 +85,20 @@ data class VLESS(
         }
     }
 
-    override fun check() {
+    override fun validateBasic(): List<ProxyServerValidationIssue> = buildList {
         validateCommonServerFields(remarks, server, port)
-        validateXrayUserId(id)
+        validateRequired(id, "user ID")
+    }
+
+    override fun validateFull(): List<ProxyServerValidationIssue> = buildList {
+        addAll(validateBasic())
+        validateOptionalXrayUserId(id)
         validateVlessEncryption(encryption)
         if (flow.isNotBlank()) {
             val usesVlessEncryption = encryption.isNotBlank() && encryption != "none"
             val transport = parms.type.ifBlank { "raw" }
             if (!usesVlessEncryption && (transport !in setOf("tcp", "raw") || parms.security !in setOf("tls", "reality"))) {
-                proxyValidationError(ProxyServerValidationError.VlessVisionFlowUnsupported)
+                addIssue(ProxyServerValidationError.VlessVisionFlowUnsupported)
             }
         }
         validateAllowed(flow, "flow", setOf("xtls-rprx-vision", "xtls-rprx-vision-udp443"), allowBlank = true)

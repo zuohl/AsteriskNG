@@ -3,8 +3,8 @@
 
 package features.proxy.server.model
 
-import engine.network.isPort
 import engine.network.NetworkLimits
+import engine.network.isPort
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import utils.decodeUrlSafeBase64NoPaddingOrNull
@@ -31,25 +31,36 @@ private const val WireguardMtuMax = 9000
 private const val RealityPublicKeyBytes = 32
 private const val RealityMldsa65VerifyBytes = 1952
 
-internal fun validateRequired(value: String?, fieldName: String) {
-    if (value.isNullOrBlank()) {
-        proxyValidationError(ProxyServerValidationError.RequiredField, fieldName)
-    }
+internal fun MutableList<ProxyServerValidationIssue>.addIssue(
+    error: ProxyServerValidationError,
+    vararg values: Any?,
+) {
+    add(proxyValidationIssue(error, *values))
 }
 
-internal fun validateRemarks(remarks: String) {
+internal fun MutableList<ProxyServerValidationIssue>.validateRequired(
+    value: String?,
+    fieldName: String,
+): Boolean {
+    if (!value.isNullOrBlank()) return true
+    addIssue(ProxyServerValidationError.RequiredField, fieldName)
+    return false
+}
+
+internal fun MutableList<ProxyServerValidationIssue>.validateRemarks(remarks: String) {
     validateRequired(remarks, "remarks")
 }
 
-internal fun validateServer(server: String) {
+internal fun MutableList<ProxyServerValidationIssue>.validateServer(server: String) {
     val value = server.trim()
-    validateRequired(value, "server address")
+    if (!validateRequired(value, "server address")) return
     if (
         value.contains("://") ||
         value.any { it.isWhitespace() } ||
         value.any { it == '/' || it == '?' || it == '#' || it == '@' }
     ) {
-        proxyValidationError(ProxyServerValidationError.ServerAddressContainsInvalidContent)
+        addIssue(ProxyServerValidationError.ServerAddressContainsInvalidContent)
+        return
     }
 
     val host = if (value.startsWith("[") && value.endsWith("]")) {
@@ -58,25 +69,31 @@ internal fun validateServer(server: String) {
         value
     }
     if (!isValidIpv4(host) && !isValidIpv6(host) && !isValidDomain(host)) {
-        proxyValidationError(ProxyServerValidationError.InvalidServerAddress)
+        addIssue(ProxyServerValidationError.InvalidServerAddress)
     }
 }
 
-internal fun validatePort(port: String, fieldName: String = "server port"): Int {
+internal fun MutableList<ProxyServerValidationIssue>.validatePort(
+    port: String,
+    fieldName: String = "server port",
+) {
     val value = port.trim()
-    validateRequired(value, fieldName)
-    val number = value.toIntOrNull() ?: proxyValidationError(ProxyServerValidationError.NumberRequired, fieldName)
+    if (!validateRequired(value, fieldName)) return
+    val number = value.toIntOrNull()
+    if (number == null) {
+        addIssue(ProxyServerValidationError.NumberRequired, fieldName)
+        return
+    }
     if (!number.isPort()) {
-        proxyValidationError(
+        addIssue(
             ProxyServerValidationError.PortOutOfRange,
             NetworkLimits.PORT_MIN,
             NetworkLimits.PORT_MAX,
         )
     }
-    return number
 }
 
-internal fun validateAllowed(
+internal fun MutableList<ProxyServerValidationIssue>.validateAllowed(
     value: String,
     fieldName: String,
     allowed: Set<String>,
@@ -84,15 +101,17 @@ internal fun validateAllowed(
 ) {
     val normalized = value.trim()
     if (normalized.isBlank()) {
-        if (allowBlank) return
-        proxyValidationError(ProxyServerValidationError.RequiredField, fieldName)
+        if (!allowBlank) {
+            addIssue(ProxyServerValidationError.RequiredField, fieldName)
+        }
+        return
     }
     if (normalized !in allowed) {
-        proxyValidationError(ProxyServerValidationError.UnsupportedValue, normalized)
+        addIssue(ProxyServerValidationError.UnsupportedValue, normalized)
     }
 }
 
-internal fun validateCommonServerFields(
+internal fun MutableList<ProxyServerValidationIssue>.validateCommonServerFields(
     remarks: String,
     server: String,
     port: String,
@@ -102,16 +121,19 @@ internal fun validateCommonServerFields(
     validatePort(port)
 }
 
-internal fun validateOptionalUserPassword(user: String?, password: String?) {
+internal fun MutableList<ProxyServerValidationIssue>.validateOptionalUserPassword(
+    user: String?,
+    password: String?,
+) {
     if (user.isNullOrBlank() && !password.isNullOrBlank()) {
-        proxyValidationError(ProxyServerValidationError.UsernameRequiredForPassword)
+        addIssue(ProxyServerValidationError.UsernameRequiredForPassword)
     }
     if (!user.isNullOrBlank() && password.isNullOrBlank()) {
-        proxyValidationError(ProxyServerValidationError.PasswordRequiredForUsername)
+        addIssue(ProxyServerValidationError.PasswordRequiredForUsername)
     }
 }
 
-internal fun validateV2RayParameters(params: V2RayParameters) {
+internal fun MutableList<ProxyServerValidationIssue>.validateV2RayParameters(params: V2RayParameters) {
     val type = params.type.ifBlank { "raw" }
     val security = params.security.ifBlank { "none" }
     validateOptionalJsonObject(params.fm, "FinalMask")
@@ -150,7 +172,7 @@ internal fun validateV2RayParameters(params: V2RayParameters) {
 
         "reality" -> {
             if (type !in setOf("tcp", "raw", "xhttp", "splithttp", "grpc")) {
-                proxyValidationError(ProxyServerValidationError.RealityTransportUnsupported)
+                addIssue(ProxyServerValidationError.RealityTransportUnsupported)
             }
             validateRealityPublicKey(params.pbk.orEmpty())
             validateRequired(params.fp, "TLS fingerprint")
@@ -159,33 +181,38 @@ internal fun validateV2RayParameters(params: V2RayParameters) {
             validateOptionalPath(params.spx, "SpiderX")
             val shortId = params.sid.orEmpty()
             if (shortId.isNotBlank() && (shortId.length > 16 || shortId.length % 2 != 0 || !HexRegex.matches(shortId))) {
-                proxyValidationError(ProxyServerValidationError.RealityShortIdInvalid)
+                addIssue(ProxyServerValidationError.RealityShortIdInvalid)
             }
         }
     }
 }
 
-internal fun validateWireguardKey(value: String, fieldName: String, required: Boolean = true) {
+internal fun MutableList<ProxyServerValidationIssue>.validateWireguardKey(
+    value: String,
+    fieldName: String,
+    required: Boolean = true,
+) {
     if (value.isBlank()) {
         if (required) {
-            proxyValidationError(ProxyServerValidationError.RequiredField, fieldName)
+            addIssue(ProxyServerValidationError.RequiredField, fieldName)
         }
         return
     }
     if (!WireguardKeyRegex.matches(value.trim())) {
-        proxyValidationError(ProxyServerValidationError.WireguardKeyInvalid, fieldName)
+        addIssue(ProxyServerValidationError.WireguardKeyInvalid, fieldName)
     }
 }
 
-internal fun validateWireguardReserved(reserved: String) {
+internal fun MutableList<ProxyServerValidationIssue>.validateWireguardReserved(reserved: String) {
     if (reserved.isBlank()) return
     val parts = reserved.split(",")
     if (parts.size != 3) {
-        proxyValidationError(ProxyServerValidationError.WireguardReservedCountInvalid)
+        addIssue(ProxyServerValidationError.WireguardReservedCountInvalid)
+        return
     }
     parts.forEach { part ->
         if (part.toIntInRangeOrNull(NetworkLimits.IPV4_OCTET_MIN..NetworkLimits.IPV4_OCTET_MAX) == null) {
-            proxyValidationError(
+            addIssue(
                 ProxyServerValidationError.WireguardReservedValueInvalid,
                 NetworkLimits.IPV4_OCTET_MIN,
                 NetworkLimits.IPV4_OCTET_MAX,
@@ -194,111 +221,128 @@ internal fun validateWireguardReserved(reserved: String) {
     }
 }
 
-internal fun validateWireguardAddresses(addresses: String) {
+internal fun MutableList<ProxyServerValidationIssue>.validateWireguardAddresses(addresses: String) {
     if (addresses.isBlank()) return
     addresses.split(",").forEach { address ->
         val value = address.trim()
         val slashIndex = value.lastIndexOf('/')
         if (value.isBlank() || slashIndex <= 0 || slashIndex == value.lastIndex) {
-            proxyValidationError(ProxyServerValidationError.LocalAddressCidrRequired)
+            addIssue(ProxyServerValidationError.LocalAddressCidrRequired)
+            return@forEach
         }
         val host = value.substring(0, slashIndex)
         val prefix = value.substring(slashIndex + 1).toIntOrNull()
-            ?: proxyValidationError(ProxyServerValidationError.LocalAddressPrefixNumberRequired)
+        if (prefix == null) {
+            addIssue(ProxyServerValidationError.LocalAddressPrefixNumberRequired)
+            return@forEach
+        }
         val validPrefix = when {
             isValidIpv4(host) -> prefix in 0..32
             isValidIpv6(host) -> prefix in 0..128
             else -> false
         }
         if (!validPrefix) {
-            proxyValidationError(ProxyServerValidationError.InvalidLocalAddressCidr)
+            addIssue(ProxyServerValidationError.InvalidLocalAddressCidr)
         }
     }
 }
 
-internal fun validateMtu(mtu: String) {
+internal fun MutableList<ProxyServerValidationIssue>.validateMtu(mtu: String) {
     if (mtu.isBlank()) return
     if (mtu.toIntOrNull() == null) {
-        proxyValidationError(ProxyServerValidationError.MtuNumberRequired)
+        addIssue(ProxyServerValidationError.MtuNumberRequired)
+        return
     }
     if (mtu.toIntInRangeOrNull(WireguardMtuMin..WireguardMtuMax) == null) {
-        proxyValidationError(ProxyServerValidationError.MtuOutOfRange, WireguardMtuMin, WireguardMtuMax)
+        addIssue(ProxyServerValidationError.MtuOutOfRange, WireguardMtuMin, WireguardMtuMax)
     }
 }
 
-internal fun validateHysteriaMultiPorts(mport: String) {
+internal fun MutableList<ProxyServerValidationIssue>.validateHysteriaMultiPorts(mport: String) {
     if (mport.isBlank()) return
     mport.split(",").forEach { part ->
         val range = part.trim().split("-")
         if (range.size !in 1..2) {
-            proxyValidationError(ProxyServerValidationError.InvalidPortHoppingFormat)
+            addIssue(ProxyServerValidationError.InvalidPortHoppingFormat)
+            return@forEach
         }
-        val start = validatePort(range[0], "port hopping")
-        val end = if (range.size == 2) validatePort(range[1], "port hopping") else start
+        val before = size
+        validatePort(range[0], "port hopping")
+        if (before != size) return@forEach
+        val start = range[0].trim().toInt()
+        val end = if (range.size == 2) {
+            val beforeEnd = size
+            validatePort(range[1], "port hopping")
+            if (beforeEnd != size) return@forEach
+            range[1].trim().toInt()
+        } else {
+            start
+        }
         if (start > end) {
-            proxyValidationError(ProxyServerValidationError.PortHoppingRangeInvalid)
+            addIssue(ProxyServerValidationError.PortHoppingRangeInvalid)
         }
     }
 }
 
-internal fun validateOptionalBandwidth(value: String, fieldName: String) {
+internal fun MutableList<ProxyServerValidationIssue>.validateOptionalBandwidth(value: String, fieldName: String) {
     if (value.isBlank()) return
     if (!HysteriaBandwidthRegex.matches(value.trim())) {
-        proxyValidationError(ProxyServerValidationError.InvalidBandwidthFormat)
+        addIssue(ProxyServerValidationError.InvalidBandwidthFormat, fieldName)
     }
 }
 
-internal fun validateOptionalSha256(value: String?, fieldName: String) {
+internal fun MutableList<ProxyServerValidationIssue>.validateOptionalSha256(value: String?, fieldName: String) {
     val hash = value.orEmpty()
     if (hash.isBlank()) return
     hash.split(",").forEach { item ->
         val normalized = item.trim().replace(":", "")
         if (normalized.length != 64 || !HexRegex.matches(normalized)) {
-            proxyValidationError(ProxyServerValidationError.Sha256Invalid, fieldName)
+            addIssue(ProxyServerValidationError.Sha256Invalid, fieldName)
         }
     }
 }
 
-internal fun validateOptionalJsonObject(value: String?, fieldName: String) {
+internal fun MutableList<ProxyServerValidationIssue>.validateOptionalJsonObject(value: String?, fieldName: String) {
     val text = value?.trim().orEmpty()
     if (text.isBlank()) return
     val jsonObject = runCatching {
         Json.parseToJsonElement(text)
     }.getOrNull() as? JsonObject
     if (jsonObject == null) {
-        proxyValidationError(ProxyServerValidationError.JsonObjectRequired, fieldName)
+        addIssue(ProxyServerValidationError.JsonObjectRequired, fieldName)
     }
 }
 
-internal fun validateRealityPublicKey(value: String) {
+internal fun MutableList<ProxyServerValidationIssue>.validateRealityPublicKey(value: String) {
     val key = value.trim()
-    validateRequired(key, "Reality PublicKey")
+    if (!validateRequired(key, "Reality PublicKey")) return
     val decoded = if (UrlSafeBase64Regex.matches(key)) {
         key.decodeUrlSafeBase64OptionalPaddingOrNull()
     } else {
         null
     }
     if (decoded?.size != RealityPublicKeyBytes) {
-        proxyValidationError(ProxyServerValidationError.RealityPublicKeyInvalid)
+        addIssue(ProxyServerValidationError.RealityPublicKeyInvalid)
     }
 }
 
-internal fun validateXrayUserId(value: String, fieldName: String = "user ID") {
-    validateRequired(value, fieldName)
+internal fun MutableList<ProxyServerValidationIssue>.validateOptionalXrayUserId(value: String) {
     val normalized = value.trim()
+    if (normalized.isBlank()) return
     if (UuidRegex.matches(normalized)) return
     if (normalized.encodeToByteArray().size >= XrayUserIdMaxBytes) {
-        proxyValidationError(ProxyServerValidationError.XrayUserIdInvalid, XrayUserIdMaxBytes)
+        addIssue(ProxyServerValidationError.XrayUserIdInvalid, XrayUserIdMaxBytes)
     }
 }
 
-internal fun validateVlessEncryption(value: String) {
+internal fun MutableList<ProxyServerValidationIssue>.validateVlessEncryption(value: String) {
     val encryption = value.ifBlank { "none" }
     if (encryption == "none") return
 
     val blocks = encryption.split(".")
     if (blocks.size < 4) {
-        proxyValidationError(ProxyServerValidationError.InvalidVlessEncryption)
+        addIssue(ProxyServerValidationError.InvalidVlessEncryption)
+        return
     }
     validateAllowed(blocks[0], "VLESS handshake", setOf("mlkem768x25519plus"))
     validateAllowed(blocks[1], "VLESS encryption method", setOf("native", "xorpub", "random"))
@@ -307,7 +351,7 @@ internal fun validateVlessEncryption(value: String) {
     val paddingBlocks = blocks.drop(3).dropLast(1)
     if (paddingBlocks.isNotEmpty()) {
         if (paddingBlocks.size % 2 == 0) {
-            proxyValidationError(ProxyServerValidationError.VlessPaddingBoundaryInvalid)
+            addIssue(ProxyServerValidationError.VlessPaddingBoundaryInvalid)
         }
         paddingBlocks.forEachIndexed { index, block ->
             validateVlessPaddingBlock(block, if (index % 2 == 0) "padding" else "delay", firstPadding = index == 0)
@@ -316,53 +360,77 @@ internal fun validateVlessEncryption(value: String) {
     validateVlessEncryptionVerifier(blocks.last())
 }
 
-private fun validateVlessEncryptionVerifier(value: String) {
-    val verifier = value.trim()
-    validateRequired(verifier, "VLESS encryption verifier")
-    if (decodeRawUrlSafeBase64(verifier) == null) {
-        proxyValidationError(ProxyServerValidationError.VlessEncryptionVerifierInvalid)
+internal fun MutableList<ProxyServerValidationIssue>.validateOptionalPositivePortInterval(value: String) {
+    if (value.isBlank()) return
+    val seconds = value.toIntOrNull()
+    if (seconds == null) {
+        addIssue(ProxyServerValidationError.PortHoppingIntervalNumberRequired)
+        return
+    }
+    if (seconds < 5) {
+        addIssue(ProxyServerValidationError.PortHoppingIntervalTooSmall)
     }
 }
 
-private fun validateVlessPaddingBlock(block: String, fieldName: String, firstPadding: Boolean) {
+private fun MutableList<ProxyServerValidationIssue>.validateVlessEncryptionVerifier(value: String) {
+    val verifier = value.trim()
+    if (!validateRequired(verifier, "VLESS encryption verifier")) return
+    if (decodeRawUrlSafeBase64(verifier) == null) {
+        addIssue(ProxyServerValidationError.VlessEncryptionVerifierInvalid)
+    }
+}
+
+private fun MutableList<ProxyServerValidationIssue>.validateVlessPaddingBlock(
+    block: String,
+    fieldName: String,
+    firstPadding: Boolean,
+) {
     val parts = block.split("-")
     if (parts.size != 3) {
-        proxyValidationError(ProxyServerValidationError.VlessPaddingFormatInvalid)
+        addIssue(ProxyServerValidationError.VlessPaddingFormatInvalid)
+        return
     }
     val probability = parts[0].toIntInRangeOrNull(0..100)
     val min = parts[1].toIntInRangeOrNull(0..Int.MAX_VALUE)
     val max = parts[2].toIntOrNull()
     if (probability == null || min == null || max == null || max < min) {
-        proxyValidationError(ProxyServerValidationError.VlessPaddingRangeInvalid)
+        addIssue(ProxyServerValidationError.VlessPaddingRangeInvalid)
+        return
     }
     if (firstPadding && (probability != 100 || min <= 0)) {
-        proxyValidationError(ProxyServerValidationError.VlessFirstPaddingInvalid)
+        addIssue(ProxyServerValidationError.VlessFirstPaddingInvalid)
     }
 }
 
-private fun validateOptionalIntRange(value: String?, fieldName: String, min: Int, max: Int) {
+private fun MutableList<ProxyServerValidationIssue>.validateOptionalIntRange(
+    value: String?,
+    fieldName: String,
+    min: Int,
+    max: Int,
+) {
     if (value.isNullOrBlank()) return
     if (value.toIntOrNull() == null) {
-        proxyValidationError(ProxyServerValidationError.NumberRequired, fieldName)
+        addIssue(ProxyServerValidationError.NumberRequired, fieldName)
+        return
     }
     if (value.toIntInRangeOrNull(min..max) == null) {
-        proxyValidationError(ProxyServerValidationError.ValueOutOfRange, min, max)
+        addIssue(ProxyServerValidationError.ValueOutOfRange, min, max)
     }
 }
 
-private fun validateOptionalPath(value: String?, fieldName: String) {
+private fun MutableList<ProxyServerValidationIssue>.validateOptionalPath(value: String?, fieldName: String) {
     val path = value.orEmpty()
     if (path.isNotBlank() && !path.startsWith("/")) {
-        proxyValidationError(ProxyServerValidationError.PathMustStartWithSlash)
+        addIssue(ProxyServerValidationError.PathMustStartWithSlash)
     }
 }
 
-private fun validateOptionalRealityMldsa65Verify(value: String?) {
+private fun MutableList<ProxyServerValidationIssue>.validateOptionalRealityMldsa65Verify(value: String?) {
     val verify = value?.trim().orEmpty()
     if (verify.isBlank()) return
     val decoded = decodeRawUrlSafeBase64(verify)
     if (decoded?.size != RealityMldsa65VerifyBytes) {
-        proxyValidationError(ProxyServerValidationError.RealityMldsa65VerifyInvalid)
+        addIssue(ProxyServerValidationError.RealityMldsa65VerifyInvalid)
     }
 }
 
@@ -371,7 +439,7 @@ private fun decodeRawUrlSafeBase64(value: String): ByteArray? {
     return value.decodeUrlSafeBase64NoPaddingOrNull()
 }
 
-private fun validateOptionalFingerprint(value: String?) {
+private fun MutableList<ProxyServerValidationIssue>.validateOptionalFingerprint(value: String?) {
     if (value.isNullOrBlank()) return
     validateAllowed(
         value,
@@ -380,12 +448,13 @@ private fun validateOptionalFingerprint(value: String?) {
     )
 }
 
-private fun validateOptionalAlpn(value: String?) {
+private fun MutableList<ProxyServerValidationIssue>.validateOptionalAlpn(value: String?) {
     if (value.isNullOrBlank()) return
     val allowed = setOf("h3", "h2", "http/1.1")
     value.split(",").forEach { item ->
-        if (item.trim() !in allowed) {
-            proxyValidationError(ProxyServerValidationError.UnsupportedAlpn, item.trim())
+        val normalized = item.trim()
+        if (normalized !in allowed) {
+            addIssue(ProxyServerValidationError.UnsupportedAlpn, normalized)
         }
     }
 }

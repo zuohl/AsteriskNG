@@ -19,7 +19,6 @@ internal object CustomXrayConfigRewriter {
         request: XrayConfigRequest,
         server: Custom,
     ): JsonObject {
-        server.check()
         val config = parseCustomXrayConfigJsonObject(server.configJson)
         return if (server.overrideAsteriskInboundAndDns) {
             config.overwriteAsteriskInboundDns(request, server)

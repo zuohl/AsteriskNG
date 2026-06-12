@@ -24,9 +24,11 @@ import features.proxy.server.usecase.ProxyServerImportFileUseCase
 import features.proxy.server.usecase.ProxyServerImportSource
 import features.proxy.server.usecase.createProxyServer
 import features.proxy.server.usecase.deleteDuplicateServersInGroup
+import features.proxy.server.usecase.deleteInvalidServersInGroup
 import features.proxy.server.usecase.importProxyServersFromText
 import features.proxy.server.usecase.sortedInGroupByLatencyResult
 import features.proxy.server.usecase.updatableSubscriptionGroups
+import features.proxy.server.usecase.withDeletedProxyServers
 import features.proxy.server.usecase.withImportedProxyServers
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
 import features.subscription.DefaultSubscriptionGroupId
@@ -430,6 +432,20 @@ private fun handleProxyServerListToolAction(
                 messages = messages,
             )
         }
+
+        ProxyServerListToolAction.DeleteInvalidServers -> {
+            deleteInvalidServers(
+                servers = groupState.currentGroupServers,
+                stateStore = stateStore,
+                updateAppState = updateAppState,
+                proxyServiceUseCase = proxyServiceUseCase,
+                tipNotifier = tipNotifier,
+                scope = scope,
+                messages = messages,
+                serviceOperationInProgress = serviceOperationInProgress,
+                runProxyServiceOperation = runProxyServiceOperation,
+            )
+        }
     }
 }
 
@@ -540,14 +556,82 @@ private fun copyCurrentGroupUrls(
     messages: ProxyServerListMessages,
 ) {
     scope.launch {
-        val urls = servers
-            .mapNotNull { server -> runCatching { server.server.getUrlOrNull() }.getOrNull() }
+        var invalidCount = 0
+        val urls = servers.mapNotNull { server ->
+            if (server.server.validateBasic().isNotEmpty()) {
+                invalidCount++
+                return@mapNotNull null
+            }
+            runCatching { server.server.getUrlOrNull() }.fold(
+                onSuccess = { url -> url },
+                onFailure = {
+                    invalidCount++
+                    null
+                },
+            )
+        }
             .joinToString("\n")
         if (urls.isBlank()) {
-            tipNotifier.show(messages.unsupported)
+            tipNotifier.show(if (invalidCount > 0) messages.configInvalid else messages.unsupported)
         } else {
             clipboard.setPlainText(urls)
             tipNotifier.show(messages.copied)
+        }
+    }
+}
+
+private fun deleteInvalidServers(
+    servers: List<ProxyServerState>,
+    stateStore: AndroidAppStateStore,
+    updateAppState: ((AppState) -> AppState) -> Unit,
+    proxyServiceUseCase: ProxyServiceUseCase,
+    tipNotifier: AndroidToastTipNotifier,
+    scope: CoroutineScope,
+    messages: ProxyServerListMessages,
+    serviceOperationInProgress: Boolean,
+    runProxyServiceOperation: (suspend () -> Unit) -> Unit,
+) {
+    val currentGroupServerIds = servers.map { server -> server.id }.toSet()
+    val stateSnapshot = stateStore.state.value
+    val previewResult = stateSnapshot.proxyServers.deleteInvalidServersInGroup(currentGroupServerIds)
+    if (previewResult.removedCount == 0) {
+        scope.launch { tipNotifier.show(messages.noInvalidServers) }
+        return
+    }
+
+    fun applyDeleteAndNotify() {
+        var removedCount = 0
+        updateAppState { state ->
+            val result = state.proxyServers.deleteInvalidServersInGroup(currentGroupServerIds)
+            removedCount = result.removedCount
+            state.withDeletedProxyServers(result.removedServerIds)
+        }
+        scope.launch {
+            tipNotifier.show(
+                if (removedCount > 0) {
+                    messages.invalidServersDeletedTemplate.formatTemplate("count" to removedCount)
+                } else {
+                    messages.noInvalidServers
+                },
+            )
+        }
+    }
+
+    val selectedServerWillBeDeleted = stateSnapshot.selectedProxyServerId in previewResult.removedServerIds
+    if (!stateSnapshot.proxyRunning || !selectedServerWillBeDeleted) {
+        applyDeleteAndNotify()
+        return
+    }
+    if (serviceOperationInProgress) return
+
+    runProxyServiceOperation {
+        when (val stopResult = proxyServiceUseCase.stop(stateStore.state.value.runMode)) {
+            is ProxyServiceResult.Success -> applyDeleteAndNotify()
+            ProxyServiceResult.MissingServer -> applyDeleteAndNotify()
+            is ProxyServiceResult.Failed -> {
+                updateAppState { state -> state.copy(proxyRunning = false) }
+                tipNotifier.showError(stopResult.error, messages.serviceStopped)
+            }
         }
     }
 }

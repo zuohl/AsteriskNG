@@ -6,7 +6,6 @@ package features.proxy.server.model
 import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
-import io.ktor.http.parsing.ParseException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -39,7 +38,7 @@ data class Trojan(
 
     override fun parse(url: Url): Trojan {
         this.remarks = url.proxyUrlRemarks()
-        this.password = url.user ?: throw ParseException("Invalid Trojan url")
+        this.password = url.user ?: ""
         this.server = url.host
         this.port = url.port.toString()
         this.parms = this.parms.parse(url, "raw", "tls")
@@ -72,9 +71,13 @@ data class Trojan(
         }
     }
 
-    override fun check() {
+    override fun validateBasic(): List<ProxyServerValidationIssue> = buildList {
         validateCommonServerFields(remarks, server, port)
         validateRequired(password, "password")
+    }
+
+    override fun validateFull(): List<ProxyServerValidationIssue> = buildList {
+        addAll(validateBasic())
         validateV2RayParameters(parms)
     }
 }

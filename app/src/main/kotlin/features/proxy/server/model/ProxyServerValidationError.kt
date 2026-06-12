@@ -3,10 +3,10 @@
 
 package features.proxy.server.model
 
-class ProxyServerValidationException(
+data class ProxyServerValidationIssue(
     val error: ProxyServerValidationError,
     val values: List<String> = emptyList(),
-) : IllegalArgumentException(error.name)
+)
 
 enum class ProxyServerValidationError {
     RequiredField,
@@ -54,11 +54,11 @@ enum class ProxyServerValidationError {
     VlessVisionFlowUnsupported,
 }
 
-internal fun proxyValidationError(
+internal fun proxyValidationIssue(
     error: ProxyServerValidationError,
     vararg values: Any?,
-): Nothing {
-    throw ProxyServerValidationException(
+): ProxyServerValidationIssue {
+    return ProxyServerValidationIssue(
         error = error,
         values = values.map { value -> value?.toString().orEmpty() },
     )

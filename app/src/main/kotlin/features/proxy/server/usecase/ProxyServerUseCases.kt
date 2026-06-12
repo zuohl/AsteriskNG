@@ -41,6 +41,12 @@ internal data class ProxyServerListDuplicateDeleteResult(
     val removedCount: Int,
 )
 
+internal data class ProxyServerListInvalidDeleteResult(
+    val servers: List<ProxyServerState>,
+    val removedCount: Int,
+    val removedServerIds: Set<Int>,
+)
+
 internal fun AppState.withImportedProxyServers(
     importResult: ProxyServerImportResult,
     groupId: Int,
@@ -194,6 +200,41 @@ internal fun List<ProxyServerState>.deleteDuplicateServersInGroup(
             filterNot { server -> server.id in duplicateServerIds }
         },
         removedCount = duplicateServerIds.size,
+    )
+}
+
+internal fun List<ProxyServerState>.deleteInvalidServersInGroup(
+    currentGroupServerIds: Set<Int>,
+): ProxyServerListInvalidDeleteResult {
+    val invalidServerIds = asSequence()
+        .filter { server -> server.id in currentGroupServerIds }
+        .filter { server -> server.server.validateFull().isNotEmpty() }
+        .map { server -> server.id }
+        .toSet()
+
+    return ProxyServerListInvalidDeleteResult(
+        servers = if (invalidServerIds.isEmpty()) {
+            this
+        } else {
+            filterNot { server -> server.id in invalidServerIds }
+        },
+        removedCount = invalidServerIds.size,
+        removedServerIds = invalidServerIds,
+    )
+}
+
+internal fun AppState.withDeletedProxyServers(deletedServerIds: Set<Int>): AppState {
+    if (deletedServerIds.isEmpty()) return this
+    val nextServers = proxyServers.filterNot { server -> server.id in deletedServerIds }
+    val selectedServerDeleted = selectedProxyServerId in deletedServerIds
+    return copy(
+        proxyServers = nextServers,
+        selectedProxyServerId = if (selectedServerDeleted) {
+            nextServers.firstOrNull()?.id ?: selectedProxyServerId
+        } else {
+            selectedProxyServerId
+        },
+        proxyRunning = proxyRunning && !selectedServerDeleted,
     )
 }
 

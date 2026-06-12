@@ -37,10 +37,15 @@ internal suspend fun parseProxyServersFromJsonConfig(
     var failedCount = 0
     val servers = configs.mapIndexedNotNull { index, config ->
         runCatching {
-            Custom(
+            val server = Custom(
                 remarks = config.customRemarks(index),
                 configJson = formatCustomXrayConfigJson(config),
-            ).also { server -> server.check() }
+            )
+            val issues = server.validateBasic()
+            if (issues.isNotEmpty()) {
+                throw IllegalArgumentException("Basic validation failed: ${issues.joinToString { it.error.name }}")
+            }
+            server
         }.onFailure { error ->
             failedCount += 1
             AndroidAppLogger.warn(

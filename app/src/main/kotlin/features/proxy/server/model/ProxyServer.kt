@@ -47,7 +47,6 @@ interface ProxyServer<T : ProxyServer<T>> {
         fun parse(str: String): ProxyServer<*> {
             val value = str.trim()
             parseLegacyProxyServerUrl(value)?.let { server ->
-                server.check()
                 return server
             }
 
@@ -75,7 +74,6 @@ interface ProxyServer<T : ProxyServer<T>> {
                     unsupportedProxyServerUrl(url)
                 }
             }
-            server.check()
             return server
         }
 
@@ -107,7 +105,8 @@ interface ProxyServer<T : ProxyServer<T>> {
     fun getInfo(): ProxyServerInfo
     fun toXrayOutbound(tag: String): OutboundObject
     fun update(other: ProxyServer<*>)
-    fun check()
+    fun validateBasic(): List<ProxyServerValidationIssue>
+    fun validateFull(): List<ProxyServerValidationIssue>
 }
 
 internal fun String.decodeProxyUrlBase64(): ByteArray {
@@ -224,8 +223,8 @@ data class V2RayParameters(
                 this.extra = url.parameters["extra"]
             }
 
-            "http", "h2", "h3" -> throw ParseException("Unsupported Xray transport type: ${this.type}")
-            else -> throw ParseException("Unknown v2ray transport type: ${this.type}")
+            "http", "h2", "h3" -> {}
+            else -> {}
         }
         when (this.security) {
             "none" -> {}
@@ -247,7 +246,7 @@ data class V2RayParameters(
                 this.spx = url.parameters["spx"]
             }
 
-            else -> throw ParseException("Unknown v2ray security type: ${this.security}")
+            else -> {}
         }
         return this
     }

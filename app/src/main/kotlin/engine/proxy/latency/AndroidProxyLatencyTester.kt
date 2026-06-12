@@ -69,7 +69,6 @@ internal class AndroidProxyLatencyTester(
 
     private fun realConnectionLatency(appState: AppState, server: ProxyServerState): Long {
         return runCatching {
-            server.server.check()
             val resourceFilePaths = appContext.prepareXrayResourceFilePaths()
             appContext.initializeAndroidXrayCoreEnvironment(resourceFilePaths.dataDir)
             val configJson = XraySpeedTestConfigFactory.buildXraySpeedTestConfig(

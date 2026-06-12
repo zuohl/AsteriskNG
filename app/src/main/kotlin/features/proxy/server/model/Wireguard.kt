@@ -118,10 +118,16 @@ data class Wireguard(
         }
     }
 
-    override fun check() {
+    override fun validateBasic(): List<ProxyServerValidationIssue> = buildList {
         validateCommonServerFields(remarks, server, port)
-        validateWireguardKey(secretKey, "SecretKey")
-        validateWireguardKey(publicKey, "PublicKey")
+        validateRequired(secretKey, "SecretKey")
+        validateRequired(publicKey, "PublicKey")
+    }
+
+    override fun validateFull(): List<ProxyServerValidationIssue> = buildList {
+        addAll(validateBasic())
+        validateWireguardKey(secretKey, "SecretKey", required = false)
+        validateWireguardKey(publicKey, "PublicKey", required = false)
         validateWireguardKey(preSharedKey, "PreSharedKey", required = false)
         validateWireguardReserved(reserved)
         validateWireguardAddresses(address)

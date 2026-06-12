@@ -51,7 +51,7 @@ data class Shadowsocks(
                 url.host.decodeProxyUrlBase64().decodeToString()
             parseLegacy(full, this.remarks)
         } else {
-            val info = url.userInfoOrNull()?.decodeFlexibleBase64ToStringOrRaw() ?: throw IllegalArgumentException("Bad Shadowsocks url")
+            val info = url.userInfoOrNull()?.decodeFlexibleBase64ToStringOrRaw().orEmpty()
             val pos = info.indexOfFirst { it == ':' }
             if (pos > -1) {
                 this.method = info.substring(0, pos)
@@ -125,8 +125,14 @@ data class Shadowsocks(
         }
     }
 
-    override fun check() {
+    override fun validateBasic(): List<ProxyServerValidationIssue> = buildList {
         validateCommonServerFields(remarks, server, port)
+        validateRequired(method, "encryption method")
+        validateRequired(password, "password")
+    }
+
+    override fun validateFull(): List<ProxyServerValidationIssue> = buildList {
+        addAll(validateBasic())
         validateAllowed(
             method,
             "encryption method",
@@ -144,8 +150,7 @@ data class Shadowsocks(
                 "2022-blake3-chacha20-poly1305",
             ),
         )
-        validateRequired(password, "password")
-        method.toXrayShadowsocksPassword(password)
+        validateShadowsocks2022Password(method, password)
         validateV2RayParameters(parms)
     }
 }
@@ -170,14 +175,29 @@ private fun String.shadowsocks2022KeyLengths(): Set<Int> {
 private fun normalizeShadowsocks2022Key(key: String, validLengths: Set<Int>): String {
     val trimmed = key.trim()
     val decodedKey = decodeShadowsocks2022Key(trimmed)
-        ?: proxyValidationError(ProxyServerValidationError.Shadowsocks2022KeyBase64Invalid)
+        ?: error("Invalid Shadowsocks 2022 key base64")
     if (decodedKey.size !in validLengths) {
-        proxyValidationError(
-            ProxyServerValidationError.Shadowsocks2022KeyLengthInvalid,
-            validLengths.joinToString(" or "),
-        )
+        error("Invalid Shadowsocks 2022 key length")
     }
     return decodedKey.encodeBase64()
+}
+
+private fun MutableList<ProxyServerValidationIssue>.validateShadowsocks2022Password(method: String, password: String) {
+    if (!method.isShadowsocks2022Method() || password.isBlank()) return
+    password.split(':').forEach { key ->
+        val decodedKey = decodeShadowsocks2022Key(key.trim())
+        if (decodedKey == null) {
+            addIssue(ProxyServerValidationError.Shadowsocks2022KeyBase64Invalid)
+            return@forEach
+        }
+        val validLengths = method.shadowsocks2022KeyLengths()
+        if (decodedKey.size !in validLengths) {
+            addIssue(
+                ProxyServerValidationError.Shadowsocks2022KeyLengthInvalid,
+                validLengths.joinToString(" or "),
+            )
+        }
+    }
 }
 
 private fun decodeShadowsocks2022Key(key: String): ByteArray? {

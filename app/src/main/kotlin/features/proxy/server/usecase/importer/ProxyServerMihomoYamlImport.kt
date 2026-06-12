@@ -127,7 +127,12 @@ private fun MihomoYamlMap.toMihomoProxyServer(): ProxyServer<*> {
         "hy2", "hysteria2" -> toMihomoHysteria2ProxyServer()
         "wg", "wireguard" -> toMihomoWireguardProxyServer()
         else -> unsupported("unsupported proxy type")
-    }.also { server -> server.check() }
+    }.also { server ->
+        val issues = server.validateBasic()
+        if (issues.isNotEmpty()) {
+            unsupported("basic validation failed: ${issues.joinToString { it.error.name }}")
+        }
+    }
 }
 
 private fun Any?.mihomoProxyConfigs(): List<MihomoYamlMap> {

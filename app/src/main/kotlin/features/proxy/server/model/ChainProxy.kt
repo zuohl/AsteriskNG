@@ -26,10 +26,12 @@ data class ChainProxy(
         proxyServerIds = other.proxyServerIds
     }
 
-    override fun check() {
+    override fun validateBasic(): List<ProxyServerValidationIssue> = validateFull()
+
+    override fun validateFull(): List<ProxyServerValidationIssue> = buildList {
         validateRemarks(remarks)
         if (proxyServerIds.size < 2) {
-            proxyValidationError(ProxyServerValidationError.ChainProxyMemberCountInvalid)
+            addIssue(ProxyServerValidationError.ChainProxyMemberCountInvalid)
         }
     }
 }

@@ -141,14 +141,18 @@ data class Hysteria2(
         }
     }
 
-    override fun check() {
+    override fun validateBasic(): List<ProxyServerValidationIssue> = buildList {
         validateCommonServerFields(remarks, server, port)
         validateRequired(auth, "password")
+    }
+
+    override fun validateFull(): List<ProxyServerValidationIssue> = buildList {
+        addAll(validateBasic())
         if (obfs.isBlank() && obfsPassword.isNotBlank()) {
-            proxyValidationError(ProxyServerValidationError.HysteriaObfsTypeRequired)
+            addIssue(ProxyServerValidationError.HysteriaObfsTypeRequired)
         }
         if (obfs.isNotBlank() && obfs != "salamander") {
-            proxyValidationError(ProxyServerValidationError.HysteriaObfsUnsupported)
+            addIssue(ProxyServerValidationError.HysteriaObfsUnsupported)
         }
         validateHysteriaMultiPorts(mport)
         validateOptionalPositivePortInterval(mportHopInt)
@@ -195,14 +199,5 @@ private fun Hysteria2.toXrayFinalMask(): JsonObject {
                 )
             }
         }
-    }
-}
-
-private fun validateOptionalPositivePortInterval(value: String) {
-    if (value.isBlank()) return
-    val seconds = value.toIntOrNull()
-        ?: proxyValidationError(ProxyServerValidationError.PortHoppingIntervalNumberRequired)
-    if (seconds < 5) {
-        proxyValidationError(ProxyServerValidationError.PortHoppingIntervalTooSmall)
     }
 }

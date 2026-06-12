@@ -28,8 +28,11 @@ internal data class ProxyServerListMessages(
     val importResultTemplate: String,
     val copied: String,
     val unsupported: String,
+    val configInvalid: String,
     val duplicatesDeletedTemplate: String,
     val noDuplicates: String,
+    val invalidServersDeletedTemplate: String,
+    val noInvalidServers: String,
 )
 
 @Composable
@@ -56,7 +59,10 @@ internal fun proxyServerListMessages(): ProxyServerListMessages {
         importResultTemplate = stringResource(R.string.proxy_server_list_import_result),
         copied = stringResource(R.string.common_copied),
         unsupported = stringResource(R.string.common_unsupported),
+        configInvalid = stringResource(R.string.proxy_server_config_invalid),
         duplicatesDeletedTemplate = stringResource(R.string.proxy_server_list_duplicates_deleted),
         noDuplicates = stringResource(R.string.proxy_server_list_no_duplicates),
+        invalidServersDeletedTemplate = stringResource(R.string.proxy_server_list_invalid_deleted),
+        noInvalidServers = stringResource(R.string.proxy_server_list_no_invalid),
     )
 }

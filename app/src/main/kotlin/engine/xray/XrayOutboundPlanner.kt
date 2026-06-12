@@ -69,7 +69,6 @@ private class XrayOutboundPlanner(
     }
 
     private fun addCustomDnsHosts(proxyServer: Custom) {
-        proxyServer.check()
         if (proxyServer.overrideAsteriskInboundAndDns) {
             dnsHostServers += customXrayConfigProxyServerHosts(proxyServer.configJson)
         }
@@ -82,7 +81,6 @@ private class XrayOutboundPlanner(
         allowFragment: Boolean = true,
     ) {
         if (tag in addedOutboundTags) return
-        server.server.check()
         proxyOutbounds += XrayProxyOutboundServer(
             tag = tag,
             server = server.server,
@@ -95,7 +93,6 @@ private class XrayOutboundPlanner(
     }
 
     private fun addStrategyGroup(tag: String, strategyGroup: StrategyGroup) {
-        strategyGroup.check()
         val members = appState.strategyGroupMembers(strategyGroup)
         if (members.isEmpty()) {
             error("Strategy group '${strategyGroup.remarks}' has no available proxy servers")
@@ -120,7 +117,6 @@ private class XrayOutboundPlanner(
     }
 
     private fun addChainProxy(tag: String, chainProxy: ChainProxy) {
-        chainProxy.check()
         val members = appState.chainProxyMembers(chainProxy)
         if (members.size < 2) {
             error("Proxy chain '${chainProxy.remarks}' requires at least two available proxy servers")
@@ -165,7 +161,6 @@ private fun AppState.strategyGroupMembers(strategyGroup: StrategyGroup): List<Pr
                 regex?.containsMatchIn(server.server.getInfo().remarks) == true ||
                 (regex == null && server.server.getInfo().remarks.contains(filter))
         }
-        .filter { server -> runCatching { server.server.check() }.isSuccess }
         .toList()
 }
 

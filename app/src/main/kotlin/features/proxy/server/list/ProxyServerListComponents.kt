@@ -450,6 +450,7 @@ private fun proxyServerListToolMenuEntries() = listOf(
     ProxyServerListToolMenuEntry(stringResource(R.string.proxy_server_list_update_subscriptions), ProxyServerListToolAction.UpdateSubscriptions),
     ProxyServerListToolMenuEntry(stringResource(R.string.proxy_server_list_copy_all_urls), ProxyServerListToolAction.CopyAllUrls),
     ProxyServerListToolMenuEntry(stringResource(R.string.proxy_server_list_delete_duplicates), ProxyServerListToolAction.DeleteDuplicateServers),
+    ProxyServerListToolMenuEntry(stringResource(R.string.proxy_server_list_delete_invalid), ProxyServerListToolAction.DeleteInvalidServers),
 ).map { entry ->
     IconDropdownMenuEntry(
         key = entry.action,
