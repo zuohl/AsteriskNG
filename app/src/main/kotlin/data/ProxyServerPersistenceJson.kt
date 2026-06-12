@@ -22,7 +22,7 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
 @Serializable
-private data class PersistedProxyServer(
+internal data class PersistedProxyServer(
     val protocol: String,
     val payload: JsonElement,
 )
@@ -31,47 +31,7 @@ internal fun ProxyServer<*>.encodePersistedProxyServer(): String {
     return ProxyServer.json.encodeToString(toPersistedProxyServer())
 }
 
-internal fun String.decodePersistedProxyServer(): ProxyServer<*> {
-    val persistedServer = ProxyServer.json.decodeFromString<PersistedProxyServer>(this)
-    return when (persistedServer.protocol) {
-        ProxyServerConstants.PROTOCOL_HTTP ->
-            ProxyServer.json.decodeFromJsonElement<HTTP>(persistedServer.payload)
-
-        ProxyServerConstants.PROTOCOL_SOCKS ->
-            ProxyServer.json.decodeFromJsonElement<Socks>(persistedServer.payload)
-
-        ProxyServerConstants.PROTOCOL_SS ->
-            ProxyServer.json.decodeFromJsonElement<Shadowsocks>(persistedServer.payload)
-
-        ProxyServerConstants.PROTOCOL_VMESS ->
-            ProxyServer.json.decodeFromJsonElement<VMess>(persistedServer.payload)
-
-        ProxyServerConstants.PROTOCOL_VLESS ->
-            ProxyServer.json.decodeFromJsonElement<VLESS>(persistedServer.payload)
-
-        ProxyServerConstants.PROTOCOL_TROJAN ->
-            ProxyServer.json.decodeFromJsonElement<Trojan>(persistedServer.payload)
-
-        ProxyServerConstants.PROTOCOL_HYSTERIA2 ->
-            ProxyServer.json.decodeFromJsonElement<Hysteria2>(persistedServer.payload)
-
-        ProxyServerConstants.PROTOCOL_WIREGUARD ->
-            ProxyServer.json.decodeFromJsonElement<Wireguard>(persistedServer.payload)
-
-        ProxyServerConstants.PROTOCOL_STRATEGY_GROUP ->
-            ProxyServer.json.decodeFromJsonElement<StrategyGroup>(persistedServer.payload)
-
-        ProxyServerConstants.PROTOCOL_CHAIN_PROXY ->
-            ProxyServer.json.decodeFromJsonElement<ChainProxy>(persistedServer.payload)
-
-        ProxyServerConstants.PROTOCOL_CUSTOM ->
-            ProxyServer.json.decodeFromJsonElement<Custom>(persistedServer.payload)
-
-        else -> error("Unsupported persisted proxy server protocol: ${persistedServer.protocol}")
-    }
-}
-
-private fun ProxyServer<*>.toPersistedProxyServer(): PersistedProxyServer {
+internal fun ProxyServer<*>.toPersistedProxyServer(): PersistedProxyServer {
     return when (this) {
         is HTTP -> persisted(ProxyServerConstants.PROTOCOL_HTTP, this)
         is Socks -> persisted(ProxyServerConstants.PROTOCOL_SOCKS, this)
@@ -85,6 +45,50 @@ private fun ProxyServer<*>.toPersistedProxyServer(): PersistedProxyServer {
         is ChainProxy -> persisted(ProxyServerConstants.PROTOCOL_CHAIN_PROXY, this)
         is Custom -> persisted(ProxyServerConstants.PROTOCOL_CUSTOM, this)
         else -> error("Unsupported proxy server type")
+    }
+}
+
+internal fun String.decodePersistedProxyServer(): ProxyServer<*> {
+    val persistedServer = ProxyServer.json.decodeFromString<PersistedProxyServer>(this)
+    return persistedServer.decodeProxyServer()
+}
+
+internal fun PersistedProxyServer.decodeProxyServer(): ProxyServer<*> {
+    return when (protocol) {
+        ProxyServerConstants.PROTOCOL_HTTP ->
+            ProxyServer.json.decodeFromJsonElement<HTTP>(payload)
+
+        ProxyServerConstants.PROTOCOL_SOCKS ->
+            ProxyServer.json.decodeFromJsonElement<Socks>(payload)
+
+        ProxyServerConstants.PROTOCOL_SS ->
+            ProxyServer.json.decodeFromJsonElement<Shadowsocks>(payload)
+
+        ProxyServerConstants.PROTOCOL_VMESS ->
+            ProxyServer.json.decodeFromJsonElement<VMess>(payload)
+
+        ProxyServerConstants.PROTOCOL_VLESS ->
+            ProxyServer.json.decodeFromJsonElement<VLESS>(payload)
+
+        ProxyServerConstants.PROTOCOL_TROJAN ->
+            ProxyServer.json.decodeFromJsonElement<Trojan>(payload)
+
+        ProxyServerConstants.PROTOCOL_HYSTERIA2 ->
+            ProxyServer.json.decodeFromJsonElement<Hysteria2>(payload)
+
+        ProxyServerConstants.PROTOCOL_WIREGUARD ->
+            ProxyServer.json.decodeFromJsonElement<Wireguard>(payload)
+
+        ProxyServerConstants.PROTOCOL_STRATEGY_GROUP ->
+            ProxyServer.json.decodeFromJsonElement<StrategyGroup>(payload)
+
+        ProxyServerConstants.PROTOCOL_CHAIN_PROXY ->
+            ProxyServer.json.decodeFromJsonElement<ChainProxy>(payload)
+
+        ProxyServerConstants.PROTOCOL_CUSTOM ->
+            ProxyServer.json.decodeFromJsonElement<Custom>(payload)
+
+        else -> error("Unsupported persisted proxy server protocol: $protocol")
     }
 }
 

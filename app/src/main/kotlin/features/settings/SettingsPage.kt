@@ -30,6 +30,7 @@ import app.modes.RunModeTun2Socks
 import app.modes.RunModeVpnService
 import app.ProjectInfo
 import app.R
+import data.backup.AppBackupRestorePreview
 import engine.proxy.withResolvedDynamicLocalProxyPort
 import features.settings.sheets.externalInterfacesSummary
 import features.settings.sheets.fragmentSettingsSummary
@@ -39,11 +40,13 @@ import features.settings.sheets.privateAddressCidrsSummary
 import features.settings.sheets.tunSettingsSummary
 import features.settings.usecase.SwitchRunModeResult
 import features.settings.usecase.RootBootScriptResult
+import features.proxy.server.usecase.ProxyServiceResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import app.navigation.Route
 import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.remember
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -100,11 +103,15 @@ private fun SettingsContent(
     val networkInterfaces = services.networkInterfaces
     val switchRunModeUseCase = services.switchRunModeUseCase
     val rootBootScriptUseCase = services.rootBootScriptUseCase
+    val appBackupUseCase = services.appBackupUseCase
+    val proxyServiceUseCase = services.proxyServiceUseCase
     val tipNotifier = services.tipNotifier
     val scope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
     var runModeSwitchInProgress by rememberSaveable { mutableStateOf(false) }
     var rootBootScriptSwitchInProgress by rememberSaveable { mutableStateOf(false) }
+    var backupRestoreInProgress by rememberSaveable { mutableStateOf(false) }
+    var pendingRestorePreview by remember { mutableStateOf<AppBackupRestorePreview?>(null) }
     val contentPadding = pageContentPaddingWithCutout(
         innerPadding = innerPadding,
         outerPadding = outerPadding,
@@ -144,6 +151,11 @@ private fun SettingsContent(
     val rootRequiredMessage = stringResource(R.string.settings_root_required)
     val rootBootScriptFailedMessage = stringResource(R.string.settings_root_boot_script_failed)
     val serviceStoppedMessage = stringResource(R.string.proxy_server_list_service_stopped)
+    val backupExportedMessage = stringResource(R.string.settings_backup_exported)
+    val backupExportFailedMessage = stringResource(R.string.settings_backup_export_failed)
+    val restoreReadFailedMessage = stringResource(R.string.settings_restore_read_failed)
+    val restoreCompletedMessage = stringResource(R.string.settings_restore_completed)
+    val restoreFailedMessage = stringResource(R.string.settings_restore_failed)
     val selectServerFirstMessage = stringResource(R.string.proxy_server_list_select_first)
     val ignoredInterfacesErrorDetail = stringResource(R.string.settings_ignored_interfaces_error_detail)
     val inboundProxySummary = inboundProxySummary(
@@ -355,6 +367,49 @@ private fun SettingsContent(
                     onOpenPrivateAddresses = { sheetState.openPrivateAddresses(appState) },
                 )
             }
+            item(key = "settings_backup_restore") {
+                SettingsBackupRestoreSection(
+                    onBackupUserData = {
+                        if (!backupRestoreInProgress) {
+                            val currentState = appState
+                            backupRestoreInProgress = true
+                            scope.launch {
+                                try {
+                                    runCatching {
+                                        appBackupUseCase.export(currentState)
+                                    }.onSuccess { exported ->
+                                        if (exported) {
+                                            tipNotifier.show(backupExportedMessage)
+                                        }
+                                    }.onFailure { error ->
+                                        tipNotifier.showError(error, backupExportFailedMessage)
+                                    }
+                                } finally {
+                                    backupRestoreInProgress = false
+                                }
+                            }
+                        }
+                    },
+                    onRestoreUserData = {
+                        if (!backupRestoreInProgress) {
+                            backupRestoreInProgress = true
+                            scope.launch {
+                                try {
+                                    runCatching {
+                                        appBackupUseCase.readRestorePreview()
+                                    }.onSuccess { preview ->
+                                        pendingRestorePreview = preview
+                                    }.onFailure { error ->
+                                        tipNotifier.showError(error, restoreReadFailedMessage)
+                                    }
+                                } finally {
+                                    backupRestoreInProgress = false
+                                }
+                            }
+                        }
+                    },
+                )
+            }
             item(key = "settings_logs") {
                 SettingsLogsSection(
                     enableAccessLog = appState.enableAccessLog,
@@ -379,6 +434,53 @@ private fun SettingsContent(
             appState = appState,
             sheetState = sheetState,
             updateAppState = updateAppState,
+        )
+        SettingsRestoreConfirmDialog(
+            preview = pendingRestorePreview,
+            onDismissRequest = { pendingRestorePreview = null },
+            onRestore = {
+                val restorePreview = pendingRestorePreview
+                if (restorePreview != null && !backupRestoreInProgress) {
+                    backupRestoreInProgress = true
+                    scope.launch {
+                        try {
+                            when (val result = proxyServiceUseCase.stop(appState.runMode)) {
+                                is ProxyServiceResult.Success -> Unit
+                                ProxyServiceResult.MissingServer -> Unit
+                                is ProxyServiceResult.Failed -> {
+                                    tipNotifier.showError(result.error, serviceStoppedMessage)
+                                    return@launch
+                                }
+                            }
+                            if (appState.enableRootBootScript) {
+                                when (val result = rootBootScriptUseCase.uninstall()) {
+                                    RootBootScriptResult.Success,
+                                    RootBootScriptResult.MissingServer -> Unit
+
+                                    RootBootScriptResult.RootUnavailable -> {
+                                        tipNotifier.show(rootRequiredMessage)
+                                        return@launch
+                                    }
+
+                                    is RootBootScriptResult.Failed -> {
+                                        tipNotifier.showError(result.error, rootBootScriptFailedMessage)
+                                        return@launch
+                                    }
+                                }
+                            }
+                            updateAppState {
+                                restorePreview.restoredState
+                            }
+                            pendingRestorePreview = null
+                            tipNotifier.show(restoreCompletedMessage)
+                        } catch (error: Throwable) {
+                            tipNotifier.showError(error, restoreFailedMessage)
+                        } finally {
+                            backupRestoreInProgress = false
+                        }
+                    }
+                }
+            },
         )
     }
 }

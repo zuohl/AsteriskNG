@@ -339,6 +339,26 @@ internal fun SettingsLogsSection(
 }
 
 @Composable
+internal fun SettingsBackupRestoreSection(
+    onBackupUserData: () -> Unit,
+    onRestoreUserData: () -> Unit,
+) {
+    SmallTitle(text = stringResource(R.string.settings_backup_restore))
+    SettingsSectionCard {
+        ArrowPreference(
+            title = stringResource(R.string.settings_backup_user_data),
+            summary = stringResource(R.string.settings_backup_user_data_summary),
+            onClick = onBackupUserData,
+        )
+        ArrowPreference(
+            title = stringResource(R.string.settings_restore_user_data),
+            summary = stringResource(R.string.settings_restore_user_data_summary),
+            onClick = onRestoreUserData,
+        )
+    }
+}
+
+@Composable
 internal fun SettingsAboutSection(
     onOpenAbout: () -> Unit,
     onOpenLicenses: () -> Unit,

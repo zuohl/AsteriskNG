@@ -5,6 +5,7 @@ package app
 
 import androidx.compose.runtime.staticCompositionLocalOf
 import android.net.Uri
+import data.backup.AppBackupUseCase
 import engine.proxy.AndroidProxyEngine
 import engine.proxy.latency.AndroidProxyLatencyTester
 import features.logs.CoreLogRepository
@@ -29,6 +30,7 @@ internal data class AppServices(
     val packageCatalog: AndroidPackageProvider,
     val networkInterfaces: AndroidNetworkInterfaceProvider,
     val resourceFileUseCase: ResourceFileUseCase,
+    val appBackupUseCase: AppBackupUseCase,
     val subscriptionFetcher: AndroidSubscriptionFetcher,
     val qrScanner: suspend () -> String?,
     val proxyServerImportFileUseCase: ProxyServerImportFileUseCase,

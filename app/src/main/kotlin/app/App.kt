@@ -22,6 +22,7 @@ import features.logs.AndroidAccessLogRepository
 import features.logs.AndroidCoreLogRepository
 import features.logs.AndroidLogcatRepository
 import data.AndroidAppStateStore
+import data.backup.AppBackupUseCase
 import engine.proxy.AndroidProxyEngine
 import engine.proxy.latency.AndroidProxyLatencyTester
 import features.proxy.server.usecase.ProxyServerImportFileUseCase
@@ -73,6 +74,13 @@ fun App(
             resourceFilePicker = resourceFilePicker,
         )
     }
+    val appBackupUseCase = remember(appContext, resourceFilePicker, logFileCreator) {
+        AppBackupUseCase(
+            context = appContext,
+            filePicker = resourceFilePicker,
+            fileCreator = logFileCreator,
+        )
+    }
     val subscriptionFetcher = remember { AndroidSubscriptionFetcher() }
     val qrScanner = remember(qrCodeScanner) { qrCodeScanner }
     val proxyServerImportFileUseCase = remember(appContext, resourceFilePicker) {
@@ -118,6 +126,7 @@ fun App(
         packageCatalog,
         networkInterfaces,
         resourceFileUseCase,
+        appBackupUseCase,
         subscriptionFetcher,
         qrScanner,
         proxyServerImportFileUseCase,
@@ -136,6 +145,7 @@ fun App(
             packageCatalog = packageCatalog,
             networkInterfaces = networkInterfaces,
             resourceFileUseCase = resourceFileUseCase,
+            appBackupUseCase = appBackupUseCase,
             subscriptionFetcher = subscriptionFetcher,
             qrScanner = qrScanner,
             proxyServerImportFileUseCase = proxyServerImportFileUseCase,

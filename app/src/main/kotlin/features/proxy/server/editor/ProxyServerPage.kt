@@ -5,35 +5,23 @@
 
 package features.proxy.server.editor
 
-import features.subscription.DefaultSubscriptionGroupId
-import app.LocalAppStateStore
-import app.LocalAppServices
-import app.LocalIsWideScreen
-import app.LocalNavigator
-import app.collectAppState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -43,47 +31,45 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import app.LocalAppServices
+import app.LocalAppStateStore
+import app.LocalIsWideScreen
+import app.LocalNavigator
 import app.R
+import app.collectAppState
+import app.navigation.ProxyServerEditResult
+import features.proxy.server.display.displayName
+import features.proxy.server.display.displayNameById
+import features.proxy.server.display.displayNameWithGroup
 import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.ProxyServerValidationIssue
-import features.proxy.server.model.isCustomProxyServer
 import features.proxy.server.model.isCompositeProxyServer
+import features.proxy.server.model.isCustomProxyServer
 import features.proxy.server.usecase.ProxyServerCopyTextResult
 import features.proxy.server.usecase.proxyServerCopyText
-import ui.components.BackNavigationIcon
-import ui.components.NavigationIcon
+import features.proxy.server.validation.rememberProxyServerValidationMessageResolver
+import features.subscription.DefaultSubscriptionGroupId
 import kotlinx.coroutines.launch
-import app.navigation.ProxyServerEditResult
-import androidx.compose.ui.res.stringResource
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import ui.layout.AdaptiveTopAppBar
-import features.proxy.server.display.displayName
-import features.proxy.server.display.displayNameWithGroup
-import features.proxy.server.display.displayNameById
-import ui.layout.pageContentPaddingWithCutout
-import ui.layout.pageScrollModifiers
-import features.proxy.server.validation.rememberProxyServerValidationMessageResolver
-import ui.clipboard.setPlainText
-import androidx.compose.runtime.getValue
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import ui.clipboard.setPlainText
+import ui.components.BackNavigationIcon
+import ui.components.NavigationIcon
+import ui.components.WarningConfirmDialog
+import ui.layout.AdaptiveTopAppBar
+import ui.layout.pageContentPaddingWithCutout
+import ui.layout.pageScrollModifiers
 
 @Composable
 fun ProxyServerPage(
@@ -299,125 +285,38 @@ private fun ProxyServerFullValidationWarningDialog(
     onDismissRequest: () -> Unit,
     onContinueSave: () -> Unit,
 ) {
-    if (!show) return
-
     val warningColor = MiuixTheme.colorScheme.error
-    Dialog(
+    WarningConfirmDialog(
+        show = show,
+        title = title,
+        summary = summary,
+        dismissText = returnEditText,
+        confirmText = continueSaveText,
         onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        onConfirm = onContinueSave,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Card(
-                modifier = Modifier
-                    .widthIn(max = 460.dp)
-                    .fillMaxWidth(),
-                insideMargin = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
-                colors = CardDefaults.defaultColors(
-                    color = MiuixTheme.colorScheme.background,
-                    contentColor = MiuixTheme.colorScheme.onBackground,
-                ),
+        issueMessages.distinct().forEachIndexed { index, message ->
+            if (index > 0) {
+                Spacer(Modifier.height(10.dp))
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .padding(bottom = 12.dp)
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(22.dp))
-                            .background(warningColor.copy(alpha = 0.14f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "!",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = warningColor,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                    Text(
-                        text = title,
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                        fontSize = MiuixTheme.textStyles.title4.fontSize,
-                        fontWeight = FontWeight.Medium,
-                        color = MiuixTheme.colorScheme.onBackground,
-                        textAlign = TextAlign.Center,
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(warningColor.copy(alpha = 0.10f))
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
-                    ) {
-                        Text(
-                            text = summary,
-                            modifier = Modifier.fillMaxWidth(),
-                            style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.Medium,
-                            color = warningColor,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 240.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(warningColor.copy(alpha = 0.06f))
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
-                    ) {
-                        issueMessages.distinct().forEachIndexed { index, message ->
-                            if (index > 0) {
-                                Spacer(Modifier.height(10.dp))
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.Top,
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .padding(top = 7.dp)
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(warningColor),
-                                )
-                                Spacer(Modifier.width(10.dp))
-                                Text(
-                                    text = message,
-                                    modifier = Modifier.weight(1f),
-                                    style = MiuixTheme.textStyles.body2,
-                                    color = MiuixTheme.colorScheme.onBackground,
-                                )
-                            }
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        TextButton(
-                            text = returnEditText,
-                            onClick = onDismissRequest,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Spacer(Modifier.width(20.dp))
-                        TextButton(
-                            text = continueSaveText,
-                            onClick = onContinueSave,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
+                Box(
+                    modifier = Modifier
+                        .padding(top = 7.dp)
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(warningColor),
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = message,
+                    modifier = Modifier.weight(1f),
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onBackground,
+                )
             }
         }
     }
