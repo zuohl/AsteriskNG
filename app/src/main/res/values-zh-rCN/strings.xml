@@ -369,7 +369,6 @@
     <string name="error_proxy_server_import_file_open_failed">无法打开导入文件</string>
 
     <!-- Proxy editor -->
-    <string name="proxy_editor_validation_failed">配置校验失败</string>
     <string name="proxy_editor_full_validation_warning_title">配置存在问题</string>
     <string name="proxy_editor_full_validation_warning_summary">部分项目未通过完整校验。仍可继续保存，但配置可能无法正常使用。</string>
     <string name="proxy_editor_return_edit">返回修改</string>

@@ -369,7 +369,6 @@
     <string name="error_proxy_server_import_file_open_failed">Failed to open import file</string>
 
     <!-- Proxy editor -->
-    <string name="proxy_editor_validation_failed">Configuration validation failed</string>
     <string name="proxy_editor_full_validation_warning_title">Configuration has issues</string>
     <string name="proxy_editor_full_validation_warning_summary">Some checks did not pass. You can continue saving, but the config may not work correctly.</string>
     <string name="proxy_editor_return_edit">Return to edit</string>
