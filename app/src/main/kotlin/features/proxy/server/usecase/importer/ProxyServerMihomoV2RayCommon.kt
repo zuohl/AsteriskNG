@@ -16,6 +16,7 @@ internal fun MihomoYamlMap.toMihomoV2RayParameters(
     val wsOpts = map("ws-opts")
     val grpcOpts = map("grpc-opts")
     val xhttpOpts = map("xhttp-opts")
+    val kcpOpts = map("kcp-opts")
     val xhttpSupported = xhttpHost != null || xhttpExtra != null
     val transport = when (val network = string("network")?.lowercase().orEmpty()) {
         "", "tcp", "raw" -> "raw"
@@ -27,27 +28,33 @@ internal fun MihomoYamlMap.toMihomoV2RayParameters(
         "http", "h2", "h3" -> unsupported("transport $network is not supported")
         else -> "raw"
     }
+    if (transport in setOf("websocket", "httpupgrade")) {
+        wsOpts?.ensureNoUnsupportedWsOptions()
+    }
     val echOpts = map("ech-opts")
     val realityOpts = map("reality-opts")
     return V2RayParameters(
         type = transport,
         security = v2raySecurity(defaultSecurity),
         path = when (transport) {
-            "websocket", "httpupgrade" -> wsOpts?.string("path")
+            "websocket", "httpupgrade" -> wsOpts?.pathWithEarlyData()
             "xhttp" -> xhttpOpts?.string("path")
             else -> null
         },
         host = when (transport) {
-            "websocket", "httpupgrade" -> wsOpts?.map("headers")?.headerString("Host") ?: wsOpts?.string("host")
+            "websocket", "httpupgrade" -> wsOpts?.mergedWsHeaders(this)?.headerString("Host") ?: wsOpts?.string("host")
             "xhttp" -> xhttpOpts?.let { xhttpHost?.invoke(it) }
+            "mkcp" -> (kcpOpts ?: this).map("header")?.string("host", "domain")
+                ?: kcpString(kcpOpts, "host", "domain")
             else -> null
         },
         headers = when (transport) {
-            "websocket", "httpupgrade" -> wsOpts?.transportHeadersJson()
+            "websocket", "httpupgrade" -> wsOpts?.mergedWsHeaders(this)?.transportHeadersJson()
             else -> null
         },
-        mtu = map("kcp-opts")?.string("mtu"),
-        tti = map("kcp-opts")?.string("tti"),
+        mtu = kcpString(kcpOpts, "mtu"),
+        tti = kcpString(kcpOpts, "tti"),
+        seed = kcpString(kcpOpts, "seed"),
         serviceName = grpcOpts?.string("grpc-service-name", "service-name", "serviceName"),
         mode = when (transport) {
             "grpc" -> grpcOpts?.string("mode") ?: "gun"
@@ -55,6 +62,10 @@ internal fun MihomoYamlMap.toMihomoV2RayParameters(
             else -> null
         },
         authority = grpcOpts?.string("authority"),
+        headerType = when (transport) {
+            "mkcp" -> (kcpOpts ?: this).kcpHeaderType() ?: "none"
+            else -> "none"
+        },
         fp = string("client-fingerprint")?.lowercase(),
         sni = string("servername", "sni"),
         alpn = csvString("alpn"),
@@ -68,6 +79,51 @@ internal fun MihomoYamlMap.toMihomoV2RayParameters(
             else -> null
         },
     )
+}
+
+private fun MihomoYamlMap.ensureNoUnsupportedWsOptions() {
+    if (boolean("v2ray-http-upgrade-fast-open") == true) {
+        unsupported("WebSocket v2ray-http-upgrade-fast-open is not supported by Xray")
+    }
+}
+
+private fun MihomoYamlMap.pathWithEarlyData(): String? {
+    val rawMaxEarlyData = this["max-early-data"] ?: return string("path")
+    val maxEarlyData = rawMaxEarlyData.scalarString()
+        ?.toIntOrNull()
+        ?: unsupported("WebSocket max-early-data must be integer")
+    if (maxEarlyData <= 0) {
+        return string("path")
+    }
+    val headerName = string("early-data-header-name")
+    if (!headerName.isNullOrBlank() && !headerName.equals("Sec-WebSocket-Protocol", ignoreCase = true)) {
+        unsupported("WebSocket early-data-header-name is not supported by Xray")
+    }
+    return (string("path") ?: "/").appendEdQuery(maxEarlyData)
+}
+
+private fun String.appendEdQuery(value: Int): String {
+    val separator = if ('?' in this) "&" else "?"
+    return "$this${separator}ed=$value"
+}
+
+private fun MihomoYamlMap.mergedWsHeaders(parentNode: MihomoYamlMap): MihomoYamlMap? {
+    val wsHeaders = parentNode.map("ws-headers")
+    val headers = map("headers")
+    if (wsHeaders.isNullOrEmpty() && headers.isNullOrEmpty()) return null
+    return buildMap {
+        wsHeaders?.let { putAll(it) }
+        headers?.let { putAll(it) }
+    }
+}
+
+private fun MihomoYamlMap.kcpHeaderType(): String? {
+    return map("header")?.string("type")
+        ?: string("headerType", "header-type")
+}
+
+private fun MihomoYamlMap.kcpString(kcpOpts: MihomoYamlMap?, vararg names: String): String? {
+    return kcpOpts?.string(*names) ?: string(*names)
 }
 
 private fun MihomoYamlMap.ensureNoUnsupportedV2RayTlsOptions() {
