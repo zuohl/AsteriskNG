@@ -92,7 +92,10 @@ internal fun V2RayParameters.toXrayStreamSettings(): JsonObject {
             "grpc" -> putGrpcSettings(this@toXrayStreamSettings)
             "httpupgrade" -> putHttpUpgradeSettings(this@toXrayStreamSettings)
             "xhttp" -> putXhttpSettings(this@toXrayStreamSettings)
-            "mkcp" -> putKcpSettings(this@toXrayStreamSettings)
+            "mkcp" -> {
+                putKcpSettings(this@toXrayStreamSettings)
+                putKcpFinalMask(this@toXrayStreamSettings)
+            }
         }
 
         val finalMask = fm.toXrayJsonObjectOrNull("FinalMask")
@@ -184,6 +187,39 @@ private fun JsonObjectBuilder.putKcpSettings(params: V2RayParameters) {
         params.mtu?.toIntOrNull()?.let { put("mtu", it) }
         params.tti?.toIntOrNull()?.let { put("tti", it) }
     }
+}
+
+private fun JsonObjectBuilder.putKcpFinalMask(params: V2RayParameters) {
+    putJsonObject("finalmask") {
+        putJsonArray("udp") {
+            val headerType = params.headerType.orEmpty()
+            if (headerType.isNotBlank() && headerType != "none") {
+                add(buildJsonObject {
+                    put("type", headerType.toKcpHeaderMaskType())
+                    if (headerType == "dns" && !params.host.isNullOrBlank()) {
+                        putJsonObject("settings") {
+                            put("domain", params.host)
+                        }
+                    }
+                })
+            }
+            add(buildJsonObject {
+                val seed = params.seed.orEmpty()
+                if (seed.isBlank()) {
+                    put("type", "mkcp-original")
+                } else {
+                    put("type", "mkcp-aes128gcm")
+                    putJsonObject("settings") {
+                        put("password", seed)
+                    }
+                }
+            })
+        }
+    }
+}
+
+private fun String.toKcpHeaderMaskType(): String {
+    return if (this == "wechat-video") "header-wechat" else "header-$this"
 }
 
 private fun String?.toXrayJsonObjectOrNull(fieldName: String): JsonObject? {

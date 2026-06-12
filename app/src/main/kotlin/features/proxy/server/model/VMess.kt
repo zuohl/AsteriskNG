@@ -110,6 +110,7 @@ data class LegacyVMess(
         if (alterId != 0) {
             throw IllegalArgumentException("VMess legacy alterId is not supported")
         }
+        val isKcp = network == "kcp" || network == "mkcp"
         return VMess(
             remarks = this.remarks.ifBlank { "none" },
             id = this.id,
@@ -119,8 +120,9 @@ data class LegacyVMess(
             parms = V2RayParameters(
                 type = this.network,
                 security = this.security,
-                path = this.path,
+                path = this.path.takeUnless { isKcp },
                 host = this.host,
+                seed = this.path.takeIf { isKcp },
                 serviceName = this.path,
                 mode = this.type,
                 authority = this.host,

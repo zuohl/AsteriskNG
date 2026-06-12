@@ -161,6 +161,7 @@ data class V2RayParameters(
     var headers: String? = null,
     var mtu: String? = null,
     var tti: String? = null,
+    var seed: String? = null,
     var serviceName: String? = null,
     var mode: String? = null,
     var authority: String? = null,
@@ -192,8 +193,11 @@ data class V2RayParameters(
 
             "kcp", "mkcp" -> {
                 this.type = "mkcp"
+                this.headerType = url.parameters["headerType"] ?: "none"
+                this.host = url.parameters["host"]
                 this.mtu = url.parameters["mtu"]
                 this.tti = url.parameters["tti"]
+                this.seed = url.parameters["seed"]
             }
 
             "ws", "websocket" -> {
@@ -264,8 +268,11 @@ data class V2RayParameters(
                 }
 
                 "kcp", "mkcp" -> {
+                    appendIfNotBlank("headerType", this@V2RayParameters.headerType)
+                    appendIfNotBlank("host", this@V2RayParameters.host)
                     appendIfNotBlank("mtu", this@V2RayParameters.mtu)
                     appendIfNotBlank("tti", this@V2RayParameters.tti)
+                    appendIfNotBlank("seed", this@V2RayParameters.seed)
                 }
 
                 "ws", "websocket", "httpupgrade" -> {
