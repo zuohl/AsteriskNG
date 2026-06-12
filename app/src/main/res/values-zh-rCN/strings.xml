@@ -308,6 +308,7 @@
     <string name="proxy_server_list_scan_qr_code">扫描二维码</string>
     <string name="proxy_server_list_import_clipboard">从剪贴板导入</string>
     <string name="proxy_server_list_import_file">从文件导入</string>
+    <string name="proxy_server_list_manual_input">手动输入</string>
     <string name="proxy_server_list_add_strategy_group">添加 策略组</string>
     <string name="proxy_server_list_add_chain_proxy">添加 链式代理</string>
     <string name="proxy_server_list_add_custom">添加 Custom</string>

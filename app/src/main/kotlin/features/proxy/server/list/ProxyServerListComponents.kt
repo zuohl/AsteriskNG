@@ -436,12 +436,24 @@ private fun ProtocolChip(
 
 @Composable
 private fun proxyServerListAddMenuEntries() = listOf(
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_scan_qr_code), ProxyServerListAddAction.ScanQrCode),
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_import_clipboard), ProxyServerListAddAction.Clipboard),
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_import_file), ProxyServerListAddAction.File),
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_strategy_group), ProxyServerListAddAction.StrategyGroup),
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_chain_proxy), ProxyServerListAddAction.ChainProxy),
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_custom), ProxyServerListAddAction.Custom),
+    proxyServerListAddMenuEntry(stringResource(R.string.proxy_server_list_scan_qr_code), ProxyServerListAddAction.ScanQrCode),
+    proxyServerListAddMenuEntry(stringResource(R.string.proxy_server_list_import_clipboard), ProxyServerListAddAction.Clipboard),
+    proxyServerListAddMenuEntry(stringResource(R.string.proxy_server_list_import_file), ProxyServerListAddAction.File),
+    IconDropdownMenuEntry(
+        key = "manual_input",
+        title = stringResource(R.string.proxy_server_list_manual_input),
+        children = proxyServerListManualInputMenuEntries(),
+    ),
+    proxyServerListAddMenuEntry(
+        stringResource(R.string.proxy_server_list_add_strategy_group),
+        ProxyServerListAddAction.StrategyGroup,
+    ),
+    proxyServerListAddMenuEntry(stringResource(R.string.proxy_server_list_add_chain_proxy), ProxyServerListAddAction.ChainProxy),
+    proxyServerListAddMenuEntry(stringResource(R.string.proxy_server_list_add_custom), ProxyServerListAddAction.Custom),
+)
+
+@Composable
+private fun proxyServerListManualInputMenuEntries() = listOf(
     ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_http), ProxyServerListAddAction.HTTP),
     ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_vmess), ProxyServerListAddAction.VMess),
     ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_vless), ProxyServerListAddAction.VLESS),
@@ -451,12 +463,17 @@ private fun proxyServerListAddMenuEntries() = listOf(
     ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_hysteria2), ProxyServerListAddAction.Hysteria2),
     ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_wireguard), ProxyServerListAddAction.Wireguard),
 ).map { entry ->
-    IconDropdownMenuEntry(
-        key = entry.action,
-        title = entry.title,
-        action = entry.action,
-    )
+    proxyServerListAddMenuEntry(entry.title, entry.action)
 }
+
+private fun proxyServerListAddMenuEntry(
+    title: String,
+    action: ProxyServerListAddAction,
+) = IconDropdownMenuEntry(
+    key = action,
+    title = title,
+    action = action,
+)
 
 @Composable
 private fun proxyServerListToolMenuEntries() = listOf(
