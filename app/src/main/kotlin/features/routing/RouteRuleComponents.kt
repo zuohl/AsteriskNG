@@ -32,6 +32,8 @@ import app.DefaultRouteOutboundTag
 import app.R
 import engine.network.isIpOrCidrAddress
 import engine.network.isPortList
+import engine.xray.isValidXrayExternalDomainRule
+import engine.xray.isXrayExternalDomainRuleCandidate
 import features.routing.model.RouteRule
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Card
@@ -453,10 +455,13 @@ private fun routeDomainInputError(input: String, invalidMessage: String): String
     if (input.startsWith("regexp:", ignoreCase = true)) {
         return if (input.substringAfter(":").isBlank()) invalidMessage else null
     }
+    if (isXrayExternalDomainRuleCandidate(input)) {
+        return if (isValidXrayExternalDomainRule(input)) null else invalidMessage
+    }
 
     val supportedPrefix = input.substringBefore(":", missingDelimiterValue = "")
         .lowercase()
-        .takeIf { it in setOf("domain", "full", "keyword", "geosite", "ext") }
+        .takeIf { it in setOf("domain", "full", "keyword", "geosite") }
     if (supportedPrefix != null) {
         return if (input.substringAfter(":").isBlank()) invalidMessage else null
     }
