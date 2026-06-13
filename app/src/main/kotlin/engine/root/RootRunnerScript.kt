@@ -9,6 +9,8 @@ import engine.xray.logDirectoryPath
 import features.resources.runtime.writeAtomically
 import system.AndroidRootShellGateway
 import system.ShellExecOptions
+import utils.shellQuote
+import utils.shellQuoteForCase
 import utils.toTrimmedNonEmptyList
 import java.io.File
 

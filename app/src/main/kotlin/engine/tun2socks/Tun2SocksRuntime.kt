@@ -9,12 +9,12 @@ import engine.root.RootRuntimeLayout
 import engine.root.appendScript
 import engine.root.buildRootProcessMatchCommand
 import engine.root.buildRootProcessMatchTest
-import engine.root.shellQuote
 import engine.xray.XrayCoreLogPaths
 import engine.xray.logDirectoryPath
 import engine.xray.prepareXrayCoreLogPaths
 import features.resources.runtime.writeAtomically
 import features.resources.runtime.xrayResourceFilesDir
+import utils.shellQuote
 import java.io.File
 
 internal fun Context.writeHevSocks5TunnelConfigFile(appState: AppState) {

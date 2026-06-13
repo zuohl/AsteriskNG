@@ -8,11 +8,11 @@ import engine.root.RootReadinessCheck
 import engine.root.RootRuntimeLayout
 import engine.root.appendScript
 import engine.root.buildRootPortReadyCommand
-import engine.root.shellQuote
 import engine.root.toNetstatPortHexMarker
 import engine.xray.XrayTags
 import system.AndroidRootShellGateway
 import system.ShellExecOptions
+import utils.shellQuote
 
 internal class Tun2SocksRootRunner(
     rootAccess: AndroidRootShellGateway,

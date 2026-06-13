@@ -7,6 +7,7 @@ import features.logs.AndroidAppLogger
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import utils.shellQuote
 
 internal object AndroidRootShell {
     private val configureLock = Any()
@@ -78,8 +79,4 @@ private fun ShellExecOptions.toShellCommand(command: String): String {
     } else {
         (prefix + command).joinToString(" && ")
     }
-}
-
-private fun String.shellQuote(): String {
-    return "'${replace("'", "'\"'\"'")}'"
 }

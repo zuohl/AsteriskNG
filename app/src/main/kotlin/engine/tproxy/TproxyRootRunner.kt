@@ -7,11 +7,11 @@ import engine.root.RootModeRunner
 import engine.root.RootReadinessCheck
 import engine.root.appendScript
 import engine.root.buildRootPortReadyCommand
-import engine.root.shellQuote
 import engine.root.toNetstatPortHexMarker
 import engine.xray.XrayTags
 import system.AndroidRootShellGateway
 import system.ShellExecOptions
+import utils.shellQuote
 
 internal class TproxyRootRunner(
     rootAccess: AndroidRootShellGateway,

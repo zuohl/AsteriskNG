@@ -3,6 +3,8 @@
 
 package engine.root
 
+import utils.shellQuote
+
 internal fun <Config : RootModeStartConfig> Config.buildInstallRootBootScriptCommand(
     modeName: String,
     buildSetupRulesCommand: (Config) -> String,
