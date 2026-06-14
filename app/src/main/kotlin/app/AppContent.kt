@@ -305,7 +305,6 @@ private fun CompactScreenLayout(
             NavigationBar(
                 navigationItems = navigationItems,
                 mainPagerState = mainPagerState,
-                modifier = Modifier.padding(bottom = padding.calculateBottomPadding()),
             )
         },
     ) { innerPadding ->

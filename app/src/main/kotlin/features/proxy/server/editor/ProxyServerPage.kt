@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -69,6 +68,7 @@ import ui.components.NavigationIcon
 import ui.components.WarningConfirmDialog
 import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
+import ui.layout.pageContentPaddingWithIme
 import ui.layout.pageScrollModifiers
 
 @Composable
@@ -232,6 +232,7 @@ fun ProxyServerPage(
             outerPadding = padding,
             isWideScreen = isWideScreen,
         )
+        val editorContentPadding = pageContentPaddingWithIme(contentPadding)
         if (psEdit is Custom) {
             CustomProxyServerEditor(
                 customEdit = psEdit,
@@ -239,22 +240,20 @@ fun ProxyServerPage(
             )
             return@Scaffold
         }
-        Box(
-            modifier = Modifier.imePadding(),
-        ) {
+        Box {
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier.pageScrollModifiers(
                     topAppBarScrollBehavior,
                 ),
-                contentPadding = contentPadding,
+                contentPadding = editorContentPadding,
             ) {
                 proxyServerEditorContent(psEdit, editorOptions)
             }
             VerticalScrollBar(
                 adapter = rememberScrollBarAdapter(lazyListState),
                 modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                trackPadding = contentPadding,
+                trackPadding = editorContentPadding,
             )
         }
     }

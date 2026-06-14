@@ -5,10 +5,6 @@ package features.proxy.server.list
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import app.LocalAppServices
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
@@ -303,17 +298,7 @@ fun ProxyServerListPage(
             outerPadding = padding,
             isWideScreen = isWideScreen,
         )
-        val isImeVisible = WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
-        val safeDrawingBottomPadding = WindowInsets.safeDrawing.asPaddingValues().calculateBottomPadding()
-        val floatingToolbarBottomPadding = if (isImeVisible) {
-            if (isWideScreen) {
-                0.dp
-            } else {
-                (contentPadding.calculateBottomPadding() - safeDrawingBottomPadding).coerceAtLeast(0.dp)
-            }
-        } else {
-            contentPadding.calculateBottomPadding()
-        }
+        val floatingToolbarBottomPadding = contentPadding.calculateBottomPadding()
         val listPadding = pageListPadding(
             contentPadding = contentPadding,
             bottomExtra = ProxyServerListFloatingToolbarReservedBottomPadding,
