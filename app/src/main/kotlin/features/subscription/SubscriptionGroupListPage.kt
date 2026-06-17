@@ -5,6 +5,9 @@
 
 package features.subscription
 
+import app.AppServices
+import app.AppState
+import app.LocalAppServices
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
@@ -40,6 +43,12 @@ import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import data.AndroidAppStateStore
+import features.proxy.server.usecase.withUpdatedSubscriptionServers
+import features.subscription.usecase.subscriptionUpdateMessage
+import features.subscription.usecase.toSubscriptionFetchOptions
+import features.subscription.usecase.updateSubscriptions
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 
 @Composable
@@ -48,10 +57,15 @@ fun SubscriptionGroupListPage(
 ) {
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
-    val appState by LocalAppStateStore.current.collectAppState()
+    val stateStore = LocalAppStateStore.current
+    val services = LocalAppServices.current
+    val appState by stateStore.collectAppState()
     val updateAppState = LocalUpdateAppState.current
     val topAppBarScrollBehavior = MiuixScrollBehavior()
     val groups = appState.subscriptionGroups
+    val subscriptionUpdateResultTemplate = stringResource(R.string.proxy_server_list_subscription_update_result)
+    val subscriptionUpdateResultWithFailedTemplate =
+        stringResource(R.string.proxy_server_list_subscription_update_result_with_failed)
     var editingGroupId by remember { mutableStateOf<Int?>(null) }
     var showGroupEditor by remember { mutableStateOf(false) }
     val editingGroup = editingGroupId?.let { id -> groups.firstOrNull { it.id == id } }
@@ -140,6 +154,20 @@ fun SubscriptionGroupListPage(
                                 )
                             }
                         },
+                        onUpdate = if (group.url.isNotBlank()) {
+                            {
+                                updateSubscriptionGroup(
+                                    group = group,
+                                    stateStore = stateStore,
+                                    services = services,
+                                    updateAppState = updateAppState,
+                                    successTemplate = subscriptionUpdateResultTemplate,
+                                    failedTemplate = subscriptionUpdateResultWithFailedTemplate,
+                                )
+                            }
+                        } else {
+                            null
+                        },
                         onEdit = {
                             editingGroupId = group.id
                             showGroupEditor = true
@@ -175,6 +203,39 @@ fun SubscriptionGroupListPage(
             onDismissRequest = ::closeGroupEditor,
             onDismissFinished = ::clearGroupEditor,
             onSave = ::saveGroup,
+        )
+    }
+}
+
+private fun updateSubscriptionGroup(
+    group: SubscriptionGroupState,
+    stateStore: AndroidAppStateStore,
+    services: AppServices,
+    updateAppState: ((AppState) -> AppState) -> Unit,
+    successTemplate: String,
+    failedTemplate: String,
+) {
+    if (group.url.isBlank()) return
+    services.appScope.launch {
+        val result = updateSubscriptions(
+            groups = listOf(group),
+            subscriptionFetcher = services.subscriptionFetcher,
+            fetchOptions = { updateGroup -> stateStore.state.value.toSubscriptionFetchOptions(updateGroup) },
+        )
+        if (result.updates.isNotEmpty()) {
+            updateAppState { state ->
+                state.withUpdatedSubscriptionServers(
+                    updates = result.updates,
+                    updatedAtMillis = result.updatedAtMillis,
+                )
+            }
+        }
+        services.tipNotifier.show(
+            subscriptionUpdateMessage(
+                result = result,
+                successTemplate = successTemplate,
+                failedTemplate = failedTemplate,
+            ),
         )
     }
 }

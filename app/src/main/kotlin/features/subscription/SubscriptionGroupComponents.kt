@@ -46,6 +46,7 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
+import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -289,6 +290,7 @@ private fun SubscriptionUserAgentSelection.labelResId(): Int = when (this) {
 internal fun SubscriptionGroupCard(
     group: SubscriptionGroupState,
     onToggle: (Boolean) -> Unit,
+    onUpdate: (() -> Unit)?,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
@@ -354,6 +356,15 @@ internal fun SubscriptionGroupCard(
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (onUpdate != null) {
+                IconButton(onClick = onUpdate) {
+                    Icon(
+                        imageVector = MiuixIcons.Refresh,
+                        contentDescription = stringResource(R.string.subscription_update_group),
+                        tint = MiuixTheme.colorScheme.onSurface,
+                    )
+                }
+            }
             IconButton(onClick = onEdit) {
                 Icon(
                     imageVector = MiuixIcons.Edit,

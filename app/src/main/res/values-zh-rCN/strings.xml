@@ -527,6 +527,7 @@
     <string name="subscription_group_list">分组列表</string>
     <string name="subscription_manual_group">手动节点分组</string>
     <string name="subscription_update_interval">每 {interval} 小时更新</string>
+    <string name="subscription_update_group">更新订阅分组</string>
     <string name="subscription_edit_group">编辑订阅分组</string>
     <string name="subscription_delete_group">删除订阅分组</string>
     <string name="subscription_new_group">新订阅分组</string>

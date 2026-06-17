@@ -527,6 +527,7 @@
     <string name="subscription_group_list">Group list</string>
     <string name="subscription_manual_group">Manual proxy server group</string>
     <string name="subscription_update_interval">Update every {interval} hours</string>
+    <string name="subscription_update_group">Update subscription group</string>
     <string name="subscription_edit_group">Edit subscription group</string>
     <string name="subscription_delete_group">Delete subscription group</string>
     <string name="subscription_new_group">New subscription group</string>
