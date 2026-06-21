@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import app.R
@@ -62,10 +63,12 @@ fun SubscriptionGroupListPage(
     val appState by stateStore.collectAppState()
     val updateAppState = LocalUpdateAppState.current
     val topAppBarScrollBehavior = MiuixScrollBehavior()
+    val scope = rememberCoroutineScope()
     val groups = appState.subscriptionGroups
     val subscriptionUpdateResultTemplate = stringResource(R.string.proxy_server_list_subscription_update_result)
     val subscriptionUpdateResultWithFailedTemplate =
         stringResource(R.string.proxy_server_list_subscription_update_result_with_failed)
+    val invalidSubscriptionUrlMessage = stringResource(R.string.subscription_invalid_url)
     var editingGroupId by remember { mutableStateOf<Int?>(null) }
     var showGroupEditor by remember { mutableStateOf(false) }
     val editingGroup = editingGroupId?.let { id -> groups.firstOrNull { it.id == id } }
@@ -203,6 +206,9 @@ fun SubscriptionGroupListPage(
             onDismissRequest = ::closeGroupEditor,
             onDismissFinished = ::clearGroupEditor,
             onSave = ::saveGroup,
+            onInvalidUrl = {
+                scope.launch { services.tipNotifier.show(invalidSubscriptionUrlMessage) }
+            },
         )
     }
 }

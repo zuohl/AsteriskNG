@@ -537,6 +537,10 @@
     <string name="subscription_unnamed_group">未命名分组</string>
     <string name="subscription_group_name">分组名称</string>
     <string name="subscription_url">订阅地址，手动分组可留空</string>
+    <string name="subscription_invalid_url">无效的订阅 URL</string>
+    <string name="subscription_http_warning_title">HTTP 订阅警告</string>
+    <string name="subscription_http_warning_message">当前订阅 URL 使用 HTTP 明文传输，配置内容可能在传输过程中被读取或篡改。仅在你信任该来源时继续保存。</string>
+    <string name="subscription_http_warning_confirm">仍然保存</string>
     <string name="subscription_user_agent">User-Agent</string>
     <string name="subscription_user_agent_v2rayng">v2rayNG</string>
     <string name="subscription_user_agent_clash_meta">Clash Meta</string>

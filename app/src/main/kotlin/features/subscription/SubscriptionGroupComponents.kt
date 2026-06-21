@@ -52,6 +52,7 @@ import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 import features.proxy.server.display.displayName
+import ui.components.WarningConfirmDialog
 import ui.text.formatTemplate
 
 @Composable
@@ -62,6 +63,7 @@ internal fun SubscriptionGroupEditorDialog(
     onDismissRequest: () -> Unit,
     onDismissFinished: () -> Unit,
     onSave: (SubscriptionGroupState, isNew: Boolean) -> Unit,
+    onInvalidUrl: () -> Unit,
 ) {
     val isEditing = group != null
     val builtIn = group?.builtIn == true
@@ -96,6 +98,7 @@ internal fun SubscriptionGroupEditorDialog(
         mutableStateOf(group?.updateViaProxy ?: false)
     }
     var showCustomUserAgentDialog by remember { mutableStateOf(false) }
+    var showHttpSubscriptionWarning by remember { mutableStateOf(false) }
     val customUserAgentDraftState = rememberTextFieldState(initialText = customUserAgent)
     val customSummary = customUserAgent.trim().ifBlank {
         stringResource(R.string.subscription_user_agent_custom_summary)
@@ -110,6 +113,42 @@ internal fun SubscriptionGroupEditorDialog(
         .indexOf(userAgentSelection)
         .coerceAtLeast(0)
     val resolvedUserAgent = userAgentSelection.resolveUserAgent(customUserAgent)
+
+    fun saveGroup(allowPlainHttp: Boolean = false) {
+        val savedUrl = url.trim()
+        if (savedUrl.isNotBlank() && !savedUrl.isValidManualSubscriptionUrl()) {
+            onInvalidUrl()
+            return
+        }
+        if (!allowPlainHttp && savedUrl.isPlainHttpSubscriptionUrl()) {
+            showHttpSubscriptionWarning = true
+            return
+        }
+
+        showHttpSubscriptionWarning = false
+        val savedUserAgent = userAgentSelection.resolveUserAgent(customUserAgent)
+        val savedGroup = if (group != null) {
+            group.copy(
+                name = if (group.builtIn) group.name else name.trim().ifBlank { unnamedGroupName },
+                url = savedUrl,
+                userAgent = savedUserAgent,
+                updateInterval = interval.trim().takeIf { savedUrl.isNotBlank() }.orEmpty(),
+                updateViaProxy = updateViaProxy && savedUrl.isNotBlank(),
+            )
+        } else {
+            SubscriptionGroupState(
+                id = nextGroupId,
+                name = name.trim().ifBlank { unnamedGroupName },
+                url = savedUrl,
+                userAgent = savedUserAgent,
+                updateInterval = interval.trim().takeIf { savedUrl.isNotBlank() }.orEmpty(),
+                updateViaProxy = updateViaProxy && savedUrl.isNotBlank(),
+                enabled = true,
+            )
+        }
+        onSave(savedGroup, group == null)
+        onDismissRequest()
+    }
 
     WindowDialog(
         show = show,
@@ -203,36 +242,34 @@ internal fun SubscriptionGroupEditorDialog(
                 Spacer(Modifier.width(20.dp))
                 TextButton(
                     text = stringResource(R.string.common_save),
-                    onClick = {
-                        val savedUrl = url.trim()
-                        val savedUserAgent = userAgentSelection.resolveUserAgent(customUserAgent)
-                        val savedGroup = if (group != null) {
-                            group.copy(
-                                name = if (group.builtIn) group.name else name.trim().ifBlank { unnamedGroupName },
-                                url = savedUrl,
-                                userAgent = savedUserAgent,
-                                updateInterval = interval.trim().takeIf { savedUrl.isNotBlank() }.orEmpty(),
-                                updateViaProxy = updateViaProxy && savedUrl.isNotBlank(),
-                            )
-                        } else {
-                            SubscriptionGroupState(
-                                id = nextGroupId,
-                                name = name.trim().ifBlank { unnamedGroupName },
-                                url = savedUrl,
-                                userAgent = savedUserAgent,
-                                updateInterval = interval.trim().takeIf { savedUrl.isNotBlank() }.orEmpty(),
-                                updateViaProxy = updateViaProxy && savedUrl.isNotBlank(),
-                                enabled = true,
-                            )
-                        }
-                        onSave(savedGroup, group == null)
-                        onDismissRequest()
-                    },
+                    onClick = { saveGroup() },
                     modifier = Modifier.weight(1f),
                 )
             }
         }
     }
+    HttpSubscriptionWarningDialog(
+        show = showHttpSubscriptionWarning,
+        onDismissRequest = { showHttpSubscriptionWarning = false },
+        onConfirm = { saveGroup(allowPlainHttp = true) },
+    )
+}
+
+@Composable
+private fun HttpSubscriptionWarningDialog(
+    show: Boolean,
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    WarningConfirmDialog(
+        show = show,
+        title = stringResource(R.string.subscription_http_warning_title),
+        summary = stringResource(R.string.subscription_http_warning_message),
+        dismissText = stringResource(R.string.common_cancel),
+        confirmText = stringResource(R.string.subscription_http_warning_confirm),
+        onDismissRequest = onDismissRequest,
+        onConfirm = onConfirm,
+    )
 }
 
 @Composable

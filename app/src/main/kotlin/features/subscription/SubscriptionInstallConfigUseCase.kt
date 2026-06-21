@@ -11,9 +11,9 @@ import data.AndroidAppStateStore
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdateResult
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
 import features.subscription.runtime.AndroidSubscriptionFetcher
+import features.subscription.usecase.subscriptionUpdateMessage
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
-import features.subscription.usecase.subscriptionUpdateMessage
 import io.ktor.http.Url
 import ui.text.formatTemplate
 import utils.decodeUrlComponentPreservingPlus
@@ -85,13 +85,6 @@ internal fun String.toSubscriptionInstallConfigOrNull(): SubscriptionInstallConf
     return url.toSubscriptionInstallConfigOrNull(value)
 }
 
-internal fun String.toRawHttpsSubscriptionInstallConfigOrNull(): SubscriptionInstallConfig? {
-    val value = trim()
-    if (value.any(Char::isWhitespace)) return null
-    val url = runCatching { Url(value) }.getOrNull() ?: return null
-    return url.toRawHttpsSubscriptionInstallConfigOrNull(value)
-}
-
 internal fun Uri.isSubscriptionInstallConfigUri(): Boolean {
     return runCatching { Url(toString()).isSubscriptionInstallConfigUri() }
         .getOrDefault(false)
@@ -101,7 +94,7 @@ private fun Url.toSubscriptionInstallConfigOrNull(rawValue: String): Subscriptio
     toRawHttpsSubscriptionInstallConfigOrNull(rawValue)?.let { return it }
     val source = installConfigSource() ?: return null
     val url = parameters["url"]?.trim().orEmpty()
-    if (!isSubscriptionInstallConfigUri() || !url.isValidSubscriptionUrl()) return null
+    if (!isSubscriptionInstallConfigUri() || !url.isValidSubscriptionInstallUrl()) return null
     val name = listOfNotNull(
         parameters["name"],
         fragment,
@@ -118,7 +111,7 @@ private fun Url.toSubscriptionInstallConfigOrNull(rawValue: String): Subscriptio
 }
 
 private fun Url.toRawHttpsSubscriptionInstallConfigOrNull(rawValue: String): SubscriptionInstallConfig? {
-    if (!rawValue.isValidSubscriptionUrl()) return null
+    if (!rawValue.isValidSubscriptionInstallUrl()) return null
     val name = listOfNotNull(fragment, V2rayNgDefaultSubscriptionName)
         .firstNotNullOfOrNull { value -> value.trim().decodeUrlComponentPreservingPlus().takeIf(String::isNotBlank) }
         ?: return null
@@ -195,14 +188,6 @@ private fun AppState.newSubscriptionGroup(config: SubscriptionInstallConfig): Su
     )
 }
 
-private fun String.isValidSubscriptionUrl(): Boolean {
-    val url = runCatching { Url(this) }.getOrNull() ?: return false
-    val scheme = url.protocol.name.lowercase()
-    return url.host.isNotBlank() &&
-        scheme in SubscriptionUrlSchemes &&
-        this.any(Char::isWhitespace).not()
-}
-
 private enum class InstallConfigSource(
     val scheme: String,
     val userAgent: String,
@@ -237,4 +222,3 @@ private fun String.toSubscriptionUrlFragmentOrNull(): String? {
 private const val V2rayNgDefaultSubscriptionName = "import sub"
 private const val ClashDefaultSubscriptionName = "clashsub"
 private val InstallConfigHosts = setOf("install-config", "install-sub")
-private val SubscriptionUrlSchemes = setOf("https")

@@ -537,6 +537,10 @@
     <string name="subscription_unnamed_group">Unnamed group</string>
     <string name="subscription_group_name">Group name</string>
     <string name="subscription_url">Subscription URL, leave empty for manual groups</string>
+    <string name="subscription_invalid_url">Invalid subscription URL</string>
+    <string name="subscription_http_warning_title">HTTP subscription warning</string>
+    <string name="subscription_http_warning_message">This subscription URL uses HTTP cleartext transport. The configuration content may be read or modified in transit. Save only if you trust this source.</string>
+    <string name="subscription_http_warning_confirm">Save anyway</string>
     <string name="subscription_user_agent">User-Agent</string>
     <string name="subscription_user_agent_v2rayng">v2rayNG</string>
     <string name="subscription_user_agent_clash_meta">Clash Meta</string>
