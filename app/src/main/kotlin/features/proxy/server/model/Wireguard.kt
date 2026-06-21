@@ -65,7 +65,7 @@ data class Wireguard(
 
     override fun parse(url: Url): Wireguard {
         this.remarks = url.proxyUrlRemarks()
-        this.server = url.host
+        this.server = url.proxyUrlHost()
         this.port = url.port.toString()
         this.secretKey = url.user ?: ""
         this.publicKey = url.parameters["publickey"] ?: ""
@@ -79,7 +79,7 @@ data class Wireguard(
     override fun getUrl(): String {
         return URLBuilder().apply {
             protocol = URLProtocol.createOrDefault(ProxyServerConstants.PROTOCOL_WIREGUARD)
-            host = this@Wireguard.server
+            setProxyUrlHost(this@Wireguard.server)
             this@Wireguard.port.toIntOrNull()?.let { port = it }
             user = this@Wireguard.secretKey
 

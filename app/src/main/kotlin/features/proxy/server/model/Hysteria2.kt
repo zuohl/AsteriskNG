@@ -67,7 +67,7 @@ data class Hysteria2(
     override fun parse(url: Url): Hysteria2 {
         //standard
         this.remarks = url.proxyUrlRemarks()
-        this.server = url.host
+        this.server = url.proxyUrlHost()
         this.port = url.port.toString()
         this.auth = url.user ?: ""
         this.obfs = url.parameters["obfs"] ?: ""
@@ -89,7 +89,7 @@ data class Hysteria2(
     override fun getUrl(): String {
         return URLBuilder().apply {
             protocol = URLProtocol.createOrDefault(ProxyServerConstants.PROTOCOL_HYSTERIA2)
-            host = this@Hysteria2.server
+            setProxyUrlHost(this@Hysteria2.server)
             this@Hysteria2.port.toIntOrNull()?.let { port = it }
             user = this@Hysteria2.auth
 

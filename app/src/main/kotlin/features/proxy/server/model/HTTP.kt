@@ -42,7 +42,7 @@ data class HTTP(
 
     override fun parse(url: Url): HTTP {
         this.remarks = url.proxyUrlRemarks()
-        this.server = url.host
+        this.server = url.proxyUrlHost()
         this.port = url.port.toString()
         url.userInfoOrNull()?.let { str ->
             val info = str.decodeFlexibleBase64ToStringOrRaw()
@@ -58,7 +58,7 @@ data class HTTP(
     override fun getUrl(): String {
         return URLBuilder().apply {
             protocol = URLProtocol.HTTP
-            host = this@HTTP.server
+            setProxyUrlHost(this@HTTP.server)
             this@HTTP.port.toIntOrNull()?.let { port = it }
             if (!this@HTTP.user.isNullOrBlank())
                 user = "${this@HTTP.user}:${this@HTTP.password.orEmpty()}".encodeToByteArray().encodeProxyUrlBase64()

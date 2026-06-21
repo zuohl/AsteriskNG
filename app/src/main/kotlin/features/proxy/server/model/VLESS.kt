@@ -43,7 +43,7 @@ data class VLESS(
     override fun parse(url: Url): VLESS {
         this.remarks = url.proxyUrlRemarks()
         this.id = url.user ?: ""
-        this.server = url.host
+        this.server = url.proxyUrlHost()
         this.port = url.port.toString()
         this.encryption = url.parameters["encryption"] ?: "none"
         this.flow = url.parameters["flow"] ?: ""
@@ -54,7 +54,7 @@ data class VLESS(
     override fun getUrl(): String {
         return URLBuilder().apply {
             protocol = URLProtocol.createOrDefault(ProxyServerConstants.PROTOCOL_VLESS)
-            host = this@VLESS.server
+            setProxyUrlHost(this@VLESS.server)
             this@VLESS.port.toIntOrNull()?.let { port = it }
             user = this@VLESS.id
             if (this@VLESS.encryption.isNotBlank()) {

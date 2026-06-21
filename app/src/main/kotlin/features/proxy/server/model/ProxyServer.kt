@@ -5,6 +5,7 @@ package features.proxy.server.model
 
 import io.ktor.http.Parameters
 import io.ktor.http.ParametersBuilder
+import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.http.parsing.ParseException
 import kotlinx.serialization.Serializable
@@ -143,6 +144,19 @@ fun ProxyServer<*>.getCopyTextOrNull(): String? {
     }
 }
 
+internal fun URLBuilder.setProxyUrlHost(value: String) {
+    val normalized = value.toProxyUrlHost()
+    host = if (normalized.contains(':')) "[$normalized]" else normalized
+}
+
+internal fun Url.proxyUrlHost(): String {
+    return host.toProxyUrlHost()
+}
+
+private fun String.toProxyUrlHost(): String {
+    return trim().removeSurrounding("[", "]")
+}
+
 internal fun proxyServerTypeMismatch(): Nothing {
     throw IllegalArgumentException("Proxy server type mismatch")
 }
@@ -257,9 +271,10 @@ data class V2RayParameters(
 
     fun get(): Parameters {
         val transportType = type.toV2RayTransportTypeParameter()
+        val securityType = security.ifBlank { "none" }
         return ParametersBuilder().apply {
             appendIfNotBlank("type", transportType)
-            appendIfNotBlank("security", this@V2RayParameters.security)
+            appendIfNotBlank("security", securityType)
             appendIfNotBlank("fm", this@V2RayParameters.fm)
             when (transportType) {
                 "raw" -> {
@@ -296,7 +311,7 @@ data class V2RayParameters(
 
                 else -> throw ParseException("Unknown v2ray transport type: $type")
             }
-            when (security) {
+            when (securityType) {
                 "none" -> {}
                 "tls" -> {
                     appendIfNotBlank("fp", this@V2RayParameters.fp)

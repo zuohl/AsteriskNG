@@ -44,7 +44,7 @@ data class Shadowsocks(
 
     override fun parse(url: Url): Shadowsocks {
         this.remarks = url.proxyUrlRemarks()
-        this.server = url.host
+        this.server = url.proxyUrlHost()
         this.port = url.port.toString()
         if (url.port == 0) {
             val full =
@@ -101,7 +101,7 @@ data class Shadowsocks(
     override fun getUrl(): String {
         return URLBuilder().apply {
             protocol = URLProtocol.createOrDefault(ProxyServerConstants.PROTOCOL_SS)
-            host = this@Shadowsocks.server
+            setProxyUrlHost(this@Shadowsocks.server)
             this@Shadowsocks.port.toIntOrNull()?.let { port = it }
             user = "${this@Shadowsocks.method}:${this@Shadowsocks.password}".encodeToByteArray().encodeProxyUrlBase64()
             this@Shadowsocks.parms.toSip002HttpObfsPluginOrNull()?.let { plugin ->

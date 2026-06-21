@@ -42,7 +42,7 @@ data class Socks(
 
     override fun parse(url: Url): Socks {
         this.remarks = url.proxyUrlRemarks()
-        this.server = url.host
+        this.server = url.proxyUrlHost()
         this.port = url.port.toString()
         url.userInfoOrNull()?.let { str ->
             val info = str.decodeFlexibleBase64ToStringOrRaw()
@@ -58,7 +58,7 @@ data class Socks(
     override fun getUrl(): String {
         return URLBuilder().apply {
             protocol = URLProtocol.createOrDefault(ProxyServerConstants.PROTOCOL_SOCKS)
-            host = this@Socks.server
+            setProxyUrlHost(this@Socks.server)
             this@Socks.port.toIntOrNull()?.let { port = it }
             if (!this@Socks.user.isNullOrBlank())
                 user = "${this@Socks.user}:${this@Socks.password.orEmpty()}".encodeToByteArray().encodeProxyUrlBase64()

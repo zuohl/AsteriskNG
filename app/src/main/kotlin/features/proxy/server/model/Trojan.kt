@@ -39,7 +39,7 @@ data class Trojan(
     override fun parse(url: Url): Trojan {
         this.remarks = url.proxyUrlRemarks()
         this.password = url.user ?: ""
-        this.server = url.host
+        this.server = url.proxyUrlHost()
         this.port = url.port.toString()
         this.parms = this.parms.parse(url, "raw", "tls")
         return this
@@ -48,7 +48,7 @@ data class Trojan(
     override fun getUrl(): String {
         return URLBuilder().apply {
             protocol = URLProtocol.createOrDefault(ProxyServerConstants.PROTOCOL_TROJAN)
-            host = this@Trojan.server
+            setProxyUrlHost(this@Trojan.server)
             this@Trojan.port.toIntOrNull()?.let { port = it }
             user = this@Trojan.password
             this@Trojan.parms.let {

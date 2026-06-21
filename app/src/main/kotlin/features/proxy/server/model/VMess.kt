@@ -165,7 +165,7 @@ data class VMess(
     override fun parse(url: Url): VMess {
         this.remarks = url.proxyUrlRemarks()
         this.id = url.user ?: ""
-        this.server = url.host
+        this.server = url.proxyUrlHost()
         this.port = url.port.toString()
         this.encryption = url.parameters["encryption"] ?: "auto"
         this.parms = this.parms.parse(url, "raw", "none")
@@ -175,7 +175,7 @@ data class VMess(
     override fun getUrl(): String {
         return URLBuilder().apply {
             protocol = URLProtocol.createOrDefault(ProxyServerConstants.PROTOCOL_VMESS)
-            host = this@VMess.server
+            setProxyUrlHost(this@VMess.server)
             this@VMess.port.toIntOrNull()?.let { port = it }
             user = this@VMess.id
             parameters.append("encryption", this@VMess.encryption)
