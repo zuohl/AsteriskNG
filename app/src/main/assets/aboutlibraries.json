@@ -15,7 +15,7 @@
         },
         {
             "uniqueId": "github:2dust/AndroidLibXrayLite",
-            "artifactVersion": "v26.6.14",
+            "artifactVersion": "v26.6.22",
             "name": "AndroidLibXrayLite",
             "description": "Android AAR wrapper for Xray-core, built with gomobile.",
             "website": "https://github.com/2dust/AndroidLibXrayLite",
@@ -28,10 +28,10 @@
         },
         {
             "uniqueId": "androidx.navigation3:navigation3-runtime",
-            "artifactVersion": "1.1.2",
+            "artifactVersion": "1.1.3",
             "name": "Androidx Navigation 3 Runtime",
             "description": "Provides the building blocks for a Compose first Navigation solution that easily supports extensions.",
-            "website": "https://developer.android.com/jetpack/androidx/releases/navigation3#1.1.2",
+            "website": "https://developer.android.com/jetpack/androidx/releases/navigation3#1.1.3",
             "scm": {
                 "url": "https://cs.android.com/androidx/platform/frameworks/support"
             },
@@ -262,7 +262,7 @@
         },
         {
             "uniqueId": "github:XTLS/Xray-core",
-            "artifactVersion": "v26.6.1",
+            "artifactVersion": "v26.6.22",
             "name": "Xray-core",
             "description": "An open platform for proxy and anti-censorship networking.",
             "website": "https://github.com/XTLS/Xray-core",
