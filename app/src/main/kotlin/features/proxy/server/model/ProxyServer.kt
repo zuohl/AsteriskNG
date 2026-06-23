@@ -195,18 +195,16 @@ data class V2RayParameters(
     var headerType: String? = "none",
 ) {
     fun parse(url: Url, defaultType: String, defaultSecurity: String): V2RayParameters {
-        this.type = url.parameters["type"] ?: defaultType
+        this.type = url.parameters["type"].toCanonicalV2RayTransportType(defaultType)
         this.security = url.parameters["security"] ?: defaultSecurity
         this.fm = url.parameters["fm"]
         when (this.type) {
-            "tcp", "raw" -> {
-                this.type = "raw"
+            V2RayTransportRaw -> {
                 this.headerType = url.parameters["headerType"] ?: "none"
                 this.host = url.parameters["host"]
             }
 
-            "kcp", "mkcp" -> {
-                this.type = "mkcp"
+            V2RayTransportMkcp -> {
                 this.headerType = url.parameters["headerType"] ?: "none"
                 this.host = url.parameters["host"]
                 this.mtu = url.parameters["mtu"]
@@ -214,27 +212,28 @@ data class V2RayParameters(
                 this.seed = url.parameters["seed"]
             }
 
-            "ws", "websocket" -> {
-                this.type = "websocket"
+            V2RayTransportWebSocket -> {
+                this.path = url.parameters["path"].appendWebSocketEarlyData(
+                    ed = url.parameters["ed"],
+                    eh = url.parameters["eh"],
+                )
+                this.host = url.parameters["host"]
+                this.headers = url.parameters["headers"]
+            }
+
+            V2RayTransportHttpUpgrade -> {
                 this.path = url.parameters["path"]
                 this.host = url.parameters["host"]
                 this.headers = url.parameters["headers"]
             }
 
-            "httpupgrade" -> {
-                this.path = url.parameters["path"]
-                this.host = url.parameters["host"]
-                this.headers = url.parameters["headers"]
-            }
-
-            "grpc" -> {
+            V2RayTransportGrpc -> {
                 this.mode = url.parameters["mode"] ?: "gun"
                 this.authority = url.parameters["authority"]
                 this.serviceName = url.parameters["serviceName"]
             }
 
-            "xhttp", "splithttp" -> {
-                this.type = "xhttp"
+            V2RayTransportXhttp -> {
                 this.path = url.parameters["path"]
                 this.host = url.parameters["host"]
                 this.mode = url.parameters["mode"]
@@ -270,7 +269,7 @@ data class V2RayParameters(
     }
 
     fun get(): Parameters {
-        val transportType = type.toV2RayTransportTypeParameter()
+        val transportType = type.toV2RayTransportUrlType()
         val securityType = security.ifBlank { "none" }
         return ParametersBuilder().apply {
             appendIfNotBlank("type", transportType)
@@ -337,13 +336,21 @@ data class V2RayParameters(
     }
 }
 
-private fun String.toV2RayTransportTypeParameter(): String {
-    return when (val transportType = ifBlank { "raw" }) {
-        "tcp" -> "raw"
-        else -> transportType
-    }
-}
-
 private fun ParametersBuilder.appendIfNotBlank(name: String, value: String?) {
     value?.takeIf(String::isNotBlank)?.let { append(name, it) }
 }
+
+private fun String?.appendWebSocketEarlyData(ed: String?, eh: String?): String? {
+    val rawEarlyData = ed?.trim()?.takeIf(String::isNotBlank) ?: return this
+    val earlyData = rawEarlyData.toIntOrNull()
+        ?: throw IllegalArgumentException("WebSocket early data must be integer")
+    if (earlyData <= 0) return this
+    if (!eh.isNullOrBlank() && !eh.equals(WebSocketEarlyDataHeader, ignoreCase = true)) {
+        throw IllegalArgumentException("WebSocket early data header is not supported: $eh")
+    }
+    val path = this?.takeIf(String::isNotBlank) ?: "/"
+    val separator = if ('?' in path) "&" else "?"
+    return "$path${separator}ed=$earlyData"
+}
+
+private const val WebSocketEarlyDataHeader = "Sec-WebSocket-Protocol"

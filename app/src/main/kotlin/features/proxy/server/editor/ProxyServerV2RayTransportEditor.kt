@@ -23,6 +23,14 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.R
 import features.proxy.server.model.V2RayParameters
+import features.proxy.server.model.V2RayTransportGrpc
+import features.proxy.server.model.V2RayTransportHttpUpgrade
+import features.proxy.server.model.V2RayTransportMkcp
+import features.proxy.server.model.V2RayTransportOptions
+import features.proxy.server.model.V2RayTransportRaw
+import features.proxy.server.model.V2RayTransportWebSocket
+import features.proxy.server.model.V2RayTransportXhttp
+import features.proxy.server.model.v2RayTransportOptionIndex
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
@@ -32,20 +40,16 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
     item(key = "transport") {
         val focusManager = LocalFocusManager.current
         val typeOptions = remember {
-            listOf(
-                "raw",
-                "kcp",
-                "ws",
-                "httpupgrade",
-                "xhttp",
-                "grpc",
-            )
+            V2RayTransportOptions
+        }
+        val typeLabels = remember {
+            typeOptions.map { option -> option.label }
         }
         val securityOptions = remember { listOf("none", "tls", "reality") }
 
         val type = remember {
             mutableIntStateOf(
-                if (typeOptions.indexOf(params.type) > -1) typeOptions.indexOf(params.type) else 0
+                v2RayTransportOptionIndex(params.type)
             )
         }
         val security = remember {
@@ -53,23 +57,24 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                 if (securityOptions.indexOf(params.security) > -1) securityOptions.indexOf(params.security) else 0
             )
         }
+        val selectedTransportType = typeOptions.getOrElse(type.intValue) { typeOptions.first() }.value
 
         SmallTitle(text = stringResource(R.string.proxy_editor_transport))
         OverlayDropdownPreference(
             title = stringResource(R.string.proxy_editor_transport_type),
-            items = typeOptions,
+            items = typeLabels,
             selectedIndex = type.intValue,
             modifier = Modifier
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 12.dp),
             onSelectedIndexChange = { newType ->
                 type.intValue = newType
-                params.type = typeOptions[newType]
+                params.type = typeOptions[newType].value
             },
         )
         //raw
         AnimatedVisibility(
-            visible = type.intValue == 0,
+            visible = selectedTransportType == V2RayTransportRaw,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {
@@ -113,7 +118,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         }
         //kcp
         AnimatedVisibility(
-            visible = type.intValue == 1,
+            visible = selectedTransportType == V2RayTransportMkcp,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {
@@ -157,7 +162,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         }
         //ws
         AnimatedVisibility(
-            visible = type.intValue == 2,
+            visible = selectedTransportType == V2RayTransportWebSocket,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {
@@ -193,7 +198,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         }
         //httpupgrade
         AnimatedVisibility(
-            visible = type.intValue == 3,
+            visible = selectedTransportType == V2RayTransportHttpUpgrade,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {
@@ -229,7 +234,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         }
         //xhttp
         AnimatedVisibility(
-            visible = type.intValue == 4,
+            visible = selectedTransportType == V2RayTransportXhttp,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {
@@ -298,7 +303,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         }
         //grpc
         AnimatedVisibility(
-            visible = type.intValue == 5,
+            visible = selectedTransportType == V2RayTransportGrpc,
             enter = fadeIn() + expandVertically(),
             exit = ExitTransition.None,
         ) {

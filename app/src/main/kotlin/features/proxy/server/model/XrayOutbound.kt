@@ -106,13 +106,13 @@ internal fun V2RayParameters.toXrayStreamSettings(): JsonObject {
 }
 
 private fun String.toXrayNetwork(): String {
-    return when (ifBlank { "raw" }) {
-        "tcp", "raw" -> "raw"
-        "kcp", "mkcp" -> "mkcp"
-        "ws", "websocket" -> "websocket"
-        "grpc" -> "grpc"
-        "httpupgrade" -> "httpupgrade"
-        "xhttp", "splithttp" -> "xhttp"
+    return when (toCanonicalV2RayTransportType()) {
+        V2RayTransportRaw -> "raw"
+        V2RayTransportMkcp -> "mkcp"
+        V2RayTransportWebSocket -> "websocket"
+        V2RayTransportGrpc -> "grpc"
+        V2RayTransportHttpUpgrade -> "httpupgrade"
+        V2RayTransportXhttp -> "xhttp"
         "http", "h2", "h3" -> throw UnsupportedOperationException("Unsupported Xray transport type: $this")
         else -> throw UnsupportedOperationException("Unknown Xray transport type: $this")
     }
