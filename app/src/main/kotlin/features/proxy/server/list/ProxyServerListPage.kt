@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -232,10 +233,12 @@ fun ProxyServerListPage(
         unknownGroupName = unknownGroupName,
     )
     val groupTabIds = groupState.groupTabs.map { group -> group.id }
-    val groupPagerState = rememberPagerState(
-        initialPage = groupState.selectedTabIndex,
-        pageCount = { groupTabIds.size.coerceAtLeast(1) },
-    )
+    val groupPagerState = key(groupTabIds) {
+        rememberPagerState(
+            initialPage = groupState.selectedTabIndex,
+            pageCount = { groupTabIds.size.coerceAtLeast(1) },
+        )
+    }
     val groupPagerOffsetFraction by remember(groupPagerState) {
         derivedStateOf { groupPagerState.currentPageOffsetFraction }
     }
