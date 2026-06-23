@@ -8,8 +8,8 @@ import engine.network.NetworkLimits
 
 const val RootXrayUid = 0
 const val RootXrayGid = 3005
-const val RootIptablesCommand = "iptables"
-const val RootIp6tablesCommand = "ip6tables"
+const val RootIptablesCommand = "iptables -w 100"
+const val RootIp6tablesCommand = "ip6tables -w 100"
 const val RootIpCommand = "ip"
 const val RootIp6Command = "ip -6"
 const val RootSharedProxyListenAddress = NetworkDefaults.IPV4_ANY_ADDRESS
