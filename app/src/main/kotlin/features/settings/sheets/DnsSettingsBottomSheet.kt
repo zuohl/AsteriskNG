@@ -130,11 +130,9 @@ internal fun DnsSettingsBottomSheet(
             StringListEditor(
                 editorKey = "direct-dns:$show",
                 title = stringResource(R.string.settings_direct_dns),
-                inputLabel = stringResource(R.string.settings_direct_dns_input),
                 values = directDnsEntries,
                 onValuesChange = { onDirectDnsChange(it.toTrimmedNonEmptyDistinctList()) },
                 emptyText = stringResource(R.string.settings_direct_dns_empty),
-                duplicateText = stringResource(R.string.settings_dns_hosts_duplicate),
                 validateInput = { dnsServerInputError(it, dnsServerInvalidMessage) },
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -142,11 +140,9 @@ internal fun DnsSettingsBottomSheet(
             StringListEditor(
                 editorKey = "direct-dns-domains:$show",
                 title = stringResource(R.string.settings_direct_dns_domains),
-                inputLabel = stringResource(R.string.settings_direct_dns_domains_input),
                 values = directDnsDomainEntries,
                 onValuesChange = { onDirectDnsDomainsChange(it.toTrimmedNonEmptyDistinctList()) },
                 emptyText = stringResource(R.string.settings_direct_dns_domains_empty),
-                duplicateText = stringResource(R.string.settings_dns_hosts_duplicate),
                 validateInput = { dnsDomainInputError(it, dnsDomainInvalidMessage) },
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -154,11 +150,9 @@ internal fun DnsSettingsBottomSheet(
             StringListEditor(
                 editorKey = "proxy-dns:$show",
                 title = stringResource(R.string.settings_proxy_dns),
-                inputLabel = stringResource(R.string.settings_proxy_dns_input),
                 values = proxyDnsEntries,
                 onValuesChange = { onProxyDnsChange(it.toTrimmedNonEmptyDistinctList()) },
                 emptyText = stringResource(R.string.settings_proxy_dns_empty),
-                duplicateText = stringResource(R.string.settings_dns_hosts_duplicate),
                 validateInput = { dnsServerInputError(it, dnsServerInvalidMessage) },
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -167,11 +161,9 @@ internal fun DnsSettingsBottomSheet(
                 editorKey = "dns-hosts:$show",
                 title = stringResource(R.string.settings_dns_hosts),
                 description = stringResource(R.string.settings_dns_hosts_format),
-                inputLabel = stringResource(R.string.settings_dns_hosts_input),
                 values = dnsHostEntries,
                 onValuesChange = { onDnsHostsChange(it.toTrimmedNonEmptyDistinctList()) },
                 emptyText = stringResource(R.string.settings_dns_hosts_empty),
-                duplicateText = stringResource(R.string.settings_dns_hosts_duplicate),
                 validateInput = { dnsHostInputError(it, dnsHostsInvalidMessage) },
                 modifier = Modifier.fillMaxWidth(),
             )

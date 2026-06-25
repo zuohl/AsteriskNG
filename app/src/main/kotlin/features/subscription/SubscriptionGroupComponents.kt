@@ -9,10 +9,13 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.byValue
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.foundation.text.input.then
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -24,6 +27,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -127,16 +131,13 @@ internal fun SubscriptionGroupEditorDialog(
 
         showHttpSubscriptionWarning = false
         val savedUserAgent = userAgentSelection.resolveUserAgent(customUserAgent)
-        val savedGroup = if (group != null) {
-            group.copy(
-                name = if (group.builtIn) group.name else name.trim().ifBlank { unnamedGroupName },
-                url = savedUrl,
-                userAgent = savedUserAgent,
-                updateInterval = interval.trim().takeIf { savedUrl.isNotBlank() }.orEmpty(),
-                updateViaProxy = updateViaProxy && savedUrl.isNotBlank(),
-            )
-        } else {
-            SubscriptionGroupState(
+        val savedGroup = group?.copy(
+            name = if (group.builtIn) group.name else name.trim().ifBlank { unnamedGroupName },
+            url = savedUrl,
+            userAgent = savedUserAgent,
+            updateInterval = interval.trim().takeIf { savedUrl.isNotBlank() }.orEmpty(),
+            updateViaProxy = updateViaProxy && savedUrl.isNotBlank(),
+        ) ?: SubscriptionGroupState(
                 id = nextGroupId,
                 name = name.trim().ifBlank { unnamedGroupName },
                 url = savedUrl,
@@ -145,7 +146,6 @@ internal fun SubscriptionGroupEditorDialog(
                 updateViaProxy = updateViaProxy && savedUrl.isNotBlank(),
                 enabled = true,
             )
-        }
         onSave(savedGroup, group == null)
         onDismissRequest()
     }
@@ -156,95 +156,104 @@ internal fun SubscriptionGroupEditorDialog(
         onDismissRequest = onDismissRequest,
         onDismissFinished = onDismissFinished,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
-        ) {
+        key(show, group?.id, builtIn) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                    .verticalScroll(rememberScrollState()),
             ) {
-                TextField(
-                    value = name,
-                    onValueChange = { if (!builtIn) name = it },
-                    label = stringResource(R.string.subscription_group_name),
-                    singleLine = true,
-                    modifier = Modifier.padding(bottom = 12.dp),
-                )
-                TextField(
-                    value = url,
-                    onValueChange = { url = it },
-                    label = stringResource(R.string.subscription_url),
-                    singleLine = true,
-                    modifier = Modifier.padding(bottom = 12.dp),
-                )
-                AnimatedVisibility(
-                    visible = url.isNotBlank(),
-                    enter = fadeIn() + expandVertically(),
-                    exit = shrinkVertically(),
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
                 ) {
-                    Column {
-                        WindowSpinnerPreference(
-                            title = stringResource(R.string.subscription_user_agent),
-                            summary = resolvedUserAgent,
-                            items = userAgentItems,
-                            selectedIndex = selectedUserAgentIndex,
-                            onSelectedIndexChange = { index ->
-                                val selection = SubscriptionUserAgentSelections[index]
-                                if (selection == SubscriptionUserAgentSelection.Custom) {
-                                    customUserAgentDraftState.setTextAndPlaceCursorAtEnd(
-                                        customUserAgent.ifBlank { resolvedUserAgent },
-                                    )
-                                    showCustomUserAgentDialog = true
-                                } else {
-                                    userAgentSelection = selection
-                                }
-                            },
-                        )
-                        CustomUserAgentDialog(
-                            show = showCustomUserAgentDialog,
-                            state = customUserAgentDraftState,
-                            onDismissRequest = { showCustomUserAgentDialog = false },
-                            onSave = {
-                                customUserAgent = customUserAgentDraftState.text.toString().trim()
-                                    .ifBlank { DefaultSubscriptionUserAgent }
-                                userAgentSelection = SubscriptionUserAgentSelection.Custom
-                                showCustomUserAgentDialog = false
-                            },
-                        )
-                        SwitchPreference(
-                            title = stringResource(R.string.subscription_update_via_proxy),
-                            summary = stringResource(R.string.subscription_update_via_proxy_summary),
-                            checked = updateViaProxy,
-                            onCheckedChange = { updateViaProxy = it },
-                            modifier = Modifier.padding(bottom = 12.dp),
-                        )
-                        TextField(
-                            value = interval,
-                            onValueChange = { interval = it.filter(Char::isDigit) },
-                            label = stringResource(R.string.subscription_auto_update_interval),
-                            singleLine = true,
-                        )
+                    TextField(
+                        state = rememberTextFieldState(initialText = name),
+                        inputTransformation = InputTransformation {
+                            name = asCharSequence().toString()
+                        },
+                        label = stringResource(R.string.subscription_group_name),
+                        lineLimits = TextFieldLineLimits.SingleLine,
+                        enabled = !builtIn,
+                        modifier = Modifier.padding(bottom = 12.dp),
+                    )
+                    TextField(
+                        state = rememberTextFieldState(initialText = url),
+                        inputTransformation = InputTransformation {
+                            url = asCharSequence().toString()
+                        },
+                        label = stringResource(R.string.subscription_url),
+                        lineLimits = TextFieldLineLimits.SingleLine,
+                        modifier = Modifier.padding(bottom = 12.dp),
+                    )
+                    AnimatedVisibility(
+                        visible = url.isNotBlank(),
+                        enter = fadeIn() + expandVertically(),
+                        exit = shrinkVertically(),
+                    ) {
+                        Column {
+                            WindowSpinnerPreference(
+                                title = stringResource(R.string.subscription_user_agent),
+                                summary = resolvedUserAgent,
+                                items = userAgentItems,
+                                selectedIndex = selectedUserAgentIndex,
+                                onSelectedIndexChange = { index ->
+                                    val selection = SubscriptionUserAgentSelections[index]
+                                    if (selection == SubscriptionUserAgentSelection.Custom) {
+                                        customUserAgentDraftState.setTextAndPlaceCursorAtEnd(
+                                            customUserAgent.ifBlank { resolvedUserAgent },
+                                        )
+                                        showCustomUserAgentDialog = true
+                                    } else {
+                                        userAgentSelection = selection
+                                    }
+                                },
+                            )
+                            CustomUserAgentDialog(
+                                show = showCustomUserAgentDialog,
+                                state = customUserAgentDraftState,
+                                onDismissRequest = { showCustomUserAgentDialog = false },
+                                onSave = {
+                                    customUserAgent = customUserAgentDraftState.text.toString().trim()
+                                        .ifBlank { DefaultSubscriptionUserAgent }
+                                    userAgentSelection = SubscriptionUserAgentSelection.Custom
+                                    showCustomUserAgentDialog = false
+                                },
+                            )
+                            SwitchPreference(
+                                title = stringResource(R.string.subscription_update_via_proxy),
+                                summary = stringResource(R.string.subscription_update_via_proxy_summary),
+                                checked = updateViaProxy,
+                                onCheckedChange = { updateViaProxy = it },
+                                modifier = Modifier.padding(bottom = 12.dp),
+                            )
+                            TextField(
+                                state = rememberTextFieldState(initialText = interval),
+                                inputTransformation = InputTransformation
+                                    .byValue { _, proposed -> proposed.toString().filter(Char::isDigit) }
+                                    .then { interval = asCharSequence().toString() },
+                                label = stringResource(R.string.subscription_auto_update_interval),
+                                lineLimits = TextFieldLineLimits.SingleLine,
+                            )
+                        }
                     }
                 }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                TextButton(
-                    text = stringResource(R.string.common_cancel),
-                    onClick = onDismissRequest,
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(Modifier.width(20.dp))
-                TextButton(
-                    text = stringResource(R.string.common_save),
-                    onClick = { saveGroup() },
-                    modifier = Modifier.weight(1f),
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    TextButton(
+                        text = stringResource(R.string.common_cancel),
+                        onClick = onDismissRequest,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(20.dp))
+                    TextButton(
+                        text = stringResource(R.string.common_save),
+                        onClick = { saveGroup() },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
     }

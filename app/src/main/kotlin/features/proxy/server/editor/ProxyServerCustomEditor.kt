@@ -27,8 +27,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -86,6 +89,7 @@ internal fun CustomProxyServerEditor(
     var remarks by remember(customEdit) {
         mutableStateOf(customEdit.remarks)
     }
+    val remarksState = rememberTextFieldState(initialText = customEdit.remarks)
     var overrideAsteriskInboundAndDns by remember(customEdit) {
         mutableStateOf(customEdit.overrideAsteriskInboundAndDns)
     }
@@ -96,6 +100,11 @@ internal fun CustomProxyServerEditor(
                 selection = TextRange(customEdit.configJson.length),
             ),
         )
+    }
+
+    LaunchedEffect(customEdit) {
+        remarks = customEdit.remarks
+        remarksState.setTextAndPlaceCursorAtEnd(customEdit.remarks)
     }
 
     fun formatCurrentJson() {
@@ -123,18 +132,16 @@ internal fun CustomProxyServerEditor(
         SmallTitle(text = stringResource(R.string.proxy_editor_properties))
         TextField(
             label = stringResource(R.string.proxy_editor_remarks),
-            value = remarks,
-            onValueChange = { value ->
-                remarks = value
-                customEdit.remarks = value
+            state = remarksState,
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                remarks = asCharSequence().toString()
+                customEdit.remarks = remarks
             },
-            singleLine = true,
             modifier = Modifier
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 12.dp),
-            keyboardActions = KeyboardActions(
-                onDone = { focusManager.clearFocus() },
-            ),
+            onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         SwitchPreference(

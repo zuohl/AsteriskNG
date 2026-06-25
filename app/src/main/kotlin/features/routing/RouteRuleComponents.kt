@@ -13,8 +13,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -347,7 +351,6 @@ private fun RouteRuleEditorContent(
     onNetworkChange: (String) -> Unit,
     onOutboundIndexChange: (Int) -> Unit,
 ) {
-    val duplicateMessage = stringResource(R.string.routing_list_duplicate)
     val emptyMessage = stringResource(R.string.routing_list_empty)
     val domainInvalidMessage = stringResource(R.string.routing_domain_invalid)
     val ipInvalidMessage = stringResource(R.string.routing_ip_invalid)
@@ -357,12 +360,15 @@ private fun RouteRuleEditorContent(
     val portError = if (ports.isBlank() || isPortList(ports)) null else portInvalidMessage
     val networkError = if (network.isBlank() || isRouteNetworkList(network)) null else networkInvalidMessage
 
+    key(editorKey) {
     Column {
         TextField(
-            value = remarks,
-            onValueChange = onRemarksChange,
+            state = rememberTextFieldState(initialText = remarks),
+            inputTransformation = InputTransformation {
+                onRemarksChange(asCharSequence().toString())
+            },
             label = stringResource(R.string.routing_rule_name),
-            singleLine = true,
+            lineLimits = TextFieldLineLimits.SingleLine,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 12.dp),
@@ -370,41 +376,37 @@ private fun RouteRuleEditorContent(
         StringListEditor(
             editorKey = editorKey,
             title = stringResource(R.string.routing_domain_label),
-            inputLabel = stringResource(R.string.routing_domain_input),
             values = domains,
             onValuesChange = onDomainsChange,
             emptyText = emptyMessage,
-            duplicateText = duplicateMessage,
             validateInput = { routeDomainInputError(it, domainInvalidMessage) },
             modifier = Modifier.padding(bottom = 12.dp),
         )
         StringListEditor(
             editorKey = editorKey,
             title = stringResource(R.string.routing_ip_label),
-            inputLabel = stringResource(R.string.routing_ip_input),
             values = ips,
             onValuesChange = onIpsChange,
             emptyText = emptyMessage,
-            duplicateText = duplicateMessage,
             validateInput = { routeIpInputError(it, ipInvalidMessage) },
             modifier = Modifier.padding(bottom = 12.dp),
         )
         StringListEditor(
             editorKey = editorKey,
             title = stringResource(R.string.routing_process_label),
-            inputLabel = stringResource(R.string.routing_process_input),
             values = process,
             onValuesChange = onProcessChange,
             emptyText = emptyMessage,
-            duplicateText = duplicateMessage,
             validateInput = { routeProcessInputError(it, processInvalidMessage) },
             modifier = Modifier.padding(bottom = 12.dp),
         )
         TextField(
-            value = ports,
-            onValueChange = onPortsChange,
+            state = rememberTextFieldState(initialText = ports),
+            inputTransformation = InputTransformation {
+                onPortsChange(asCharSequence().toString())
+            },
             label = stringResource(R.string.routing_port_label),
-            singleLine = true,
+            lineLimits = TextFieldLineLimits.SingleLine,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = if (portError == null) 12.dp else 4.dp),
@@ -417,19 +419,23 @@ private fun RouteRuleEditorContent(
             )
         }
         TextField(
-            value = protocol,
-            onValueChange = onProtocolChange,
+            state = rememberTextFieldState(initialText = protocol),
+            inputTransformation = InputTransformation {
+                onProtocolChange(asCharSequence().toString())
+            },
             label = stringResource(R.string.routing_protocol_label),
-            singleLine = true,
+            lineLimits = TextFieldLineLimits.SingleLine,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 12.dp),
         )
         TextField(
-            value = network,
-            onValueChange = onNetworkChange,
+            state = rememberTextFieldState(initialText = network),
+            inputTransformation = InputTransformation {
+                onNetworkChange(asCharSequence().toString())
+            },
             label = stringResource(R.string.routing_network_label),
-            singleLine = true,
+            lineLimits = TextFieldLineLimits.SingleLine,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = if (networkError == null) 12.dp else 4.dp),
@@ -447,6 +453,7 @@ private fun RouteRuleEditorContent(
             selectedIndex = selectedOutboundIndex,
             onSelectedIndexChange = onOutboundIndexChange,
         )
+    }
     }
 }
 

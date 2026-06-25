@@ -38,6 +38,7 @@
     <string name="common_add">Add</string>
     <string name="common_share">Share</string>
     <string name="common_edit">Edit</string>
+    <string name="common_edit_all">Edit all</string>
     <string name="common_delete">Delete</string>
     <string name="common_empty">Nothing here yet~~~</string>
     <string name="common_unknown_group">Unknown group</string>
@@ -46,6 +47,8 @@
     <string name="common_restore">Restore</string>
     <string name="common_unsupported">Unsupported</string>
     <string name="common_complete">Complete</string>
+    <string name="string_list_item_empty">Entry cannot be empty</string>
+    <string name="string_list_line_error">Line %1$d: %2$s</string>
 
     <!-- Navigation -->
     <string name="nav_proxy">Proxy</string>
@@ -141,7 +144,6 @@
     <string name="settings_private_addresses_selected">{count} entries</string>
     <string name="settings_private_addresses_input">CIDR range</string>
     <string name="settings_private_addresses_invalid">Invalid CIDR</string>
-    <string name="settings_private_addresses_duplicate">Already added</string>
     <string name="settings_private_addresses_empty">No CIDR ranges added</string>
     <string name="settings_ipv6_summary">Enable IPv6 support</string>
     <string name="settings_ipv6_prefer">IPv6 preferred</string>
@@ -256,7 +258,6 @@
     <string name="settings_dns_hosts_format">Format: domain:address1,address2,…</string>
     <string name="settings_dns_hosts_input">DNS hosts entry</string>
     <string name="settings_dns_hosts_empty">No DNS hosts added</string>
-    <string name="settings_dns_hosts_duplicate">Already added</string>
     <string name="settings_dns_hosts_invalid">Invalid DNS hosts entry</string>
     <string name="settings_dns_server_invalid">Invalid Xray DNS server</string>
 
@@ -526,7 +527,6 @@
     <string name="routing_process_input">Add process rule</string>
     <string name="routing_process_invalid">Invalid process rule</string>
     <string name="routing_list_empty">No entries added</string>
-    <string name="routing_list_duplicate">Already added</string>
     <string name="routing_port_label">Port</string>
     <string name="routing_port_invalid">Invalid port format</string>
     <string name="routing_protocol_label">Protocol type</string>
