@@ -58,6 +58,12 @@ An Xray client for Android, powered by [Xray-core](https://github.com/XTLS/Xray-
 
 ## Development
 
+Initialize submodules before building:
+
+```bash
+git submodule update --init --recursive
+```
+
 Open the project root in Android Studio, or build it with Gradle wrapper:
 
 ```powershell
@@ -74,6 +80,8 @@ The build:
 
 - uses the Android SDK and NDK
 - downloads or prepares the bundled Xray-core asset
+- checks out `hev-socks5-tunnel` to `ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION` before building it
+- builds the native `hev-socks5-tunnel` JNI library and CLI runtime from the vendored submodule
 - builds the native `setuidgid` and `ipv6disabler` helpers
 - packages native runtime components for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`
 

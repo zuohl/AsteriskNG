@@ -6,6 +6,11 @@ package engine.tun2socks
 import android.content.Context
 import app.AppState
 import app.effectiveFakeDnsEnabled
+import engine.hevtun.HevSocks5TunnelConfig
+import engine.hevtun.HevSocks5TunnelConfigFileName
+import engine.hevtun.HevSocks5TunnelLogFileName
+import engine.hevtun.HevSocks5TunnelPidFileName
+import engine.hevtun.hevSocks5TunnelLogFile
 import engine.proxy.LocalProxyOptions
 import engine.proxy.buildLocalSocksInbound
 import engine.proxy.toLocalProxyOptions
@@ -39,17 +44,6 @@ internal data class Tun2SocksStartConfig(
     val iptablesConfig: RootIptablesConfig,
     override val rootEbpfConfig: RootEbpfRuntimeConfig?,
 ) : RootModeStartConfig
-
-internal data class HevSocks5TunnelConfig(
-    val executablePath: String,
-    val configPath: String,
-    val pidPath: String,
-    val logPath: String,
-    val socksPort: Int,
-    val mtu: Int,
-    val ipv4Address: String,
-    val ipv6Address: String?,
-)
 
 internal val Tun2SocksBaseIptablesConfig = RootIptablesConfig(
     mark = Tun2SocksFwmark,
@@ -152,10 +146,14 @@ private fun buildHevSocks5TunnelConfig(
         executablePath = runtimeLayout.hevSocks5TunnelPath,
         configPath = File(dataDir, HevSocks5TunnelConfigFileName).absolutePath,
         pidPath = File(dataDir, HevSocks5TunnelPidFileName).absolutePath,
-        logPath = coreLogPaths.hevSocks5TunnelLogFile().absolutePath,
+        logPath = coreLogPaths.hevSocks5TunnelLogFile(HevSocks5TunnelLogFileName).absolutePath,
+        socksAddress = Tun2SocksListenAddress,
         socksPort = socks5ProxyPort,
         mtu = tunOptions.mtu,
         ipv4Address = tunOptions.ipv4Address.address,
         ipv6Address = tunOptions.ipv6Address.address.takeIf { enableIpv6 },
+        tunnelName = "asterisk0",
+        enableMultiQueue = true,
+        enableTcpFastOpen = true,
     )
 }

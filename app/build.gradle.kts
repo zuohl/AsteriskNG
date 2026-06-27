@@ -12,7 +12,6 @@ plugins {
 
 val generatedSrcDir: Provider<Directory> = layout.buildDirectory.dir("generated/projectInfo")
 val generatedXrayCoreJniLibsDir: Provider<Directory> = layout.buildDirectory.dir("generated/xrayCoreJniLibs")
-val generatedHevSocks5TunnelJniLibsDir: Provider<Directory> = layout.buildDirectory.dir("generated/hevSocks5TunnelJniLibs")
 
 android {
     namespace = "app"
@@ -111,9 +110,10 @@ dependencies {
     implementation(libs.coil.compose)
     //noinspection UseTomlInstead
     implementation("com.github.2dust:libv2ray:${ProjectConfig.ANDROID_LIB_XRAY_LITE_VERSION}@aar")
-    implementation(project(":setuidgid"))
-    implementation(project(":ipv6disabler"))
-    implementation(project(":bpfmatcher"))
+    implementation(dependencies.project(":setuidgid"))
+    implementation(dependencies.project(":ipv6disabler"))
+    implementation(dependencies.project(":bpfmatcher"))
+    implementation(dependencies.project(":hevtun"))
     implementation(libs.ktor.http)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.libsu.core)
@@ -157,7 +157,6 @@ androidComponents {
             task.outputDirectory
         }
         variant.sources.jniLibs?.addStaticSourceDirectory("build/generated/xrayCoreJniLibs")
-        variant.sources.jniLibs?.addStaticSourceDirectory("build/generated/hevSocks5TunnelJniLibs")
     }
 }
 

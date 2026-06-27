@@ -58,6 +58,12 @@
 
 ## 开发
 
+构建前初始化 submodule：
+
+```bash
+git submodule update --init --recursive
+```
+
 使用 Android Studio 打开项目根目录，或通过 Gradle wrapper 构建：
 
 ```powershell
@@ -74,6 +80,8 @@ macOS 或 Linux：
 
 - 使用 Android SDK 和 NDK
 - 下载或准备内置 Xray-core 资源
+- 构建前将 `hev-socks5-tunnel` checkout 到 `ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION`
+- 从 vendored submodule 构建 native `hev-socks5-tunnel` JNI library 和 CLI runtime
 - 构建 native `setuidgid` 和 `ipv6disabler` helper
 - 为 `arm64-v8a`、`armeabi-v7a`、`x86` 和 `x86_64` 打包 native 运行时组件
 

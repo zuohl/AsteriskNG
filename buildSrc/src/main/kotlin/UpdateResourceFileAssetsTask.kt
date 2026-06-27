@@ -3,11 +3,9 @@
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
-import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import java.io.File
@@ -18,9 +16,6 @@ import java.util.zip.ZipInputStream
 abstract class UpdateResourceFileAssetsTask : DefaultTask() {
     @get:Input
     abstract val xrayCoreVersion: Property<String>
-
-    @get:Input
-    abstract val hevSocks5TunnelVersion: Property<String>
 
     @get:Input
     abstract val directCidrIpv4Url: Property<String>
@@ -36,9 +31,6 @@ abstract class UpdateResourceFileAssetsTask : DefaultTask() {
 
     @get:OutputFile
     abstract val directCidrIpv6File: RegularFileProperty
-
-    @get:OutputDirectory
-    abstract val hevSocks5TunnelJniLibsDir: DirectoryProperty
 
     init {
         group = "resources"
@@ -60,22 +52,11 @@ abstract class UpdateResourceFileAssetsTask : DefaultTask() {
             url = directCidrIpv6Url.get(),
             target = directCidrIpv6File.get().asFile,
         )
-        AndroidHevSocks5TunnelAssets.forEach { asset ->
-            downloadFile(
-                url = hevSocks5TunnelArchiveUrl(asset.releaseName),
-                target = File(hevSocks5TunnelJniLibsDir.get().asFile, "${asset.androidAbi}/libhev-socks5-tunnel.so"),
-            )
-        }
     }
 
     private fun xrayCoreArchiveUrl(): String {
         val version = xrayCoreVersion.get()
         return "https://github.com/XTLS/Xray-core/releases/download/$version/Xray-android-arm64-v8a.zip"
-    }
-
-    private fun hevSocks5TunnelArchiveUrl(releaseName: String): String {
-        val version = hevSocks5TunnelVersion.get()
-        return "https://github.com/heiher/hev-socks5-tunnel/releases/download/$version/$releaseName"
     }
 
     private fun downloadZipEntry(url: String, entryName: String, target: File) {
@@ -160,15 +141,3 @@ abstract class UpdateResourceFileAssetsTask : DefaultTask() {
         logger.lifecycle("Updated ${target.absolutePath} (${target.length()} bytes)")
     }
 }
-
-private data class HevSocks5TunnelAsset(
-    val androidAbi: String,
-    val releaseName: String,
-)
-
-private val AndroidHevSocks5TunnelAssets = listOf(
-    HevSocks5TunnelAsset("arm64-v8a", "hev-socks5-tunnel-linux-arm64"),
-    HevSocks5TunnelAsset("armeabi-v7a", "hev-socks5-tunnel-linux-arm32v7"),
-    HevSocks5TunnelAsset("x86", "hev-socks5-tunnel-linux-i686"),
-    HevSocks5TunnelAsset("x86_64", "hev-socks5-tunnel-linux-x86_64"),
-)

@@ -114,6 +114,8 @@
     <string name="settings_local_proxy_summary_all_interfaces">0.0.0.0:{port}</string>
     <string name="settings_vpn_append_http_proxy">Append HTTP proxy</string>
     <string name="settings_vpn_append_http_proxy_summary">Supported apps use HTTP proxy directly</string>
+    <string name="settings_vpn_hev_tun">Use Hev TUN</string>
+    <string name="settings_vpn_hev_tun_summary">Use hev-socks5-tunnel to create the TUN device</string>
     <string name="settings_tun">TUN settings</string>
     <string name="settings_tun_summary">MTU {mtu}, VPN DNS {vpnDns}, IPv4 {ipv4}, IPv6 {ipv6}</string>
     <string name="settings_tun_summary_without_dns">MTU {mtu}, IPv4 {ipv4}, IPv6 {ipv6}</string>

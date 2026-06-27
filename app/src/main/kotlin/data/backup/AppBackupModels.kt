@@ -46,6 +46,7 @@ internal data class AppBackupSettings(
     val localProxyUsername: String = BackupDefaults.localProxyUsername,
     val localProxyPassword: String = BackupDefaults.localProxyPassword,
     val enableVpnAppendHttpProxy: Boolean = BackupDefaults.enableVpnAppendHttpProxy,
+    val enableVpnHevTun: Boolean = BackupDefaults.enableVpnHevTun,
     val tunMtu: String = BackupDefaults.tunMtu,
     val tunVpnDns: String = BackupDefaults.tunVpnDns,
     val tunIpv4Cidr: String = BackupDefaults.tunIpv4Cidr,

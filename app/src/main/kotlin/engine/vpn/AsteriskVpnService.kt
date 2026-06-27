@@ -11,6 +11,8 @@ import android.content.pm.PackageManager
 import android.net.ProxyInfo
 import android.net.VpnService
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelFileDescriptor
 import app.R
 import app.modes.ProxyAppListModeBlacklist
@@ -19,25 +21,45 @@ import app.modes.ProxyAppListModeWhitelist
 import engine.network.NetworkDefaults
 import engine.proxy.LocalProxyLoopbackAddress
 import engine.proxy.LocalProxyRuntime
+import engine.vpn.hevtun.HevTunRuntime
 import engine.xray.clearCoreLogs
 import engine.xray.startCoreLogTailers
 import features.logs.AndroidAppLogger
 import features.logs.CoreLogFileTailer
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import system.getInstalledApplicationsCompat
 import utils.toTrimmedNonEmptyDistinctList
+import kotlin.time.Duration.Companion.milliseconds
 
 @SuppressLint("VpnServicePolicy")
 class AsteriskVpnService : VpnService() {
     private var tunFileDescriptor: ParcelFileDescriptor? = null
     private var logFileTailers: List<CoreLogFileTailer> = emptyList()
+    private var hevTunRuntime: HevTunRuntime? = null
+    private val serviceJob = SupervisorJob()
+    private val serviceScope = CoroutineScope(serviceJob + Dispatchers.IO)
+    private val operationMutex = Mutex()
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             AsteriskVpnServiceIntents.ACTION_STOP -> {
-                stopVpn()
-                stopSelf(startId)
+                serviceScope.launch {
+                    try {
+                        operationMutex.withLock {
+                            stopVpn()
+                        }
+                    } finally {
+                        stopSelfOnMain(startId)
+                    }
+                }
             }
 
             AsteriskVpnServiceIntents.ACTION_START -> {
@@ -47,15 +69,19 @@ class AsteriskVpnService : VpnService() {
                     stopSelf(startId)
                     return Service.START_NOT_STICKY
                 }
-                runCatching {
-                    startVpn(config)
-                }.onSuccess {
-                    completeStart(Result.success(Unit))
-                }.onFailure { error ->
-                    AndroidAppLogger.error(LogTag, "Failed to start VPN Service", error)
-                    stopVpn()
-                    completeStart(Result.failure(error))
-                    stopSelf(startId)
+                serviceScope.launch {
+                    operationMutex.withLock {
+                        runCatching {
+                            startVpn(config)
+                        }.onSuccess {
+                            completeStart(Result.success(Unit))
+                        }.onFailure { error ->
+                            AndroidAppLogger.error(LogTag, "Failed to start VPN Service", error)
+                            stopVpn()
+                            completeStart(Result.failure(error))
+                            stopSelfOnMain(startId)
+                        }
+                    }
                 }
             }
         }
@@ -63,8 +89,25 @@ class AsteriskVpnService : VpnService() {
     }
 
     override fun onDestroy() {
-        stopVpn()
+        serviceScope.launch {
+            runCatching {
+                operationMutex.withLock {
+                    stopVpn()
+                }
+            }.onFailure { error ->
+                AndroidAppLogger.warn(LogTag, "Failed to stop VPN Service while destroying service", error)
+            }
+            serviceJob.cancel()
+        }
         super.onDestroy()
+    }
+
+    private fun stopSelfOnMain(startId: Int) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            stopSelf(startId)
+        } else {
+            mainHandler.post { stopSelf(startId) }
+        }
     }
 
     private fun startVpn(config: VpnServiceStartConfig) {
@@ -72,11 +115,17 @@ class AsteriskVpnService : VpnService() {
         config.coreLogPaths.clearCoreLogs(LogTag)
         logFileTailers = config.coreLogPaths.startCoreLogTailers(config.enableAccessLog)
         tunFileDescriptor = establishTun(config)
+        val tunFd = tunFileDescriptor?.fd ?: error(getString(R.string.error_vpn_tun_fd_unavailable))
         AndroidLibXrayLiteRuntime.start(
             context = this,
             config = config,
-            tunFd = tunFileDescriptor?.fd ?: error(getString(R.string.error_vpn_tun_fd_unavailable)),
+            tunFd = config.xrayTunFd(tunFd),
         )
+        config.hevSocks5TunnelConfig?.let { hevConfig ->
+            val runtime = hevTunRuntime ?: HevTunRuntime().also { hevTunRuntime = it }
+            runtime.start(hevConfig, tunFd)
+            AndroidAppLogger.info(LogTag, "Started Hev TUN with VPN file descriptor")
+        }
         LocalProxyRuntime.update(config.localProxyOptions)
         running = true
     }
@@ -196,6 +245,11 @@ class AsteriskVpnService : VpnService() {
         logFileTailers.forEach { tailer -> tailer.stop() }
         logFileTailers = emptyList()
         runCatching {
+            hevTunRuntime?.stop()
+        }.onFailure { error ->
+            AndroidAppLogger.warn(LogTag, "Failed to stop Hev TUN while stopping VPN Service", error)
+        }
+        runCatching {
             AndroidLibXrayLiteRuntime.stop()
         }.onFailure { error ->
             AndroidAppLogger.warn(LogTag, "Failed to stop AndroidLibXrayLite while stopping VPN Service", error)
@@ -224,7 +278,7 @@ class AsteriskVpnService : VpnService() {
             pendingStart = result
             try {
                 context.startService(AsteriskVpnServiceIntents.startIntent(context, config))
-                withTimeout(10_000) {
+                withTimeout(10_000.milliseconds) {
                     result.await()
                 }.getOrThrow()
             } finally {
