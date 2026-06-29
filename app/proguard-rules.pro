@@ -5,3 +5,7 @@
 # Keep these bindings exact while allowing the rest of the app to shrink aggressively.
 -keep class go.** { *; }
 -keep class libv2ray.** { *; }
+
+# Protobuf lite generated classes for Xray stats API.
+# protobuf-javalite relies on generated message fields at runtime.
+-keep class com.xray.app.stats.command.** { *; }
