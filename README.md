@@ -1,4 +1,4 @@
-English | [简体中文](README_zh_CN.md)
+[Русский](README_ru.md) | English | [简体中文](README_zh_CN.md)
 
 # AsteriskNG
 
