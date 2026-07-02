@@ -13,6 +13,7 @@ import app.ResourceFileKind
 import app.ResourceFileStatus
 import app.ResourceFilesStatus
 import app.sanitizeCustomResourceFileName
+import features.resources.ResourceFileSourceLoyalsoldierGithub
 import java.io.File
 import java.io.FileNotFoundException
 import java.util.zip.ZipInputStream
@@ -59,11 +60,30 @@ internal class AndroidResourceFileStore(
         )
     }
 
-    fun ensureBundledFiles() {
+    fun synchronizeBundledFilesAfterPackageUpdate(resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub) {
+        ensureBundledFiles(
+            resourceFileSource = resourceFileSource,
+            restoreAfterPackageUpdate = true,
+        )
+    }
+
+    fun ensureBundledFiles(
+        resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub,
+        restoreAfterPackageUpdate: Boolean = false,
+    ) {
         val bundledUpdatedAtMillis = appContext.packageUpdatedAtMillis()
         ResourceFileKind.entries.forEach { kind ->
             val target = file(kind)
-            if (!target.needsBundledRestore(bundledUpdatedAtMillis)) return@forEach
+            if (
+                !target.shouldRestoreBundled(
+                    kind = kind,
+                    resourceFileSource = resourceFileSource,
+                    bundledUpdatedAtMillis = bundledUpdatedAtMillis,
+                    restoreAfterPackageUpdate = restoreAfterPackageUpdate,
+                )
+            ) {
+                return@forEach
+            }
             if (!kind.hasBundledAsset()) return@forEach
             if (kind == ResourceFileKind.XrayCore && bundledXrayCoreFileOrNull() == null) return@forEach
             runCatching { restoreBundled(kind) }
@@ -164,9 +184,11 @@ internal class AndroidResourceFileStore(
         }
     }
 
-    fun preparePaths(): XrayResourceFilePaths {
+    fun preparePaths(restoreBundledFiles: Boolean = true): XrayResourceFilePaths {
         dataDir.mkdirs()
-        ensureBundledFiles()
+        if (restoreBundledFiles) {
+            ensureBundledFiles()
+        }
         return XrayResourceFilePaths(
             dataDir = dataDir.absolutePath,
             setuidgidPath = File(appContext.applicationInfo.nativeLibraryDir, SetuidgidLibraryName).absolutePath,
@@ -181,9 +203,38 @@ internal class AndroidResourceFileStore(
     }
 }
 
-private fun File.needsBundledRestore(bundledUpdatedAtMillis: Long): Boolean {
-    if (!exists() || length() <= 0) return true
-    return bundledUpdatedAtMillis > 0 && lastModified() < bundledUpdatedAtMillis
+private fun File.shouldRestoreBundled(
+    kind: ResourceFileKind,
+    resourceFileSource: Int,
+    bundledUpdatedAtMillis: Long,
+    restoreAfterPackageUpdate: Boolean,
+): Boolean {
+    return shouldRestoreBundledResourceFile(
+        kind = kind,
+        resourceFileSource = resourceFileSource,
+        targetExists = exists(),
+        targetLength = takeIf { exists() }?.length() ?: 0L,
+        targetLastModifiedMillis = takeIf { exists() }?.lastModified() ?: 0L,
+        bundledUpdatedAtMillis = bundledUpdatedAtMillis,
+        restoreAfterPackageUpdate = restoreAfterPackageUpdate,
+    )
+}
+
+internal fun shouldRestoreBundledResourceFile(
+    kind: ResourceFileKind,
+    resourceFileSource: Int,
+    targetExists: Boolean,
+    targetLength: Long,
+    targetLastModifiedMillis: Long,
+    bundledUpdatedAtMillis: Long,
+    restoreAfterPackageUpdate: Boolean,
+): Boolean {
+    if (!targetExists || targetLength <= 0) return true
+    if (!restoreAfterPackageUpdate) return false
+    if (kind != ResourceFileKind.XrayCore && resourceFileSource != ResourceFileSourceLoyalsoldierGithub) {
+        return false
+    }
+    return bundledUpdatedAtMillis > 0 && targetLastModifiedMillis < bundledUpdatedAtMillis
 }
 
 internal data class XrayResourceFilePaths(
@@ -202,8 +253,10 @@ internal fun Context.xrayResourceFilesDir(): File {
     return File(filesDir, "xray")
 }
 
-internal fun Context.prepareXrayResourceFilePaths(): XrayResourceFilePaths {
-    return AndroidResourceFileStore(this).preparePaths()
+internal fun Context.prepareXrayResourceFilePaths(
+    restoreBundledFiles: Boolean = true,
+): XrayResourceFilePaths {
+    return AndroidResourceFileStore(this).preparePaths(restoreBundledFiles = restoreBundledFiles)
 }
 
 private fun ResourceFileKind.hasBundledAsset(): Boolean {

@@ -21,6 +21,10 @@ class ResourceFileUseCase(
         return repository.status(customResourceFiles)
     }
 
+    suspend fun synchronizeBundledFilesAfterPackageUpdate(resourceFileSource: Int) {
+        repository.synchronizeBundledFilesAfterPackageUpdate(resourceFileSource)
+    }
+
     suspend fun update(
         source: ResourceFileUpdateSource,
         options: ResourceFileUpdateOptions = ResourceFileUpdateOptions(),

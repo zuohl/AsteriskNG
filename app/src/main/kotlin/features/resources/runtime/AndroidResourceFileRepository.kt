@@ -29,6 +29,12 @@ internal class AndroidResourceFileRepository(
             store.status(customResourceFiles)
         }
 
+    suspend fun synchronizeBundledFilesAfterPackageUpdate(resourceFileSource: Int) {
+        withContext(Dispatchers.IO) {
+            store.synchronizeBundledFilesAfterPackageUpdate(resourceFileSource)
+        }
+    }
+
     suspend fun deleteCustom(
         customFile: CustomResourceFileState,
         customResourceFiles: List<CustomResourceFileState>,
