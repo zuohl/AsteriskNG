@@ -1,6 +1,19 @@
 {
     "libraries": [
         {
+            "uniqueId": "javax.annotation:javax.annotation-api",
+            "artifactVersion": "1.3.2",
+            "name": "${extension.name} API",
+            "description": "Common Annotations for the JavaTM Platform API",
+            "website": "http://jcp.org/en/jsr/detail?id=250",
+            "scm": {
+                "url": "https://github.com/javaee/javax.annotation"
+            },
+            "licenses": [
+                "CDDL + GPLv2 with classpath exception"
+            ]
+        },
+        {
             "uniqueId": "androidx.activity:activity-compose",
             "artifactVersion": "1.13.0",
             "name": "Activity Compose",
@@ -28,10 +41,10 @@
         },
         {
             "uniqueId": "androidx.navigation3:navigation3-runtime",
-            "artifactVersion": "1.1.3",
+            "artifactVersion": "1.1.4",
             "name": "Androidx Navigation 3 Runtime",
             "description": "Provides the building blocks for a Compose first Navigation solution that easily supports extensions.",
-            "website": "https://developer.android.com/jetpack/androidx/releases/navigation3#1.1.3",
+            "website": "https://developer.android.com/jetpack/androidx/releases/navigation3#1.1.4",
             "scm": {
                 "url": "https://cs.android.com/androidx/platform/frameworks/support"
             },
@@ -102,6 +115,45 @@
             },
             "licenses": [
                 "MIT"
+            ]
+        },
+        {
+            "uniqueId": "io.grpc:grpc-okhttp",
+            "artifactVersion": "1.82.1",
+            "name": "io.grpc:grpc-okhttp",
+            "description": "gRPC: OkHttp",
+            "website": "https://github.com/grpc/grpc-java",
+            "scm": {
+                "url": "https://github.com/grpc/grpc-java"
+            },
+            "licenses": [
+                "Apache-2.0"
+            ]
+        },
+        {
+            "uniqueId": "io.grpc:grpc-protobuf-lite",
+            "artifactVersion": "1.82.1",
+            "name": "io.grpc:grpc-protobuf-lite",
+            "description": "gRPC: Protobuf Lite",
+            "website": "https://github.com/grpc/grpc-java",
+            "scm": {
+                "url": "https://github.com/grpc/grpc-java"
+            },
+            "licenses": [
+                "Apache-2.0"
+            ]
+        },
+        {
+            "uniqueId": "io.grpc:grpc-stub",
+            "artifactVersion": "1.82.1",
+            "name": "io.grpc:grpc-stub",
+            "description": "gRPC: Stub",
+            "website": "https://github.com/grpc/grpc-java",
+            "scm": {
+                "url": "https://github.com/grpc/grpc-java"
+            },
+            "licenses": [
+                "Apache-2.0"
             ]
         },
         {
@@ -219,6 +271,19 @@
             },
             "licenses": [
                 "Apache-2.0"
+            ]
+        },
+        {
+            "uniqueId": "com.google.protobuf:protobuf-javalite",
+            "artifactVersion": "4.35.1",
+            "name": "Protocol Buffers [Lite]",
+            "description": "Lite version of Protocol Buffers library. This version is targeted for mobile client use\n    rather than server side use. It is optimized for code size, but does not guarantee API/ABI\n    stability.",
+            "website": "https://mvnrepository.com/artifact/com.google.protobuf/protobuf-javalite",
+            "scm": {
+                "url": "https://mvnrepository.com/artifact/com.google.protobuf/protobuf-javalite"
+            },
+            "licenses": [
+                "Unknown"
             ]
         },
         {
