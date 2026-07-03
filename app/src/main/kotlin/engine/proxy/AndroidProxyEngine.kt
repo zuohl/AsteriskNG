@@ -19,8 +19,8 @@ import engine.stats.XrayStatsApiListenAddress
 import engine.stats.resolveXrayStatsApiPort
 import engine.stats.xrayStatsApiExcludedPorts
 import engine.proxy.mode.AndroidModeProxyEngine
-import engine.root.bpf2socks.Bpf2SocksRootRunner
-import engine.root.bpf2socks.buildBpf2SocksStartConfig
+import engine.bpf2socks.Bpf2SocksRootRunner
+import engine.bpf2socks.buildBpf2SocksStartConfig
 import engine.root.RootModeEngine
 import engine.tproxy.TproxyRootRunner
 import engine.tproxy.buildTproxyStartConfig

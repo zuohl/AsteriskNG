@@ -10,8 +10,8 @@ import app.modes.RunModeTproxy
 import app.modes.RunModeTun2Socks
 import app.modes.isRootRunMode
 import engine.proxy.ProxyEngineStartRequest
-import engine.root.bpf2socks.Bpf2SocksRootRunner
-import engine.root.bpf2socks.buildBpf2SocksStartConfig
+import engine.bpf2socks.Bpf2SocksRootRunner
+import engine.bpf2socks.buildBpf2SocksStartConfig
 import engine.root.prepareRootConfigBuildContext
 import engine.root.prepareRootRuntimeLayout
 import engine.root.removeRootBootScript

@@ -10,7 +10,7 @@ import app.modes.RunModeBpf2Socks
 import app.modes.RunModeTun2Socks
 import app.modes.RunModeTproxy
 import engine.proxy.ProxyEngineStartRequest
-import engine.root.bpf2socks.buildBpf2SocksStartConfig
+import engine.bpf2socks.buildBpf2SocksStartConfig
 import engine.root.prepareRootConfigBuildContext
 import engine.tproxy.buildTproxyStartConfig
 import engine.tun2socks.buildTun2SocksStartConfig
