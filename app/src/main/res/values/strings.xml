@@ -100,8 +100,8 @@
     <string name="settings_root_ebpf_bypass_direct_cidrs_summary">Uses China address lists by default; adjust them in Resource Management</string>
     <string name="settings_root_ebpf_matcher_failed">Failed to probe eBPF matcher support</string>
     <string name="settings_root_ebpf_matcher_unsupported">This device does not support eBPF matcher</string>
-    <string name="settings_broadcast_control" tools:ignore="MissingTranslation">Broadcast control</string>
-    <string name="settings_broadcast_control_summary" tools:ignore="MissingTranslation">Allow external broadcasts to start and stop the proxy service</string>
+    <string name="settings_broadcast_control">Broadcast control</string>
+    <string name="settings_broadcast_control_summary">Allow external broadcasts to start and stop the proxy service</string>
     <string name="settings_root_ebpf_selinux_policy_warning_title">Enable eBPF matcher?</string>
     <string name="settings_root_ebpf_selinux_policy_warning_summary">No SELinux policy tool was detected. AsteriskNG may be unable to add the netd eBPF permission rule when the proxy starts. You can still enable eBPF matching, but hotspot or tethering sharing may not work until your root framework provides magiskpolicy/supolicy or the rule is added manually.</string>
     <string name="settings_root_ebpf_selinux_policy_warning_confirm">Enable anyway</string>
