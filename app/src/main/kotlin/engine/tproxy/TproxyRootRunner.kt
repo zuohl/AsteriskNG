@@ -21,12 +21,16 @@ internal class TproxyRootRunner(
     runtimeConfigTag = XrayTags.TPROXY_INBOUND,
     logTag = LogTag,
 ) {
-    override fun buildSetupRulesCommand(config: TproxyStartConfig): String {
+    override fun buildSetupRulesCommand(
+        config: TproxyStartConfig,
+        cleanupExistingRules: Boolean,
+    ): String {
         return config.iptablesConfig.buildSetupRulesCommand(
             port = config.tproxyPort,
             enableIpv6 = config.root.enableIpv6,
             enableLocalDns = config.root.enableLocalDns,
             enableFakeDns = config.root.enableFakeDns,
+            cleanupExistingRules = cleanupExistingRules,
         )
     }
 

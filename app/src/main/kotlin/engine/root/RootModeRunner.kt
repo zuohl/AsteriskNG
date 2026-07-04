@@ -55,7 +55,10 @@ internal abstract class RootModeRunner<Config : RootModeStartConfig>(
             failStartup(config, "$modeName helper runtime exited or did not match the expected runtime state")
         }
 
-        runRootCommand(buildSetupRulesCommand(config), "Failed to install $modeName rules")
+        runRootCommand(
+            buildSetupRulesCommand(config, cleanupExistingRules = false),
+            "Failed to install $modeName rules",
+        )
     }
 
     suspend fun stop(runtimeLayout: RootRuntimeLayout) = withContext(Dispatchers.IO) {
@@ -72,7 +75,9 @@ internal abstract class RootModeRunner<Config : RootModeStartConfig>(
         prepareModeRuntimeFiles(config)
         val command = config.buildInstallRootBootScriptCommand(
             modeName = modeName,
-            buildSetupRulesCommand = ::buildSetupRulesCommand,
+            buildSetupRulesCommand = { targetConfig ->
+                buildSetupRulesCommand(targetConfig, cleanupExistingRules = true)
+            },
             buildPostCoreStartCommand = ::buildPostCoreStartCommand,
             buildReadinessCheck = ::buildReadinessCheck,
             bootReadinessCheckAttempts = BootReadinessCheckAttempts,
@@ -117,7 +122,10 @@ internal abstract class RootModeRunner<Config : RootModeStartConfig>(
         rootAccess.exec(command, ShellExecOptions(logFailure = false)).errno == 0
     }
 
-    protected abstract fun buildSetupRulesCommand(config: Config): String
+    protected abstract fun buildSetupRulesCommand(
+        config: Config,
+        cleanupExistingRules: Boolean,
+    ): String
 
     protected abstract fun buildCleanupRulesCommand(): String
 

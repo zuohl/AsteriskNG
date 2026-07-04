@@ -26,9 +26,12 @@ internal fun RootIptablesConfig.buildSetupRulesCommand(
     enableIpv6: Boolean,
     enableLocalDns: Boolean,
     enableFakeDns: Boolean,
+    cleanupExistingRules: Boolean = true,
 ): String {
     return buildString {
-        append(buildCleanupRulesCommand())
+        if (cleanupExistingRules) {
+            append(buildCleanupRulesCommand())
+        }
         appendIptablesVariantSetupRules(
             config = this@buildSetupRulesCommand,
             variant = ipv4IptablesVariant(),
@@ -39,10 +42,10 @@ internal fun RootIptablesConfig.buildSetupRulesCommand(
             appendIpv6VariantSetupRules(this@buildSetupRulesCommand, port, enableLocalDns)
         }
         if (enableLocalDns) {
-            appendRootIpv6DnsRejectRules()
+            appendRootIpv6DnsRejectRules(cleanupExistingRules)
         }
         if (enableFakeDns) {
-            appendRootFakeDnsIcmpReplyRules()
+            appendRootFakeDnsIcmpReplyRules(cleanupExistingRules)
         }
     }
 }

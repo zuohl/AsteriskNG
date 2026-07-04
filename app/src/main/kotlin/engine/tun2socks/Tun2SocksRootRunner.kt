@@ -23,11 +23,15 @@ internal class Tun2SocksRootRunner(
     runtimeConfigTag = XrayTags.TUN2SOCKS_INBOUND,
     logTag = LogTag,
 ) {
-    override fun buildSetupRulesCommand(config: Tun2SocksStartConfig): String {
+    override fun buildSetupRulesCommand(
+        config: Tun2SocksStartConfig,
+        cleanupExistingRules: Boolean,
+    ): String {
         return config.iptablesConfig.buildSetupRulesCommand(
             enableIpv6 = config.root.enableIpv6,
             enableLocalDns = config.root.enableLocalDns,
             enableFakeDns = config.root.enableFakeDns,
+            cleanupExistingRules = cleanupExistingRules,
         )
     }
 

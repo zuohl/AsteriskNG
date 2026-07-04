@@ -106,8 +106,10 @@ private fun String.rootEbpfProgramPath(ipv4Path: String, ipv6Path: String): Stri
     return if (this == RootIp6tablesCommand) ipv6Path else ipv4Path
 }
 
-internal fun StringBuilder.appendRootIpv6DnsRejectRules() {
-    appendRootIpv6DnsRejectCleanupRules()
+internal fun StringBuilder.appendRootIpv6DnsRejectRules(cleanupExistingRules: Boolean = true) {
+    if (cleanupExistingRules) {
+        appendRootIpv6DnsRejectCleanupRules()
+    }
     appendScript(
         """
         $RootIp6tablesCommand -t mangle -I PREROUTING 1 -p udp --dport 53 -j DROP
@@ -145,8 +147,10 @@ internal fun StringBuilder.appendRootIpv6DnsRejectCleanupRules() {
     )
 }
 
-internal fun StringBuilder.appendRootFakeDnsIcmpReplyRules() {
-    appendRootFakeDnsIcmpReplyCleanupRules()
+internal fun StringBuilder.appendRootFakeDnsIcmpReplyRules(cleanupExistingRules: Boolean = true) {
+    if (cleanupExistingRules) {
+        appendRootFakeDnsIcmpReplyCleanupRules()
+    }
     val pool = XrayFakeDnsIpv4Pool.shellQuote()
     appendScript(
         """
