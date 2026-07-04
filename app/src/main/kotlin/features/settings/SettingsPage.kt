@@ -262,10 +262,14 @@ private fun SettingsContent(
             }
             item(key = "settings_run_mode") {
                 SettingsAdvancedSection(
+                    enableBroadcastControl = appState.enableBroadcastControl,
                     enableIpv6 = appState.enableIpv6,
                     enableIpv6Prefer = appState.enableIpv6Prefer,
                     runModeOptions = runModeOptions,
                     runMode = appState.runMode,
+                    onEnableBroadcastControlChange = { enabled ->
+                        updateAppState { state -> state.copy(enableBroadcastControl = enabled) }
+                    },
                     onEnableIpv6Change = { enabled ->
                         updateAppState { state -> state.copy(enableIpv6 = enabled) }
                     },

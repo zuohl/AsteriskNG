@@ -135,6 +135,10 @@ internal class AppSettingsPreferences(
                 KeyEnableTrafficStatsNotification,
                 defaults.enableTrafficStatsNotification,
             ),
+            enableBroadcastControl = preferences.getBoolean(
+                KeyEnableBroadcastControl,
+                defaults.enableBroadcastControl,
+            ),
             enableIpv6 = preferences.getBoolean(KeyEnableIpv6, defaults.enableIpv6),
             enableIpv6Prefer = preferences.getBoolean(KeyEnableIpv6Prefer, defaults.enableIpv6Prefer),
             enableFakeDns = preferences.getBoolean(KeyEnableFakeDns, defaults.enableFakeDns),
@@ -235,6 +239,7 @@ internal class AppSettingsPreferences(
             .putString(KeyFragmentLength, state.fragmentLength)
             .putString(KeyFragmentInterval, state.fragmentInterval)
             .putBoolean(KeyEnableTrafficStatsNotification, state.enableTrafficStatsNotification)
+            .putBoolean(KeyEnableBroadcastControl, state.enableBroadcastControl)
             .putBoolean(KeyEnableIpv6, state.enableIpv6)
             .putBoolean(KeyEnableIpv6Prefer, state.enableIpv6Prefer)
             .putBoolean(KeyEnableFakeDns, state.enableFakeDns)
@@ -332,6 +337,7 @@ private const val KeyFragmentPackets = "fragment_packets"
 private const val KeyFragmentLength = "fragment_length"
 private const val KeyFragmentInterval = "fragment_interval"
 private const val KeyEnableTrafficStatsNotification = "enable_traffic_stats_notification"
+private const val KeyEnableBroadcastControl = "enable_broadcast_control"
 private const val KeyEnableIpv6 = "enable_ipv6"
 private const val KeyEnableIpv6Prefer = "enable_ipv6_prefer"
 private const val KeyEnableFakeDns = "enable_fake_dns"

@@ -161,16 +161,24 @@ internal fun SettingsCoreSection(
 
 @Composable
 internal fun SettingsAdvancedSection(
+    enableBroadcastControl: Boolean,
     enableIpv6: Boolean,
     enableIpv6Prefer: Boolean,
     runModeOptions: List<String>,
     runMode: Int,
+    onEnableBroadcastControlChange: (Boolean) -> Unit,
     onEnableIpv6Change: (Boolean) -> Unit,
     onEnableIpv6PreferChange: (Boolean) -> Unit,
     onRunModeChange: (Int) -> Unit,
 ) {
     SmallTitle(text = stringResource(R.string.settings_advanced))
     SettingsSectionCard {
+        SwitchPreference(
+            title = stringResource(R.string.settings_broadcast_control),
+            summary = stringResource(R.string.settings_broadcast_control_summary),
+            checked = enableBroadcastControl,
+            onCheckedChange = onEnableBroadcastControlChange,
+        )
         SwitchPreference(
             title = "IPv6",
             summary = stringResource(R.string.settings_ipv6_summary),
