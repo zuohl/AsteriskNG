@@ -19,6 +19,8 @@ import engine.root.RootRuntimeLayout
 import engine.root.RootXrayGid
 import engine.root.RootXrayUid
 import engine.root.appendDeleteRuleLoop
+import engine.root.appendRootFakeDnsIcmpReplyCleanupRules
+import engine.root.appendRootFakeDnsIcmpReplyRules
 import engine.root.appendIpRuleDeleteLoop
 import engine.root.appendScript
 import engine.root.buildApplyRootEbpfSelinuxPolicyCommand
@@ -50,6 +52,7 @@ internal class Bpf2SocksRootRunner(
     ): String {
         return buildString {
             append(buildApplyRootEbpfSelinuxPolicyCommand())
+            appendRootFakeDnsIcmpReplyRules(config.root.enableFakeDns, cleanupExistingRules)
             appendBpf2SocksIpv6TokenRouteSetup(config.bpf2socksConfig)
             appendBpf2SocksHotspotSetupRules(config.bpf2socksConfig, cleanupExistingRules)
         }
@@ -58,6 +61,7 @@ internal class Bpf2SocksRootRunner(
     override fun buildCleanupRulesCommand(): String {
         return buildString {
             appendBpf2SocksHotspotCleanupRules()
+            appendRootFakeDnsIcmpReplyCleanupRules()
             appendBpf2SocksIpv6TokenRouteCleanup()
             appendScript("rm -rf ${RootBpf2SocksPinnedObjectDir.shellQuote()} 2>/dev/null || true")
         }
@@ -231,11 +235,18 @@ private fun StringBuilder.appendBpf2SocksHotspotSetupRules(
             val quotedInterface = prefix.shellQuote()
             appendScript(
                 """
+                ${if (config.enableDnsHijack) "$RootIp6tablesCommand -t mangle -A $RootBpf2SocksPreroutingChain -i $quotedInterface -p udp --dport 53 -j DROP" else ":"}
                 $RootIp6tablesCommand -t mangle -A $RootBpf2SocksPreroutingChain -i $quotedInterface -p tcp -m bpf --object-pinned $programPath6 -j MARK --set-xmark $RootBpf2SocksFwmark
                 $RootIp6tablesCommand -t mangle -A $RootBpf2SocksPreroutingChain -i $quotedInterface -p udp -m bpf --object-pinned $programPath6 -j MARK --set-xmark $RootBpf2SocksFwmark
                 """,
             )
         }
+    }
+}
+
+private fun StringBuilder.appendRootFakeDnsIcmpReplyRules(enableFakeDns: Boolean, cleanupExistingRules: Boolean) {
+    if (enableFakeDns) {
+        appendRootFakeDnsIcmpReplyRules(cleanupExistingRules)
     }
 }
 

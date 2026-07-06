@@ -16,7 +16,6 @@ import engine.root.RootBpf2SocksPinnedObjectDir
 import engine.root.RootBpf2SocksPreroutingV4ProgramPath
 import engine.root.RootBpf2SocksPreroutingV6ProgramPath
 import engine.root.RootBpf2SocksSocksInboundAddress
-import engine.root.RootBpf2SocksSystemBypassUids
 import engine.root.RootBpf2SocksTokenIpv4
 import engine.root.RootBpf2SocksTokenIpv6Prefix
 import engine.root.RootConfigBuildContext
@@ -25,7 +24,6 @@ import engine.root.RootModeStartConfig
 import engine.root.RootProxyAppWhitelistSystemUids
 import engine.root.RootRuntimeLayout
 import engine.root.RootStartConfig
-import engine.root.RootXrayUid
 import engine.root.bpf2SocksBridgePortValue
 import engine.root.bpf2socksConfigPath
 import engine.root.bpf2socksPidPath
@@ -228,11 +226,10 @@ private fun RootIptablesConfig.toBpf2SocksPolicy(
     } else {
         proxyApplicationUids
     }
-    val systemBypassUids = RootBpf2SocksSystemBypassUids.filterNot { it == RootXrayUid }
     return Bpf2SocksPolicy(
         mode = proxyAppListMode,
         uids = proxyUids.distinct().sorted(),
-        bypassUids = (forcedBypassUids + systemBypassUids).distinct().sorted(),
+        bypassUids = forcedBypassUids.distinct().sorted(),
         bypassDirectCidrs = enableEbpfDirectCidrBypass,
         directCidrPathV4 = directCidrPathV4,
         directCidrPathV6 = directCidrPathV6,
