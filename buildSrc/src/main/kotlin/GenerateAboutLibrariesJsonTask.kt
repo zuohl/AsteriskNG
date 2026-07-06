@@ -73,6 +73,30 @@ abstract class GenerateAboutLibrariesJsonTask : DefaultTask() {
                         listOf("Apache-2.0"),
                     )
                 },
+            "javax.annotation:javax.annotation-api" to
+                { version: String ->
+                    library(
+                        "javax.annotation:javax.annotation-api",
+                        version,
+                        "javax.annotation API",
+                        "Common Annotations for the JavaTM Platform API",
+                        "http://jcp.org/en/jsr/detail?id=250",
+                        "https://github.com/javaee/javax.annotation",
+                        listOf("CDDL + GPLv2 with classpath exception"),
+                    )
+                },
+            "com.google.protobuf:protobuf-javalite" to
+                { version: String ->
+                    library(
+                        "com.google.protobuf:protobuf-javalite",
+                        version,
+                        "Protocol Buffers [Lite]",
+                        "Lite version of Protocol Buffers library.",
+                        "https://developers.google.com/protocol-buffers/",
+                        "https://github.com/protocolbuffers/protobuf",
+                        listOf("BSD-3-Clause"),
+                    )
+                },
         )
         val bundledRuntimeLibraries = listOf(
             library(
