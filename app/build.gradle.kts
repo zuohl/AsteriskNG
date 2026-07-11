@@ -3,6 +3,7 @@
 import com.android.build.api.variant.HasHostTestsBuilder
 import com.android.build.api.variant.HostTestBuilder
 import com.google.protobuf.gradle.id
+import org.gradle.api.artifacts.VersionCatalogsExtension
 
 plugins {
     alias(libs.plugins.android.application)
@@ -14,6 +15,9 @@ plugins {
 
 val generatedSrcDir: Provider<Directory> = layout.buildDirectory.dir("generated/projectInfo")
 val generatedXrayCoreJniLibsDir: Provider<Directory> = layout.buildDirectory.dir("generated/xrayCoreJniLibs")
+val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
+val protobufVersion = versionCatalog.findVersion("protobuf").get().requiredVersion
+val grpcVersion = versionCatalog.findVersion("grpc").get().requiredVersion
 
 android {
     namespace = "app"
@@ -141,11 +145,11 @@ ksp {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:4.35.1"
+        artifact = "com.google.protobuf:protoc:$protobufVersion"
     }
     plugins {
         id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:1.82.1"
+            artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
         }
     }
     generateProtoTasks {
