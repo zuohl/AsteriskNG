@@ -33,6 +33,10 @@ internal class AppSettingsPreferences(
                 defaults.nextSubscriptionGroupId,
             ),
             enableAllProxyGroup = preferences.getBoolean(KeyEnableAllProxyGroup, defaults.enableAllProxyGroup),
+            enableDeletionConfirmation = preferences.getBoolean(
+                KeyEnableDeletionConfirmation,
+                defaults.enableDeletionConfirmation,
+            ),
             runMode = preferences.getInt(KeyRunMode, defaults.runMode),
             enableResolveProxyServerDomain = preferences.getBoolean(
                 KeyEnableResolveProxyServerDomain,
@@ -197,6 +201,7 @@ internal class AppSettingsPreferences(
             .putInt(KeySeedIndex, state.seedIndex)
             .putInt(KeyNextSubscriptionGroupId, state.nextSubscriptionGroupId)
             .putBoolean(KeyEnableAllProxyGroup, state.enableAllProxyGroup)
+            .putBoolean(KeyEnableDeletionConfirmation, state.enableDeletionConfirmation)
             .putInt(KeyRunMode, state.runMode)
             .putBoolean(KeyEnableResolveProxyServerDomain, state.enableResolveProxyServerDomain)
             .putBoolean(KeyEnableVpnLocalDns, state.enableVpnLocalDns)
@@ -295,6 +300,7 @@ private const val KeyLanguageMode = "language_mode"
 private const val KeySeedIndex = "seed_index"
 private const val KeyNextSubscriptionGroupId = "next_subscription_group_id"
 private const val KeyEnableAllProxyGroup = "enable_all_proxy_group"
+private const val KeyEnableDeletionConfirmation = "enable_deletion_confirmation"
 private const val KeyRunMode = "run_mode"
 private const val KeyEnableResolveProxyServerDomain = "enable_resolve_proxy_server_domain"
 private const val KeyEnableVpnLocalDns = "enable_vpn_local_dns"

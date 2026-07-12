@@ -45,6 +45,11 @@
     <string name="common_edit">Edit</string>
     <string name="common_edit_all">Edit all</string>
     <string name="common_delete">Delete</string>
+    <string name="deletion_confirmation_summary">This action cannot be undone.</string>
+    <string name="deletion_confirmation_delete_proxy_server">Delete proxy server</string>
+    <string name="deletion_confirmation_delete_route">Delete route</string>
+    <string name="deletion_confirmation_delete_subscription_group">Delete subscription group</string>
+    <string name="deletion_confirmation_delete_resource_file">Delete resource file</string>
     <string name="common_empty">Nothing here yet~~~</string>
     <string name="common_unknown_group">Unknown group</string>
     <string name="common_copied">Copied</string>
@@ -79,6 +84,8 @@
     <string name="settings_group_management_summary">Edit subscription URLs, group names, and enabled state</string>
     <string name="settings_enable_all_proxy_group">Enable "All" group</string>
     <string name="settings_enable_all_proxy_group_summary">Show the "All" group when multiple groups are enabled</string>
+    <string name="settings_deletion_confirmation">Deletion confirmation</string>
+    <string name="settings_deletion_confirmation_summary">Require confirmation before deleting servers, routes, groups, or resources</string>
     <string name="settings_advanced">Advanced settings</string>
     <string name="settings_run_mode">Run mode</string>
     <string name="settings_run_mode_vpn_service">VPN Service</string>

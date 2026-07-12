@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import app.R
 import ui.components.BackNavigationIcon
+import ui.components.DeleteConfirmationDialog
 import ui.components.NavigationIcon
 import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -71,6 +72,7 @@ fun SubscriptionGroupListPage(
     val invalidSubscriptionUrlMessage = stringResource(R.string.subscription_invalid_url)
     var editingGroupId by remember { mutableStateOf<Int?>(null) }
     var showGroupEditor by remember { mutableStateOf(false) }
+    var pendingGroupDeletion by remember { mutableStateOf<SubscriptionGroupState?>(null) }
     val editingGroup = editingGroupId?.let { id -> groups.firstOrNull { it.id == id } }
 
     fun closeGroupEditor() {
@@ -96,6 +98,30 @@ fun SubscriptionGroupListPage(
                     },
                 )
             }
+        }
+    }
+
+    fun deleteGroup(group: SubscriptionGroupState) {
+        if (group.builtIn) return
+        updateAppState { state ->
+            val nextServers = state.proxyServers.filterNot { it.groupId == group.id }
+            state.copy(
+                subscriptionGroups = state.subscriptionGroups.filterNot { it.id == group.id },
+                proxyServers = nextServers,
+                selectedProxyServerId = if (nextServers.any { it.id == state.selectedProxyServerId }) {
+                    state.selectedProxyServerId
+                } else {
+                    nextServers.firstOrNull()?.id ?: 0
+                },
+            )
+        }
+    }
+
+    fun requestGroupDeletion(group: SubscriptionGroupState) {
+        if (appState.enableDeletionConfirmation) {
+            pendingGroupDeletion = group
+        } else {
+            deleteGroup(group)
         }
     }
 
@@ -175,21 +201,7 @@ fun SubscriptionGroupListPage(
                             editingGroupId = group.id
                             showGroupEditor = true
                         },
-                        onDelete = {
-                            if (group.builtIn) return@SubscriptionGroupCard
-                            updateAppState { state ->
-                                val nextServers = state.proxyServers.filterNot { it.groupId == group.id }
-                                state.copy(
-                                    subscriptionGroups = state.subscriptionGroups.filterNot { it.id == group.id },
-                                    proxyServers = nextServers,
-                                    selectedProxyServerId = if (nextServers.any { it.id == state.selectedProxyServerId }) {
-                                        state.selectedProxyServerId
-                                    } else {
-                                        nextServers.firstOrNull()?.id ?: 0
-                                    },
-                                )
-                            }
-                        },
+                        onDelete = { requestGroupDeletion(group) },
                     )
                 }
             }
@@ -210,6 +222,17 @@ fun SubscriptionGroupListPage(
                 scope.launch { services.tipNotifier.show(invalidSubscriptionUrlMessage) }
             },
         )
+        pendingGroupDeletion?.let { group ->
+            DeleteConfirmationDialog(
+                show = true,
+                title = stringResource(R.string.deletion_confirmation_delete_subscription_group),
+                onDismissRequest = { pendingGroupDeletion = null },
+                onConfirm = {
+                    pendingGroupDeletion = null
+                    deleteGroup(group)
+                },
+            )
+        }
     }
 }
 

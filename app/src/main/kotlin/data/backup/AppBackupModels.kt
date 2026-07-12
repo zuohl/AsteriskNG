@@ -38,6 +38,7 @@ internal data class AppBackupSettings(
     val languageMode: Int = BackupDefaults.languageMode,
     val seedIndex: Int = BackupDefaults.seedIndex,
     val enableAllProxyGroup: Boolean = BackupDefaults.enableAllProxyGroup,
+    val enableDeletionConfirmation: Boolean = BackupDefaults.enableDeletionConfirmation,
     val enableResolveProxyServerDomain: Boolean = BackupDefaults.enableResolveProxyServerDomain,
     val enableVpnLocalDns: Boolean = BackupDefaults.enableVpnLocalDns,
     val localProxyPort: String = BackupDefaults.localProxyPort,

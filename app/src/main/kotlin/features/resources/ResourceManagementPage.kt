@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import app.R
 import ui.components.BackNavigationIcon
+import ui.components.DeleteConfirmationDialog
 import ui.components.NavigationIcon
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -74,6 +75,7 @@ fun ResourceManagementPage(
     var updating by remember { mutableStateOf(false) }
     val showCustomResourceFileDialog = remember { mutableStateOf(false) }
     var editingCustomResourceFile by remember { mutableStateOf<CustomResourceFileState?>(null) }
+    var pendingCustomResourceFileDeletion by remember { mutableStateOf<CustomResourceFileState?>(null) }
     val customResourceFileNameState = rememberTextFieldState()
     val customResourceFileUrlState = rememberTextFieldState()
     val editCustomResourceFileNameState = rememberTextFieldState()
@@ -250,6 +252,30 @@ fun ResourceManagementPage(
         return true
     }
 
+    fun deleteCustomResourceFile(file: CustomResourceFileState) {
+        runResourceFileAction(
+            action = {
+                var remainingCustomFiles = emptyList<CustomResourceFileState>()
+                updateAppState { state ->
+                    remainingCustomFiles = state.customResourceFiles.filterNot { it.id == file.id }
+                    state.copy(
+                        customResourceFiles = remainingCustomFiles,
+                    )
+                }
+                resourceFileUseCase.deleteCustom(file, remainingCustomFiles)
+            },
+            successMessage = deletedMessage.formatTemplate("name" to file.name),
+        )
+    }
+
+    fun requestCustomResourceFileDeletion(file: CustomResourceFileState) {
+        if (appState.enableDeletionConfirmation) {
+            pendingCustomResourceFileDeletion = file
+        } else {
+            deleteCustomResourceFile(file)
+        }
+    }
+
     LaunchedEffect(appState.customResourceFiles) {
         status = resourceFileUseCase.status(appState.customResourceFiles)
     }
@@ -415,21 +441,7 @@ fun ResourceManagementPage(
                                 editCustomResourceFileUrlState.setTextAndPlaceCursorAtEnd(file.url)
                                 editingCustomResourceFile = file
                             },
-                            onDelete = { file ->
-                                runResourceFileAction(
-                                    action = {
-                                        var remainingCustomFiles = emptyList<CustomResourceFileState>()
-                                        updateAppState { state ->
-                                            remainingCustomFiles = state.customResourceFiles.filterNot { it.id == file.id }
-                                            state.copy(
-                                                customResourceFiles = remainingCustomFiles,
-                                            )
-                                        }
-                                        resourceFileUseCase.deleteCustom(file, remainingCustomFiles)
-                                    },
-                                    successMessage = deletedMessage.formatTemplate("name" to file.name),
-                                )
-                            },
+                            onDelete = ::requestCustomResourceFileDeletion,
                         )
                     }
                 }
@@ -456,6 +468,17 @@ fun ResourceManagementPage(
                 editingCustomResourceFile?.let { file -> editCustomResourceFile(file, name, url) } ?: false
             },
         )
+        pendingCustomResourceFileDeletion?.let { file ->
+            DeleteConfirmationDialog(
+                show = true,
+                title = stringResource(R.string.deletion_confirmation_delete_resource_file),
+                onDismissRequest = { pendingCustomResourceFileDeletion = null },
+                onConfirm = {
+                    pendingCustomResourceFileDeletion = null
+                    deleteCustomResourceFile(file)
+                },
+            )
+        }
     }
 }
 

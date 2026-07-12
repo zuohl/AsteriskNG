@@ -69,9 +69,11 @@ internal fun SettingsThemeSection(
 @Composable
 internal fun SettingsSubscriptionsSection(
     enableAllProxyGroup: Boolean,
+    enableDeletionConfirmation: Boolean,
     onOpenGroupManagement: () -> Unit,
     onOpenResourceManagement: () -> Unit,
     onEnableAllProxyGroupChange: (Boolean) -> Unit,
+    onEnableDeletionConfirmationChange: (Boolean) -> Unit,
 ) {
     SmallTitle(text = stringResource(R.string.settings_general))
     SettingsSectionCard {
@@ -90,6 +92,12 @@ internal fun SettingsSubscriptionsSection(
             summary = stringResource(R.string.settings_enable_all_proxy_group_summary),
             checked = enableAllProxyGroup,
             onCheckedChange = onEnableAllProxyGroupChange,
+        )
+        SwitchPreference(
+            title = stringResource(R.string.settings_deletion_confirmation),
+            summary = stringResource(R.string.settings_deletion_confirmation_summary),
+            checked = enableDeletionConfirmation,
+            onCheckedChange = onEnableDeletionConfirmationChange,
         )
     }
 }

@@ -37,6 +37,7 @@ data class AppState(
     val subscriptionGroups: List<SubscriptionGroupState> = DefaultSubscriptionGroups,
     val nextSubscriptionGroupId: Int = 4,
     val enableAllProxyGroup: Boolean = false,
+    val enableDeletionConfirmation: Boolean = true,
 
     val runMode: Int = RunModeVpnService,
     val enableResolveProxyServerDomain: Boolean = false,

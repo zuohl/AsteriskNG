@@ -45,6 +45,11 @@
     <string name="common_edit">编辑</string>
     <string name="common_edit_all">编辑全部</string>
     <string name="common_delete">删除</string>
+    <string name="deletion_confirmation_summary">此操作无法撤销。</string>
+    <string name="deletion_confirmation_delete_proxy_server">删除代理节点</string>
+    <string name="deletion_confirmation_delete_route">删除路由</string>
+    <string name="deletion_confirmation_delete_subscription_group">删除订阅分组</string>
+    <string name="deletion_confirmation_delete_resource_file">删除资源文件</string>
     <string name="common_empty">这里空空的~~~</string>
     <string name="common_unknown_group">未知分组</string>
     <string name="common_copied">已复制</string>
@@ -79,6 +84,8 @@
     <string name="settings_group_management_summary">编辑订阅地址、分组名称和启用状态</string>
     <string name="settings_enable_all_proxy_group">启用“全部”分组</string>
     <string name="settings_enable_all_proxy_group_summary">多分组时显示“全部”分组</string>
+    <string name="settings_deletion_confirmation">删除确认</string>
+    <string name="settings_deletion_confirmation_summary">删除节点、路由、分组、资源时需二次确认</string>
     <string name="settings_advanced">高级设置</string>
     <string name="settings_run_mode">运行模式</string>
     <string name="settings_run_mode_vpn_service">VPN Service</string>

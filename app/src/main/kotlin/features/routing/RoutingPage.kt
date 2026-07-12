@@ -60,6 +60,7 @@ import ui.clipboard.setPlainText
 import ui.components.IconDropdownMenu
 import ui.components.IconDropdownMenuEntry
 import ui.components.ImportModeDialog
+import ui.components.DeleteConfirmationDialog
 import ui.components.NavigationIcon
 import ui.components.longPressReorderDragHandle
 import ui.components.moveItem
@@ -143,7 +144,27 @@ fun RoutingPage(
     var editingRule by remember { mutableStateOf<RouteRule?>(null) }
     var showRuleDialog by remember { mutableStateOf(false) }
     var pendingRouteImport by remember { mutableStateOf<List<RouteRuleClipboardItem>?>(null) }
+    var pendingRouteDeletion by remember { mutableStateOf<RouteRule?>(null) }
     val rules = appState.routeRules
+
+    fun deleteRoute(rule: RouteRule) {
+        updateAppState { state ->
+            state.copy(
+                routeRules = state.routeRules.filterNot { it.id == rule.id },
+            )
+        }
+        scope.launch {
+            tipNotifier.show(deletedTemplate.formatTemplate("name" to rule.remarks))
+        }
+    }
+
+    fun requestRouteDeletion(rule: RouteRule) {
+        if (appState.enableDeletionConfirmation) {
+            pendingRouteDeletion = rule
+        } else {
+            deleteRoute(rule)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -282,16 +303,7 @@ fun RoutingPage(
                                 editingRule = rule
                                 showRuleDialog = true
                             },
-                            onDelete = {
-                                updateAppState { state ->
-                                    state.copy(
-                                        routeRules = state.routeRules.filterNot { it.id == rule.id },
-                                    )
-                                }
-                                scope.launch {
-                                    tipNotifier.show(deletedTemplate.formatTemplate("name" to rule.remarks))
-                                }
-                            },
+                            onDelete = { requestRouteDeletion(rule) },
                             modifier = Modifier.animateItem(
                                 fadeInSpec = null,
                                 fadeOutSpec = null,
@@ -312,6 +324,18 @@ fun RoutingPage(
                 trackPadding = contentPadding,
             )
         }
+    }
+
+    pendingRouteDeletion?.let { rule ->
+        DeleteConfirmationDialog(
+            show = true,
+            title = stringResource(R.string.deletion_confirmation_delete_route),
+            onDismissRequest = { pendingRouteDeletion = null },
+            onConfirm = {
+                pendingRouteDeletion = null
+                deleteRoute(rule)
+            },
+        )
     }
 
     RouteRuleEditorBottomSheet(

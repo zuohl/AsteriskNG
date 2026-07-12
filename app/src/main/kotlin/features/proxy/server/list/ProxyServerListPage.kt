@@ -45,6 +45,7 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
+import ui.components.DeleteConfirmationDialog
 import ui.text.formatTemplate
 
 private const val ProxyServerEditResultKey = "proxy-server-edit-result"
@@ -74,6 +75,7 @@ fun ProxyServerListPage(
     var searchValue by rememberSaveable { mutableStateOf("") }
     var selectedGroupId by rememberSaveable { mutableIntStateOf(DefaultSubscriptionGroupId) }
     var serviceOperationInProgress by rememberSaveable { mutableStateOf(false) }
+    var pendingProxyServerDeletion by remember { mutableStateOf<ProxyServerState?>(null) }
     val servers = proxyListState.proxyServers
     var selectedServerId by rememberSaveable { mutableIntStateOf(proxyListState.selectedProxyServerId) }
     val selectedServer = servers.firstOrNull { server -> server.id == selectedServerId }
@@ -212,6 +214,14 @@ fun ProxyServerListPage(
         }
     }
 
+    fun requestProxyServerDeletion(server: ProxyServerState) {
+        if (proxyListState.enableDeletionConfirmation) {
+            pendingProxyServerDeletion = server
+        } else {
+            deleteProxyServer(server)
+        }
+    }
+
     ProxyServerEditResultHandler(
         navigator = navigator,
         resultKey = ProxyServerEditResultKey,
@@ -339,7 +349,7 @@ fun ProxyServerListPage(
                 messages = messages,
                 resultKey = ProxyServerEditResultKey,
                 onSelectedServerIdChange = { selectedServerId = it },
-                onDeleteServer = ::deleteProxyServer,
+                onDeleteServer = ::requestProxyServerDeletion,
             )
             ProxyServerListFloatingToolbar(
                 running = proxyRunning,
@@ -394,5 +404,17 @@ fun ProxyServerListPage(
                 modifier = Modifier.align(Alignment.BottomEnd),
             )
         }
+    }
+
+    pendingProxyServerDeletion?.let { server ->
+        DeleteConfirmationDialog(
+            show = true,
+            title = stringResource(R.string.deletion_confirmation_delete_proxy_server),
+            onDismissRequest = { pendingProxyServerDeletion = null },
+            onConfirm = {
+                pendingProxyServerDeletion = null
+                deleteProxyServer(server)
+            },
+        )
     }
 }

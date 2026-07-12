@@ -23,6 +23,7 @@ data class AppChromeState(
 data class ProxyServerListState(
     val subscriptionGroups: List<SubscriptionGroupState>,
     val enableAllProxyGroup: Boolean,
+    val enableDeletionConfirmation: Boolean,
     val proxyServers: List<ProxyServerState>,
     val nextProxyServerId: Int,
     val selectedProxyServerId: Int,
@@ -91,6 +92,7 @@ private fun AppState.toProxyServerListState(): ProxyServerListState {
     return ProxyServerListState(
         subscriptionGroups = subscriptionGroups,
         enableAllProxyGroup = enableAllProxyGroup,
+        enableDeletionConfirmation = enableDeletionConfirmation,
         proxyServers = proxyServers,
         nextProxyServerId = nextProxyServerId,
         selectedProxyServerId = selectedProxyServerId,

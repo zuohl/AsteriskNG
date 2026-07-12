@@ -6,6 +6,10 @@ package features.proxy.server.list
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.unit.dp
@@ -50,6 +54,7 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import ui.clipboard.getPlainText
 import ui.clipboard.setPlainText
+import ui.components.DeleteConfirmationDialog
 import ui.feedback.AndroidToastTipNotifier
 import ui.layout.AdaptiveTopAppBar
 import ui.text.formatTemplate
@@ -83,6 +88,37 @@ internal fun ProxyServerListTopBar(
     onSelectedGroupIdChange: (Int) -> Unit,
     onTestProxyServerLatency: (List<ProxyServerState>, ProxyServerLatencyTestMode, String, Boolean) -> Unit,
 ) {
+    var pendingDeletionAction by remember { mutableStateOf<ProxyServerListToolAction?>(null) }
+
+    fun executeToolAction(action: ProxyServerListToolAction) {
+        handleProxyServerListToolAction(
+            action = action,
+            groupState = groupState,
+            selectedServer = selectedServer,
+            proxyListState = proxyListState,
+            stateStore = stateStore,
+            updateAppState = updateAppState,
+            subscriptionFetcher = subscriptionFetcher,
+            proxyServiceUseCase = proxyServiceUseCase,
+            clipboard = clipboard,
+            tipNotifier = tipNotifier,
+            scope = scope,
+            backgroundScope = backgroundScope,
+            messages = messages,
+            serviceOperationInProgress = serviceOperationInProgress,
+            runProxyServiceOperation = runProxyServiceOperation,
+            onTestProxyServerLatency = onTestProxyServerLatency,
+        )
+    }
+
+    fun requestToolAction(action: ProxyServerListToolAction) {
+        if (action.isDeletion && proxyListState.enableDeletionConfirmation) {
+            pendingDeletionAction = action
+        } else {
+            executeToolAction(action)
+        }
+    }
+
     AdaptiveTopAppBar(
         title = androidx.compose.ui.res.stringResource(R.string.proxy_server_list_title),
         isWideScreen = isWideScreen,
@@ -110,26 +146,7 @@ internal fun ProxyServerListTopBar(
             ProxyServerListToolsMenu(
                 layout = proxyListState.proxyServerListLayout,
                 sort = proxyListState.proxyServerListSort,
-            ) { action ->
-                handleProxyServerListToolAction(
-                    action = action,
-                    groupState = groupState,
-                    selectedServer = selectedServer,
-                    proxyListState = proxyListState,
-                    stateStore = stateStore,
-                    updateAppState = updateAppState,
-                    subscriptionFetcher = subscriptionFetcher,
-                    proxyServiceUseCase = proxyServiceUseCase,
-                    clipboard = clipboard,
-                    tipNotifier = tipNotifier,
-                    scope = scope,
-                    backgroundScope = backgroundScope,
-                    messages = messages,
-                    serviceOperationInProgress = serviceOperationInProgress,
-                    runProxyServiceOperation = runProxyServiceOperation,
-                    onTestProxyServerLatency = onTestProxyServerLatency,
-                )
-            }
+            ) { action -> requestToolAction(action) }
         },
         bottomContent = {
             Column {
@@ -153,7 +170,37 @@ internal fun ProxyServerListTopBar(
             }
         },
     )
+
+    pendingDeletionAction?.let { action ->
+        DeleteConfirmationDialog(
+            show = true,
+            title = androidx.compose.ui.res.stringResource(action.deletionConfirmationTitleResId),
+            onDismissRequest = { pendingDeletionAction = null },
+            onConfirm = {
+                pendingDeletionAction = null
+                executeToolAction(action)
+            },
+        )
+    }
 }
+
+private val ProxyServerListToolAction.isDeletion: Boolean
+    get() = when (this) {
+        ProxyServerListToolAction.DeleteDuplicateServers,
+        ProxyServerListToolAction.DeleteInvalidServers,
+        ProxyServerListToolAction.DeleteAllServers,
+        -> true
+
+        else -> false
+    }
+
+private val ProxyServerListToolAction.deletionConfirmationTitleResId: Int
+    get() = when (this) {
+        ProxyServerListToolAction.DeleteDuplicateServers -> R.string.proxy_server_list_delete_duplicates
+        ProxyServerListToolAction.DeleteInvalidServers -> R.string.proxy_server_list_delete_invalid
+        ProxyServerListToolAction.DeleteAllServers -> R.string.proxy_server_list_delete_all
+        else -> error("Deletion confirmation is only available for deletion actions")
+    }
 
 private fun handleProxyServerListAddAction(
     action: ProxyServerListAddAction,
