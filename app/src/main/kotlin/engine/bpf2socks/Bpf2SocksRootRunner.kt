@@ -212,7 +212,7 @@ private fun StringBuilder.appendBpf2SocksHotspotSetupRules(
         $RootIptablesCommand -t mangle -I PREROUTING 1 -j $RootBpf2SocksPreroutingChain
         """,
     )
-    val programPath = config.preroutingPolicyIpv4Path.shellQuote()
+    val programPath = config.pinnedObjectPath("prerouting_v4").shellQuote()
     prefixes.forEach { prefix ->
         val quotedInterface = prefix.shellQuote()
         appendScript(
@@ -232,7 +232,7 @@ private fun StringBuilder.appendBpf2SocksHotspotSetupRules(
             $RootIp6tablesCommand -t mangle -I PREROUTING 1 -j $RootBpf2SocksPreroutingChain
             """,
         )
-        val programPath6 = config.preroutingPolicyIpv6Path.shellQuote()
+        val programPath6 = config.pinnedObjectPath("prerouting_v6").shellQuote()
         prefixes.forEach { prefix ->
             val quotedInterface = prefix.shellQuote()
             appendScript(
@@ -244,6 +244,10 @@ private fun StringBuilder.appendBpf2SocksHotspotSetupRules(
             )
         }
     }
+}
+
+private fun Bpf2SocksConfig.pinnedObjectPath(name: String): String {
+    return "${pinnedObjectDir.trimEnd('/')}/$name"
 }
 
 private fun StringBuilder.appendRootFakeDnsIcmpReplyRules(enableFakeDns: Boolean, cleanupExistingRules: Boolean) {

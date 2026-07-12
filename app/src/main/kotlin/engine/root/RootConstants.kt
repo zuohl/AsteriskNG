@@ -29,7 +29,7 @@ const val RootBpf2SocksPidFileName = "bpf2socks.pid"
 const val RootEbpfPinnedObjectDir = "/sys/fs/bpf/asteriskng"
 const val RootBpf2SocksPinnedObjectDir = "/sys/fs/bpf/asteriskng/bpf2socks"
 const val RootBpf2SocksCgroupPath = "/sys/fs/cgroup"
-const val RootBpf2SocksTokenIpv4 = "127.79.0.1"
+const val RootBpf2SocksTokenIpv4Prefix = "127.0.0.0/8"
 const val RootBpf2SocksTokenIpv6Prefix = "fd7a:7374:6572:6973::/64"
 const val RootBpf2SocksListenAddress = NetworkDefaults.IPV4_ANY_ADDRESS
 const val RootBpf2SocksSocksInboundAddress = "127.0.0.1"
@@ -37,8 +37,6 @@ const val RootBpf2SocksDefaultBridgePort = NetworkLimits.PORT_MAX - 3
 const val RootBpf2SocksFwmark = RootProxyFwmark
 const val RootBpf2SocksRouteTable = "172"
 const val RootBpf2SocksPreroutingChain = "ASTERISK_B2S_PREROUTING"
-const val RootBpf2SocksPreroutingV4ProgramPath = "$RootBpf2SocksPinnedObjectDir/prerouting_v4"
-const val RootBpf2SocksPreroutingV6ProgramPath = "$RootBpf2SocksPinnedObjectDir/prerouting_v6"
 const val RootEbpfXtOutputV4ProgramPath = "/sys/fs/bpf/asteriskng/xt_output_v4"
 const val RootEbpfXtOutputV6ProgramPath = "/sys/fs/bpf/asteriskng/xt_output_v6"
 const val RootEbpfXtPreroutingV4ProgramPath = "/sys/fs/bpf/asteriskng/xt_prerouting_v4"
@@ -57,7 +55,6 @@ const val RootBootScriptPath = "$RootBootScriptDir/asteriskng_start.sh"
 const val DefaultRootHttpProxyPort = NetworkLimits.PORT_MAX - 2
 
 val RootProxyAppWhitelistSystemUids = listOf(0, 1052)
-val RootBpf2SocksSystemBypassUids = (RootProxyAppWhitelistSystemUids + RootNetworkStackUid).distinct()
 
 val RootDefaultBypassPrivateCidrs = listOf(
     "0.0.0.0/8",
