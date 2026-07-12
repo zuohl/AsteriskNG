@@ -10,6 +10,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import system.AndroidRootShellGateway
 import system.ShellExecOptions
+import utils.shellQuote
 import kotlin.time.Duration.Companion.milliseconds
 
 internal data class RootReadinessCheck(
@@ -27,13 +28,14 @@ internal abstract class RootModeRunner<Config : RootModeStartConfig>(
     suspend fun start(config: Config) = withContext(Dispatchers.IO) {
         stop(config.root.runtimeLayout)
         writeRootConfigFile(config.root)
+        writeAsteriskdConfig(config.asteriskdConfig, config.root.runtimeLayout.asteriskdConfigPath)
         config.rootEbpfConfig?.writeRuntimeFiles()
         prepareModeRuntimeFiles(config)
-        runRootCommand(config.root.buildPrepareRuntimeCommand(), "Failed to prepare $modeName environment")
-        runRootCommandIfNotBlank(
-            command = config.root.buildStartIpv6DisablerCommand(),
-            failureMessage = "Failed to start IPv6 disabler daemon",
+        config.root.writeRootStopScript(
+            cleanupRulesCommand = buildCleanupRulesCommand() + buildPostCoreStopCommand(config.root.runtimeLayout),
         )
+        runRootCommand(config.root.buildPrepareRuntimeCommand(), "Failed to prepare $modeName environment")
+        runRootCommand(config.root.buildPrepareAsteriskdCommand(), "Failed to prepare asteriskd")
         runRootCommand(config.root.buildStartDaemonCommand(), "Failed to start Xray-core daemon")
         runRootCommandIfNotBlank(
             command = buildPostCoreStartCommand(config),
@@ -59,6 +61,10 @@ internal abstract class RootModeRunner<Config : RootModeStartConfig>(
             buildSetupRulesCommand(config, cleanupExistingRules = false),
             "Failed to install $modeName rules",
         )
+        runRootCommand(config.root.buildStartAsteriskdCommand(), "Failed to start asteriskd")
+        if (!waitForAsteriskdReady(config.root.runtimeLayout)) {
+            failStartup(config, "asteriskd did not become ready")
+        }
     }
 
     suspend fun stop(runtimeLayout: RootRuntimeLayout) = withContext(Dispatchers.IO) {
@@ -71,8 +77,12 @@ internal abstract class RootModeRunner<Config : RootModeStartConfig>(
 
     suspend fun installBootScript(config: Config) = withContext(Dispatchers.IO) {
         writeRootConfigFile(config.root)
+        writeAsteriskdConfig(config.asteriskdConfig, config.root.runtimeLayout.asteriskdConfigPath)
         config.rootEbpfConfig?.writeRuntimeFiles()
         prepareModeRuntimeFiles(config)
+        config.root.writeRootStopScript(
+            cleanupRulesCommand = buildCleanupRulesCommand() + buildPostCoreStopCommand(config.root.runtimeLayout),
+        )
         val command = config.buildInstallRootBootScriptCommand(
             modeName = modeName,
             buildSetupRulesCommand = { targetConfig ->
@@ -179,6 +189,19 @@ internal abstract class RootModeRunner<Config : RootModeStartConfig>(
         return result.errno == 0
     }
 
+    private suspend fun waitForAsteriskdReady(runtimeLayout: RootRuntimeLayout): Boolean {
+        val command = runtimeLayout.buildAsteriskdReadyCommand()
+        val deadline = System.currentTimeMillis() + RuntimeReadyTimeoutMillis
+        while (System.currentTimeMillis() < deadline) {
+            val result = rootAccess.exec(command, ShellExecOptions(logFailure = false))
+            if (result.errno == 0) {
+                return true
+            }
+            delay(RuntimeReadyIntervalMillis.milliseconds)
+        }
+        return rootAccess.exec(command, ShellExecOptions(logFailure = false)).errno == 0
+    }
+
     private suspend fun failStartup(config: Config, message: String): Nothing {
         val errorLog = config.root.collectRootErrorLogTail(rootAccess)
         val processDiagnostics = config.root.collectRootProcessDiagnostics(rootAccess)
@@ -195,12 +218,19 @@ internal abstract class RootModeRunner<Config : RootModeStartConfig>(
     }
 
     private fun buildStopCommand(runtimeLayout: RootRuntimeLayout): String {
-        return buildRootStopCommand(
+        val fallbackCommand = buildRootStopCommand(
             runtimeLayout = runtimeLayout,
             uid = RootXrayUid,
             gid = RootXrayGid,
             cleanupRulesCommand = buildCleanupRulesCommand() + buildPostCoreStopCommand(runtimeLayout),
         )
+        return $$"""
+            if [ -f $${runtimeLayout.stopScriptPath.shellQuote()} ]; then
+                /system/bin/sh $${runtimeLayout.stopScriptPath.shellQuote()} --normal
+            else
+                $$fallbackCommand
+            fi
+        """.trimIndent()
     }
 
     protected companion object {

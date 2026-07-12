@@ -2,7 +2,7 @@
 
 # AsteriskNG
 
-An Xray client for Android, powered by [Xray-core](https://github.com/XTLS/Xray-core), [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite), [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel), and the native BPF2SOCKS runtime.
+An Xray client for Android, powered by [Xray-core](https://github.com/XTLS/Xray-core), [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite), [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel).
 
 ## Telegram Channel
 
@@ -15,6 +15,7 @@ An Xray client for Android, powered by [Xray-core](https://github.com/XTLS/Xray-
 - v2rayNG, mihomo subscription format support
 - Resource file management for `geoip.dat`, `geosite.dat`, `geoip-only-cn-private.dat`, and the Xray executable
 - ROOT start-on-boot script generation through Magisk `service.d`
+- Native ROOT network monitoring for dynamic local-address bypass, system IPv6 control, and IPv6 tethering
 - MIUIX Compose UI
 
 ## Screenshots
@@ -57,6 +58,13 @@ An Xray client for Android, powered by [Xray-core](https://github.com/XTLS/Xray-
 - Does not create a TUN device. The default bridge port is `65532`, and the default SOCKS5 inbound port is `65534`.
 - Requires its eBPF probe to pass before startup. This mode cannot start when device support is insufficient.
 
+### ROOT address monitor
+
+- All ROOT modes use the native `asteriskd` monitor after Xray and mode rules are ready.
+- It tracks local IPv4/IPv6 address changes and atomically refreshes direct-bypass iptables chains or BPF maps, so public addresses are not accidentally captured by the proxy path.
+- When system IPv6 disabling is enabled, it also applies the setting to newly appearing IPv6 interfaces. With IPv6 enabled, it reacts to configured tethering interfaces and removes Android IPv6 TC offload rules when needed.
+- The monitor log is `files/xray/logs/asteriskd.log`; generated `files/xray/stop.sh` is the single ROOT stop entry point and restores captured IPv6 state before cleanup.
+
 ## Resource Files
 
 - Runtime files are stored in the app private `files/xray` directory, commonly `/data/user/0/org.asterisk.zcc.ang/files/xray`.
@@ -90,7 +98,7 @@ The build:
 - downloads or prepares the bundled Xray-core asset
 - checks out `hev-socks5-tunnel` to `ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION` before building it
 - builds the native `hev-socks5-tunnel` JNI library and CLI runtime from the vendored submodule
-- builds the native `bpf2socks`, `setuidgid`, and `ipv6disabler` helpers
+- builds the native `asteriskd`, `bpf2socks`, and `setuidgid` helpers
 - packages native runtime components for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`
 
 If Gradle cannot find Android NDK, set `ndk.dir` in `local.properties`, set `ANDROID_NDK_HOME`, or install an NDK under the Android SDK.

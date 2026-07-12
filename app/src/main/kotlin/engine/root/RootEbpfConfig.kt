@@ -212,27 +212,29 @@ internal fun buildRootEbpfSelinuxPolicyApplicatorCommand(): String {
 
 internal fun buildApplyRootEbpfSelinuxPolicyCommand(): String {
     val policyRules = rootEbpfSelinuxPolicyRuleArguments()
+    val applicatorCommand = buildRootEbpfSelinuxPolicyApplicatorCommand().indentShellBlock()
     return buildString {
         appendScript(
-            $$"""
-            root_ebpf_policy_applicator="$(
-            $${buildRootEbpfSelinuxPolicyApplicatorCommand().trimEnd()}
-            )" || true
-            case "$root_ebpf_policy_applicator" in
-                magiskpolicy:*)
-                    root_ebpf_policy_tool="${root_ebpf_policy_applicator#magiskpolicy:}"
-                    for root_ebpf_policy_rule in $${policyRules}; do
-                        "$root_ebpf_policy_tool" --live "$root_ebpf_policy_rule" >/dev/null 2>&1 || true
-                    done
-                    ;;
-                ksud:*)
-                    root_ebpf_policy_tool="${root_ebpf_policy_applicator#ksud:}"
-                    for root_ebpf_policy_rule in $${policyRules}; do
-                        "$root_ebpf_policy_tool" sepolicy patch "$root_ebpf_policy_rule" >/dev/null 2>&1 || true
-                    done
-                    ;;
-            esac
-            """,
+            buildString {
+                appendLine("# Grant netd and netutils_wrapper access to the pinned eBPF maps when supported.")
+                appendLine("root_ebpf_policy_applicator=\"${'$'}(")
+                appendLine(applicatorCommand)
+                appendLine(")\" || true")
+                appendLine("case \"${'$'}root_ebpf_policy_applicator\" in")
+                appendLine("    magiskpolicy:*)")
+                appendLine("        root_ebpf_policy_tool=\"${'$'}{root_ebpf_policy_applicator#magiskpolicy:}\"")
+                appendLine("        for root_ebpf_policy_rule in $policyRules; do")
+                appendLine("            \"${'$'}root_ebpf_policy_tool\" --live \"${'$'}root_ebpf_policy_rule\" >/dev/null 2>&1 || true")
+                appendLine("        done")
+                appendLine("        ;;")
+                appendLine("    ksud:*)")
+                appendLine("        root_ebpf_policy_tool=\"${'$'}{root_ebpf_policy_applicator#ksud:}\"")
+                appendLine("        for root_ebpf_policy_rule in $policyRules; do")
+                appendLine("            \"${'$'}root_ebpf_policy_tool\" sepolicy patch \"${'$'}root_ebpf_policy_rule\" >/dev/null 2>&1 || true")
+                appendLine("        done")
+                appendLine("        ;;")
+                appendLine("esac")
+            },
         )
     }
 }

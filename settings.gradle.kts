@@ -1,3 +1,6 @@
+// Copyright 2026, AsteriskNG contributors
+// SPDX-License-Identifier: GPL-3.0
+
 @file:Suppress("UnstableApiUsage")
 
 rootProject.name = "AsteriskNG"
@@ -45,7 +48,7 @@ dependencyResolutionManagement {
 
 include(":app")
 include(":setuidgid")
-include(":ipv6disabler")
+include(":asteriskd")
 include(":bpfmatcher")
 include(":bpf2socks")
 include(":hevtun")

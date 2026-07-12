@@ -27,6 +27,7 @@ internal fun <Config : RootModeStartConfig> Config.buildInstallRootBootScriptCom
     return buildString {
         appendScript("mkdir -p ${RootBootScriptDir.shellQuote()}")
         appendScript("mkdir -p ${root.runtimeLayout.dataDir.shellQuote()}")
+        appendScript("chmod 755 ${root.runtimeLayout.stopScriptPath.shellQuote()} || exit 1")
         appendScript("mkdir -p ${root.bootLogDirPath.shellQuote()}")
         appendHeredoc(
             targetPath = root.startupScriptPath,
@@ -59,20 +60,23 @@ private fun <Config : RootModeStartConfig> Config.buildRootStartupScript(
             appendStartupSummary = appendStartupSummary,
             appendStartupFailureDiagnostics = appendStartupFailureDiagnostics,
         )
-        if (root.shouldStartIpv6Disabler) {
-            appendScript("section \"Start IPv6 disabler\"")
-            append(root.buildStartIpv6DisablerCommand())
-        }
+        appendScript("# Prepare the native monitor and clear stale runtime markers.")
+        appendScript("section \"Prepare asteriskd\"")
+        append(root.buildPrepareAsteriskdCommand())
+        appendScript("# Create writable Xray log files before starting background processes.")
         appendScript("section \"Prepare core logs\"")
         append(root.coreLogPaths.buildPrepareCoreLogFilesCommand())
+        appendScript("# Start Xray before mode-specific helper processes and traffic rules.")
         appendScript("section \"Start Xray-core\"")
         append(root.buildBootStartDaemonCommand())
         val postCoreStartCommand = buildPostCoreStartCommand(this@buildRootStartupScript)
         if (postCoreStartCommand.isNotBlank()) {
+            appendScript("# Start the helper process required by $modeName mode.")
             appendScript("section \"Start $modeName helper runtime\"")
             append(postCoreStartCommand)
         }
         rootEbpfConfig?.let { ebpfConfig ->
+            appendScript("# Load optional eBPF programs after their userspace dependencies are ready.")
             appendScript("section \"Start $modeName eBPF matcher\"")
             append(ebpfConfig.buildStartCommand())
         }
@@ -81,8 +85,20 @@ private fun <Config : RootModeStartConfig> Config.buildRootStartupScript(
             attempts = bootReadinessCheckAttempts,
         )
         append('\n')
+        appendScript("# Install packet-marking and routing rules only after all runtime checks pass.")
         appendScript("section \"Install $modeName rules\"")
         append(buildSetupRulesCommand(this@buildRootStartupScript))
+        appendScript("# Start the address monitor after it has rules and BPF maps to maintain.")
+        appendScript("section \"Start asteriskd\"")
+        append(root.buildStartAsteriskdCommand())
+        appendRootBootReadinessCheck(
+            readinessCheck = RootReadinessCheck(
+                description = "asteriskd",
+                command = root.runtimeLayout.buildAsteriskdReadyCommand(),
+                failureMessage = "asteriskd did not become ready",
+            ),
+            attempts = bootReadinessCheckAttempts,
+        )
         appendScript("section \"$modeName boot setup is ready\"")
     }
 }
@@ -93,27 +109,30 @@ private fun StringBuilder.appendRootBootReadinessCheck(
 ) {
     val sectionTitle = "Wait for ${readinessCheck.description}".shellQuote()
     val failureMessage = "ERROR: ${readinessCheck.failureMessage}".shellQuote()
+    val readinessCommand = readinessCheck.command.indentShellBlock("        ")
     appendScript(
-        $$"""
-
-        section $$sectionTitle
-        runtime_ready=0
-        attempt=0
-        while [ "$attempt" -lt $$attempts ]; do
-            echo "Attempt $((attempt + 1))/$${attempts}"
-            if $${readinessCheck.command.trimEnd()}; then
-                runtime_ready=1
-                break
-            fi
-            attempt=$((attempt + 1))
-            sleep 1
-        done
-        if [ "$runtime_ready" != "1" ]; then
-            echo $$failureMessage >&2
-            dump_failure_diagnostics
-            exit 1
-        fi
-        """,
+        buildString {
+            appendLine("# Poll the runtime because helpers can become ready shortly after they are spawned.")
+            appendLine("section $sectionTitle")
+            appendLine("runtime_ready=0")
+            appendLine("attempt=0")
+            appendLine("while [ \"\$attempt\" -lt $attempts ]; do")
+            appendLine("    echo \"Attempt \$((attempt + 1))/$attempts\"")
+            appendLine("    if (")
+            appendLine(readinessCommand)
+            appendLine("    ); then")
+            appendLine("        runtime_ready=1")
+            appendLine("        break")
+            appendLine("    fi")
+            appendLine("    attempt=\$((attempt + 1))")
+            appendLine("    sleep 1")
+            appendLine("done")
+            appendLine("if [ \"\$runtime_ready\" != \"1\" ]; then")
+            appendLine("    echo $failureMessage >&2")
+            appendLine("    dump_failure_diagnostics")
+            appendLine("    exit 1")
+            appendLine("fi")
+        },
     )
 }
 
@@ -123,11 +142,46 @@ private fun <Config : RootModeStartConfig> StringBuilder.appendRootStartupPreamb
     appendStartupSummary: StringBuilder.(Config) -> Unit,
     appendStartupFailureDiagnostics: StringBuilder.(Config) -> Unit,
 ) {
+    val modeFailureDiagnostics = buildString {
+        appendStartupFailureDiagnostics(config)
+    }.trim()
+    val modeStartupSummary = buildString {
+        appendStartupSummary(config)
+    }.trim()
+    val failureDiagnosticsFunction = buildString {
+        appendLine("dump_failure_diagnostics() {")
+        appendLine("    diagnostics_dumped=1")
+        appendLine("    echo")
+        appendLine("    # Core errors provide the first failure context.")
+        appendLine("    echo \"Recent Xray error log:\"")
+        appendLine("    tail -n 80 ${config.root.coreLogPaths.errorLogPath.shellQuote()} || true")
+        if (modeFailureDiagnostics.isNotBlank()) {
+            appendLine("    # Mode-specific helper diagnostics.")
+            appendLine(modeFailureDiagnostics.indentShellBlock())
+        }
+        appendLine("    echo")
+        appendLine("    # The monitor log records its last address and interface synchronization.")
+        appendLine("    echo \"Asteriskd log:\"")
+        appendLine("    tail -n 80 ${config.root.runtimeLayout.asteriskdLogPath.shellQuote()} || true")
+        appendLine("    echo")
+        appendLine("    # Capture the Xray process identity for stale-PID diagnosis.")
+        appendLine("    echo \"Process snapshot:\"")
+        appendLine("    pid=\"\$(cat ${config.root.runtimeLayout.pidPath.shellQuote()} || true)\"")
+        appendLine("    echo \"pid=\$pid\"")
+        appendLine("    if [ -n \"\$pid\" ]; then")
+        appendLine("        echo \"cmdline=\$(tr '\\0' ' ' < /proc/\"\$pid\"/cmdline || true)\"")
+        appendLine("        echo \"exe=\$(readlink /proc/\"\$pid\"/exe || true)\"")
+        appendLine("        grep -E '^(Uid|Gid):' /proc/\"\$pid\"/status || true")
+        appendLine("    fi")
+        appendLine("}")
+    }
     appendScript(
         $$"""
         #!/system/bin/sh
         # Generated by AsteriskNG. This script is invoked by ROOT boot script.
 
+        # Exit immediately on an unhandled command failure. The EXIT trap below
+        # writes diagnostics before the boot log is closed.
         set -e
         diagnostics_dumped=0
 
@@ -153,38 +207,14 @@ private fun <Config : RootModeStartConfig> StringBuilder.appendRootStartupPreamb
             fi
         }
 
-        dump_failure_diagnostics() {
-            diagnostics_dumped=1
-            echo
-            echo "Recent Xray error log:"
-            tail -n 80 $${config.root.coreLogPaths.errorLogPath.shellQuote()} || true
         """,
     )
-    appendStartupFailureDiagnostics(config)
-    if (config.root.shouldStartIpv6Disabler) {
-        appendScript(
-            $$"""
-                echo
-                echo "IPv6 disabler log:"
-                tail -n 80 $${config.root.ipv6DisablerLogPath.shellQuote()} || true
-            """,
-        )
-    }
+    appendScript(failureDiagnosticsFunction)
     appendScript(
         $$"""
-            echo
-            echo "Process snapshot:"
-            pid="$(cat $${config.root.runtimeLayout.pidPath.shellQuote()} || true)"
-            echo "pid=$pid"
-            if [ -n "$pid" ]; then
-                echo "cmdline=$(tr '\0' ' ' < /proc/"$pid"/cmdline || true)"
-                echo "exe=$(readlink /proc/"$pid"/exe || true)"
-                grep -E '^(Uid|Gid):' /proc/"$pid"/status || true
-            fi
-        }
-
         trap finish EXIT
 
+        # Print the immutable runtime paths before mutating process or rule state.
         echo "AsteriskNG $$modeName startup"
         echo "Started at: $(timestamp)"
         echo "Data dir: $${config.root.runtimeLayout.dataDir.shellQuote()}"
@@ -192,22 +222,28 @@ private fun <Config : RootModeStartConfig> StringBuilder.appendRootStartupPreamb
         echo "PID file: $${config.root.runtimeLayout.pidPath.shellQuote()}"
         """,
     )
-    appendStartupSummary(config)
+    if (modeStartupSummary.isNotBlank()) {
+        appendScript("# Mode-specific runtime settings.")
+        appendScript(modeStartupSummary)
+    }
     appendScript(
         $$"""
+        # Network and logging options used by the generated configuration.
         echo "IPv6 enabled: $${config.root.enableIpv6}"
-        echo "IPv6 disabler enabled: $${config.root.shouldStartIpv6Disabler}"
+        echo "System IPv6 disable requested: $${config.root.disableSystemIpv6}"
         echo "Local DNS enabled: $${config.root.enableLocalDns}"
         echo "FakeDNS enabled: $${config.root.enableFakeDns}"
         echo "Access log enabled: $${config.root.enableAccessLog}"
         echo "Core error log: $${config.root.coreLogPaths.errorLogPath.shellQuote()}"
         echo "Core access log: $${config.root.coreLogPaths.accessLogPath.shellQuote()}"
-        echo "IPv6 disabler log: $${config.root.ipv6DisablerLogPath.shellQuote()}"
+        echo "Asteriskd log: $${config.root.runtimeLayout.asteriskdLogPath.shellQuote()}"
         echo "eBPF rules enabled: $${config.rootEbpfConfig != null}"
 
+        # Clear stale PID metadata and make the executable scripts available to root.
         section "Prepare runtime"
         rm -f $${config.root.runtimeLayout.pidPath.shellQuote()} || true
         chmod 755 $${config.root.runtimeLayout.xrayCorePath.shellQuote()}
+        chmod 755 $${config.root.runtimeLayout.stopScriptPath.shellQuote()} || exit 1
         """,
     )
 }

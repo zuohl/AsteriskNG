@@ -19,7 +19,6 @@ internal fun RootIptablesConfig.ipv4IptablesVariant(): TproxyIptablesVariant {
         outputChain = TproxyOutputChain,
         dnsOutputChain = TproxyDnsOutputChain,
         tproxyOnIp = "0.0.0.0",
-        localInterfaceCidrs = localInterfaceIpv4Cidrs,
         proxyPrivateCidrs = proxyPrivateIpv4Cidrs,
         bypassPrivateCidrs = bypassPrivateIpv4Cidrs,
     )
@@ -35,7 +34,6 @@ internal fun RootIptablesConfig.ipv6IptablesVariant(useDummyInterface: Boolean):
         outputChain = TproxyOutput6Chain,
         dnsOutputChain = TproxyDnsOutput6Chain,
         tproxyOnIp = "::",
-        localInterfaceCidrs = localInterfaceIpv6Cidrs,
         proxyPrivateCidrs = proxyPrivateIpv6Cidrs,
         bypassPrivateCidrs = bypassPrivateIpv6Cidrs,
         dummyInterface = DummyInterfaceConfig.takeIf { useDummyInterface },
@@ -55,7 +53,6 @@ internal data class TproxyIptablesVariant(
     val outputChain: String,
     val dnsOutputChain: String,
     val tproxyOnIp: String,
-    val localInterfaceCidrs: List<String>,
     val proxyPrivateCidrs: List<String>,
     val bypassPrivateCidrs: List<String>,
     val dummyInterface: TproxyDummyInterfaceConfig? = null,

@@ -9,11 +9,14 @@ import engine.proxy.LocalProxyOptions
 import engine.proxy.buildLocalSocksInbound
 import engine.proxy.toLocalProxyOptions
 import engine.network.toPortOrNull
+import engine.root.AsteriskdConfig
+import engine.root.AsteriskdMode
 import engine.root.RootConfigBuildContext
 import engine.root.RootEbpfRuntimeConfig
 import engine.root.RootIptablesConfig
 import engine.root.RootModeStartConfig
 import engine.root.RootStartConfig
+import engine.root.buildAsteriskdConfig
 import engine.root.buildRootSharedProxyInbounds
 import engine.xray.XrayProtocols
 import engine.xray.XrayTags
@@ -28,6 +31,7 @@ internal data class TproxyStartConfig(
     override val localProxyOptions: LocalProxyOptions,
     val tproxyPort: Int,
     val iptablesConfig: RootIptablesConfig,
+    override val asteriskdConfig: AsteriskdConfig,
     override val rootEbpfConfig: RootEbpfRuntimeConfig?,
 ) : RootModeStartConfig
 
@@ -40,18 +44,21 @@ internal val TproxyBaseIptablesConfig = RootIptablesConfig(
 internal fun RootConfigBuildContext.buildTproxyStartConfig(): TproxyStartConfig {
     val appState = this.appState
     val tproxyPort = appState.tproxyPortValue()
-    val iptablesConfig = buildRootIptablesConfig(
-        base = TproxyBaseIptablesConfig,
-        ignoredLocalInterfaceNames = setOf(TproxyDummyDevice),
-    )
-    return TproxyStartConfig(
-        root = buildRootStartConfig(
+    val iptablesConfig = buildRootIptablesConfig(base = TproxyBaseIptablesConfig)
+    val rootStartConfig = buildRootStartConfig(
             inbounds = appState.buildTproxyInbounds(appState.toLocalProxyOptions(), tproxyPort),
             dnsHijackInboundTags = listOf(XrayTags.TPROXY_INBOUND),
-        ),
+        )
+    return TproxyStartConfig(
+        root = rootStartConfig,
         localProxyOptions = appState.toLocalProxyOptions(),
         tproxyPort = tproxyPort,
         iptablesConfig = iptablesConfig,
+        asteriskdConfig = rootStartConfig.buildAsteriskdConfig(
+            mode = AsteriskdMode.Tproxy,
+            iptablesConfig = iptablesConfig,
+            virtualInterfaces = listOf(TproxyDummyDevice),
+        ),
         rootEbpfConfig = buildRootEbpfRuntimeConfig(iptablesConfig),
     )
 }

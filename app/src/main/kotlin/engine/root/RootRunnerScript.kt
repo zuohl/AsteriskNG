@@ -60,7 +60,7 @@ internal fun buildRootStopCommand(
 ): String {
     return buildString {
         runtimeLayout?.let { paths ->
-            append(paths.buildStopIpv6DisablerCommand())
+            append(paths.buildStopAsteriskdCommand())
             appendScript(
                 $$"""
                 pid="$(cat $${paths.pidPath.shellQuote()} 2>/dev/null || true)"
@@ -86,6 +86,7 @@ internal fun RootStartConfig.buildPrepareRuntimeCommand(): String {
             """
             rm -f ${runtimeLayout.pidPath.shellQuote()} 2>/dev/null || true
             chmod 755 ${runtimeLayout.xrayCorePath.shellQuote()}
+            chmod 755 ${runtimeLayout.stopScriptPath.shellQuote()} || exit 1
             """,
         )
     }

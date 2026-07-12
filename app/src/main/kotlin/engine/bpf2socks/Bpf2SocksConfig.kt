@@ -9,6 +9,8 @@ import app.modes.ProxyAppListModeWhitelist
 import engine.proxy.LocalProxyOptions
 import engine.proxy.buildLocalSocksInbound
 import engine.proxy.toLocalProxyOptions
+import engine.root.AsteriskdConfig
+import engine.root.AsteriskdMode
 import engine.root.RootBpf2SocksCgroupPath
 import engine.root.RootBpf2SocksDefaultBridgePort
 import engine.root.RootBpf2SocksListenAddress
@@ -22,6 +24,7 @@ import engine.root.RootModeStartConfig
 import engine.root.RootProxyAppWhitelistSystemUids
 import engine.root.RootRuntimeLayout
 import engine.root.RootStartConfig
+import engine.root.buildAsteriskdConfig
 import engine.root.bpf2SocksBridgePortValue
 import engine.root.bpf2socksConfigPath
 import engine.root.bpf2socksPidPath
@@ -68,10 +71,8 @@ internal data class Bpf2SocksConfig(
     val ignoredInterfaces: List<String> = emptyList(),
     val proxyPrivateCidrsV4: List<String> = emptyList(),
     val bypassPrivateCidrsV4: List<String> = emptyList(),
-    val localInterfaceCidrsV4: List<String> = emptyList(),
     val proxyPrivateCidrsV6: List<String> = emptyList(),
     val bypassPrivateCidrsV6: List<String> = emptyList(),
-    val localInterfaceCidrsV6: List<String> = emptyList(),
     val policy: Bpf2SocksPolicy,
 )
 
@@ -96,6 +97,7 @@ internal data class Bpf2SocksStartConfig(
     override val localProxyOptions: LocalProxyOptions,
     val controlPaths: Bpf2SocksControlPaths,
     val bpf2socksConfig: Bpf2SocksConfig,
+    override val asteriskdConfig: AsteriskdConfig,
     val directCidrSourcePathsV4: List<String>,
     val directCidrSourcePathsV6: List<String>,
 ) : RootModeStartConfig
@@ -112,10 +114,7 @@ internal fun RootConfigBuildContext.buildBpf2SocksStartConfig(): Bpf2SocksStartC
         inbounds = appState.buildBpf2SocksInbounds(localProxyOptions, socksPort),
         dnsHijackInboundTags = listOf(XrayTags.BPF2SOCKS_INBOUND),
     )
-    val iptablesConfig = buildRootIptablesConfig(
-        base = Bpf2SocksBasePolicyConfig,
-        ignoredLocalInterfaceNames = emptySet(),
-    ).copy(enableEbpfRules = true)
+    val iptablesConfig = buildRootIptablesConfig(base = Bpf2SocksBasePolicyConfig).copy(enableEbpfRules = true)
     val bpf2SocksPolicy = iptablesConfig.toBpf2SocksPolicy(
         directCidrPathV4 = rootStartConfig.runtimeLayout.rootEbpfDirectCidrPathV4,
         directCidrPathV6 = rootStartConfig.runtimeLayout.rootEbpfDirectCidrPathV6,
@@ -131,6 +130,11 @@ internal fun RootConfigBuildContext.buildBpf2SocksStartConfig(): Bpf2SocksStartC
             enableDnsHijack = rootStartConfig.enableLocalDns,
             iptablesConfig = iptablesConfig,
             policy = bpf2SocksPolicy,
+        ),
+        asteriskdConfig = rootStartConfig.buildAsteriskdConfig(
+            mode = AsteriskdMode.Bpf2Socks,
+            iptablesConfig = iptablesConfig,
+            virtualInterfaces = emptyList(),
         ),
         directCidrSourcePathsV4 = listOf(resourceFilePaths.directCidrIpv4Path),
         directCidrSourcePathsV6 = listOf(resourceFilePaths.directCidrIpv6Path),
@@ -207,10 +211,8 @@ private fun RootRuntimeLayout.buildBpf2SocksConfig(
         ignoredInterfaces = iptablesConfig.ignoredInterfaces,
         proxyPrivateCidrsV4 = iptablesConfig.proxyPrivateIpv4Cidrs,
         bypassPrivateCidrsV4 = iptablesConfig.bypassPrivateIpv4Cidrs,
-        localInterfaceCidrsV4 = iptablesConfig.localInterfaceIpv4Cidrs,
         proxyPrivateCidrsV6 = iptablesConfig.proxyPrivateIpv6Cidrs,
         bypassPrivateCidrsV6 = iptablesConfig.bypassPrivateIpv6Cidrs,
-        localInterfaceCidrsV6 = iptablesConfig.localInterfaceIpv6Cidrs,
         policy = policy,
     )
 }

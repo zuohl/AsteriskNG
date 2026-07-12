@@ -117,7 +117,7 @@ dependencies {
     //noinspection UseTomlInstead
     implementation("com.github.2dust:libv2ray:${ProjectConfig.ANDROID_LIB_XRAY_LITE_VERSION}@aar")
     implementation(dependencies.project(":setuidgid"))
-    implementation(dependencies.project(":ipv6disabler"))
+    implementation(dependencies.project(":asteriskd"))
     implementation(dependencies.project(":bpfmatcher"))
     implementation(dependencies.project(":bpf2socks"))
     implementation(dependencies.project(":hevtun"))
