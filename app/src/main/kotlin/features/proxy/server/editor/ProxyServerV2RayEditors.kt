@@ -33,8 +33,6 @@ internal fun LazyListScope.vmessProxyServer(vmessEdit: VMess) {
                 "auto",
                 "aes-128-gcm",
                 "chacha20-poly1305",
-                "none",
-                "zero",
             )
         }
         val encryption = remember {

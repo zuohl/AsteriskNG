@@ -143,8 +143,6 @@ data class Shadowsocks(
                 "chacha20-ietf-poly1305",
                 "xchacha20-poly1305",
                 "xchacha20-ietf-poly1305",
-                "none",
-                "plain",
                 "2022-blake3-aes-128-gcm",
                 "2022-blake3-aes-256-gcm",
                 "2022-blake3-chacha20-poly1305",

@@ -211,7 +211,7 @@ data class VMess(
         validateAllowed(
             encryption.ifBlank { "auto" },
             "encryption method",
-            setOf("auto", "aes-128-gcm", "chacha20-poly1305", "none", "zero"),
+            setOf("auto", "aes-128-gcm", "chacha20-poly1305"),
         )
         validateV2RayParameters(parms)
     }
