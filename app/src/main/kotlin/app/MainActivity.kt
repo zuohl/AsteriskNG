@@ -104,10 +104,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun attachBaseContext(newBase: Context) {
-        val settings = AppSettingsPreferences(newBase).load()
-        super.attachBaseContext(
-            newBase.localizedAppContext(settings.languageMode, settings.colorMode),
-        )
+        val languageMode = AppSettingsPreferences(newBase).load().languageMode
+        super.attachBaseContext(newBase.localizedAppContext(languageMode))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -1,6 +1,0 @@
-<resources>
-    <style name="AppTheme.Starting" parent="AppTheme">
-        <item name="android:windowBackground">@color/splash_background</item>
-        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
-    </style>
-</resources>
