@@ -563,6 +563,7 @@
     <string name="subscription_unnamed_group">Безымянная группа</string>
     <string name="subscription_group_name">Имя группы</string>
     <string name="subscription_url">URL подписки (оставьте пустым для ручных групп)</string>
+    <string name="subscription_hwid">HWID</string>
     <string name="subscription_invalid_url">Некорректный URL-адрес подписки</string>
     <string name="subscription_http_warning_title">Предупреждение: незащищенный протокол HTTP</string>
     <string name="subscription_http_warning_message">Данный URL использует незащищенную передачу данных по HTTP cleartext. Содержимое конфигураций может быть перехвачено или изменено злоумышленниками в процессе транспортировки. Сохраняйте подписку только в том случае, если полностью доверяете этому источнику.</string>

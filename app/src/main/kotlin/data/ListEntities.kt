@@ -4,6 +4,7 @@
 package data
 
 import androidx.room.Entity
+import androidx.room.ColumnInfo
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import app.ProxyServerState
@@ -22,6 +23,8 @@ internal data class SubscriptionGroupEntity(
     val url: String,
     val userAgent: String,
     val updateInterval: String,
+    @ColumnInfo(defaultValue = "''") val hwid: String,
+    @ColumnInfo(defaultValue = "''") val ageSecretKey: String,
     val updateViaProxy: Boolean,
     val enabled: Boolean,
     val builtIn: Boolean,
@@ -34,6 +37,8 @@ internal data class SubscriptionGroupEntity(
             url = url,
             userAgent = userAgent,
             updateInterval = updateInterval,
+            hwid = hwid,
+            ageSecretKey = ageSecretKey,
             updateViaProxy = updateViaProxy,
             enabled = enabled,
             builtIn = builtIn,
@@ -50,6 +55,8 @@ internal data class SubscriptionGroupEntity(
                 url = group.url,
                 userAgent = group.userAgent,
                 updateInterval = group.updateInterval,
+                hwid = group.hwid,
+                ageSecretKey = group.ageSecretKey,
                 updateViaProxy = group.updateViaProxy,
                 enabled = group.enabled,
                 builtIn = group.builtIn,

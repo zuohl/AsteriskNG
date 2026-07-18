@@ -3,6 +3,9 @@
 
 package features.subscription.runtime
 
+import android.content.Context
+import android.os.Build
+import data.AppSettingsPreferences
 import features.subscription.DefaultSubscriptionUserAgent
 import engine.network.isPort
 import engine.proxy.LocalProxyLoopbackAddress
@@ -19,20 +22,40 @@ import java.net.Proxy
 import java.net.URI
 import java.net.URL
 
-internal class AndroidSubscriptionFetcher {
+internal class AndroidSubscriptionFetcher(
+    private val installationHwid: String,
+    private val ageCrypto: SubscriptionAgeCrypto,
+) {
+    constructor(context: Context) : this(
+        installationHwid = AppSettingsPreferences(context.applicationContext).getOrCreateSubscriptionHwid(),
+        ageCrypto = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            KageSubscriptionAgeCrypto
+        } else {
+            UnsupportedSubscriptionAgeCrypto
+        },
+    )
+
     suspend fun fetch(
         url: String,
         userAgent: String,
         options: AndroidSubscriptionFetchOptions,
     ): String = withContext(Dispatchers.IO) {
         val proxy = options.toProxy()
+        val requestCredentials = options.toRequestCredentials(
+            installationHwid = installationHwid,
+            ageCrypto = ageCrypto,
+        )
         proxy.withAuthenticator {
             fetchWithRedirects(
                 url = url.toIdnUrl(),
                 userAgent = userAgent.ifBlank { DefaultSubscriptionUserAgent },
+                requestCredentials = requestCredentials,
                 proxy = proxy,
             )
-        }
+        }.decryptAgeArmoredOrPassThrough(
+            secretKey = options.ageSecretKey,
+            ageCrypto = ageCrypto,
+        )
     }
 }
 
@@ -41,6 +64,13 @@ internal data class AndroidSubscriptionFetchOptions(
     val fallbackProxyPort: Int? = null,
     val fallbackProxyUsername: String = "",
     val fallbackProxyPassword: String = "",
+    val hwid: String = "",
+    val ageSecretKey: String = "",
+)
+
+private data class SubscriptionRequestCredentials(
+    val hwid: String,
+    val agePublicKey: String?,
 )
 
 private data class AndroidSubscriptionProxy(
@@ -70,6 +100,7 @@ private fun AndroidSubscriptionFetchOptions.toProxy(): AndroidSubscriptionProxy?
 private fun fetchWithRedirects(
     url: String,
     userAgent: String,
+    requestCredentials: SubscriptionRequestCredentials,
     proxy: AndroidSubscriptionProxy?,
 ): String {
     var currentUrl = url
@@ -78,6 +109,10 @@ private fun fetchWithRedirects(
         try {
             connection.setRequestProperty("User-Agent", userAgent)
             connection.setRequestProperty("Connection", "close")
+            connection.setRequestProperty("X-Hwid", requestCredentials.hwid)
+            requestCredentials.agePublicKey?.let { publicKey ->
+                connection.setRequestProperty("X-Age-Public-Key", publicKey)
+            }
             connection.setEmbeddedBasicAuth(currentUrl)
 
             val code = connection.responseCode
@@ -96,6 +131,29 @@ private fun fetchWithRedirects(
         }
     }
     error("Too many redirects")
+}
+
+private fun AndroidSubscriptionFetchOptions.toRequestCredentials(
+    installationHwid: String,
+    ageCrypto: SubscriptionAgeCrypto,
+): SubscriptionRequestCredentials {
+    val secretKey = ageSecretKey.trim()
+    return SubscriptionRequestCredentials(
+        hwid = hwid.trim().ifBlank { installationHwid },
+        agePublicKey = secretKey.takeIf(String::isNotEmpty)?.let(ageCrypto::publicKey),
+    )
+}
+
+private fun String.decryptAgeArmoredOrPassThrough(
+    secretKey: String,
+    ageCrypto: SubscriptionAgeCrypto,
+): String {
+    if (!trimStart().startsWith(AgeArmorHeader)) return this
+    val normalizedSecretKey = secretKey.trim()
+    require(normalizedSecretKey.isNotEmpty()) {
+        "Age-encrypted subscription requires a secret key"
+    }
+    return ageCrypto.decryptArmored(this, normalizedSecretKey)
 }
 
 private fun String.toConnection(proxy: AndroidSubscriptionProxy?): HttpURLConnection {
@@ -152,3 +210,5 @@ private fun String.toIdnUrl(): String {
     val asciiHost = IDN.toASCII(host, IDN.ALLOW_UNASSIGNED)
     return if (host == asciiHost) this else replace(host, asciiHost)
 }
+
+private const val AgeArmorHeader = "-----BEGIN AGE ENCRYPTED FILE-----"
