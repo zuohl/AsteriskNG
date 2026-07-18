@@ -3,6 +3,7 @@
 
 package data
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import app.AppState
@@ -13,11 +14,28 @@ import app.modes.ColorModeThemeSystem
 import app.modes.normalizeColorMode
 import androidx.core.content.edit
 import features.subscription.DefaultSubscriptionUserAgent
+import java.util.UUID
 
 internal class AppSettingsPreferences(
     context: Context,
 ) {
     private val preferences = context.getSharedPreferences(PreferencesName, Context.MODE_PRIVATE)
+
+    @SuppressLint("UseKtx") // The raw API exposes commit()'s success result for this installation identifier.
+    fun getOrCreateSubscriptionHwid(): String {
+        synchronized(SubscriptionHwidLock) {
+            preferences.getString(KeySubscriptionHwid, null)
+                ?.trim()
+                ?.takeIf(String::isNotEmpty)
+                ?.let { return it }
+
+            val generated = UUID.randomUUID().toString()
+            check(preferences.edit().putString(KeySubscriptionHwid, generated).commit()) {
+                "Failed to persist subscription HWID"
+            }
+            return generated
+        }
+    }
 
     fun load(): AppState {
         val defaults = AppState()
@@ -315,6 +333,7 @@ private const val PreferencesName = "asteriskng_settings"
 private const val KeyColorMode = "color_mode"
 private const val KeyLanguageMode = "language_mode"
 private const val KeySeedIndex = "seed_index"
+private const val KeySubscriptionHwid = "subscription_hwid"
 private const val KeyNextSubscriptionGroupId = "next_subscription_group_id"
 private const val KeyEnableAllProxyGroup = "enable_all_proxy_group"
 private const val KeyEnableDeletionConfirmation = "enable_deletion_confirmation"
@@ -383,3 +402,5 @@ private const val KeyExternalInterfaces = "external_interfaces"
 private const val KeyIgnoredInterfaces = "ignored_interfaces"
 private const val KeyPrivateAddressCidrs = "private_address_cidrs"
 private const val KeyProxyAppListMode = "proxy_app_list_mode"
+
+private val SubscriptionHwidLock = Any()

@@ -96,6 +96,8 @@ internal fun AppState.toSubscriptionFetchOptions(group: SubscriptionGroupState):
         fallbackProxyPort = localProxyPort.toPortOrNull(),
         fallbackProxyUsername = localProxyUsername,
         fallbackProxyPassword = localProxyPassword,
+        hwid = group.hwid,
+        ageSecretKey = group.ageSecretKey,
     )
 }
 

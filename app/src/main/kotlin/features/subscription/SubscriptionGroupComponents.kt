@@ -84,6 +84,8 @@ internal fun SubscriptionGroupEditorDialog(
         )
     }
     var url by remember(show, group?.id) { mutableStateOf(group?.url ?: "") }
+    var hwid by remember(show, group?.id) { mutableStateOf(group?.hwid ?: "") }
+    var ageSecretKey by remember(show, group?.id) { mutableStateOf(group?.ageSecretKey ?: "") }
     val initialUserAgent = group?.userAgent ?: DefaultSubscriptionUserAgent
     var userAgentSelection by remember(show, group?.id, initialUserAgent) {
         mutableStateOf(subscriptionUserAgentSelectionFor(initialUserAgent))
@@ -134,6 +136,8 @@ internal fun SubscriptionGroupEditorDialog(
         val savedGroup = group?.copy(
             name = if (group.builtIn) group.name else name.trim().ifBlank { unnamedGroupName },
             url = savedUrl,
+            hwid = hwid.trim(),
+            ageSecretKey = ageSecretKey.trim(),
             userAgent = savedUserAgent,
             updateInterval = interval.trim().takeIf { savedUrl.isNotBlank() }.orEmpty(),
             updateViaProxy = updateViaProxy && savedUrl.isNotBlank(),
@@ -141,6 +145,8 @@ internal fun SubscriptionGroupEditorDialog(
                 id = nextGroupId,
                 name = name.trim().ifBlank { unnamedGroupName },
                 url = savedUrl,
+                hwid = hwid.trim(),
+                ageSecretKey = ageSecretKey.trim(),
                 userAgent = savedUserAgent,
                 updateInterval = interval.trim().takeIf { savedUrl.isNotBlank() }.orEmpty(),
                 updateViaProxy = updateViaProxy && savedUrl.isNotBlank(),
@@ -192,6 +198,24 @@ internal fun SubscriptionGroupEditorDialog(
                         exit = shrinkVertically(),
                     ) {
                         Column {
+                            TextField(
+                                state = rememberTextFieldState(initialText = hwid),
+                                inputTransformation = InputTransformation {
+                                    hwid = asCharSequence().toString()
+                                },
+                                label = stringResource(R.string.subscription_hwid),
+                                lineLimits = TextFieldLineLimits.SingleLine,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                            )
+                            TextField(
+                                state = rememberTextFieldState(initialText = ageSecretKey),
+                                inputTransformation = InputTransformation {
+                                    ageSecretKey = asCharSequence().toString()
+                                },
+                                label = stringResource(R.string.subscription_age_secret_key),
+                                lineLimits = TextFieldLineLimits.SingleLine,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                            )
                             WindowSpinnerPreference(
                                 title = stringResource(R.string.subscription_user_agent),
                                 summary = resolvedUserAgent,

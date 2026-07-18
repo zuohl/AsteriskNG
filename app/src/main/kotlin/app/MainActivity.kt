@@ -68,7 +68,7 @@ class MainActivity : ComponentActivity() {
     private val subscriptionInstallConfigUseCase by lazy {
         SubscriptionInstallConfigUseCase(
             stateStore = AndroidAppStateStore.get(this),
-            subscriptionFetcher = AndroidSubscriptionFetcher(),
+            subscriptionFetcher = AndroidSubscriptionFetcher(this),
         )
     }
 

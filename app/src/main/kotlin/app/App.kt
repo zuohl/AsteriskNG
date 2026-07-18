@@ -83,7 +83,7 @@ fun App(
             fileCreator = logFileCreator,
         )
     }
-    val subscriptionFetcher = remember { AndroidSubscriptionFetcher() }
+    val subscriptionFetcher = remember(appContext) { AndroidSubscriptionFetcher(appContext) }
     val qrScanner = remember(qrCodeScanner) { qrCodeScanner }
     val proxyServerImportFileUseCase = remember(appContext, resourceFilePicker) {
         ProxyServerImportFileUseCase(

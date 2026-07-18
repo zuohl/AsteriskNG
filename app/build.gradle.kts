@@ -125,6 +125,7 @@ dependencies {
     implementation(libs.grpc.protobuf.lite)
     implementation(libs.grpc.stub)
     implementation(libs.ktor.http)
+    implementation(libs.kage)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.libsu.core)
     implementation(libs.miuix.ui)
