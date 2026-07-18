@@ -67,6 +67,8 @@ import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import features.subscription.SubscriptionUserAgentSelection
 import features.subscription.SubscriptionUserAgentSelections
 import features.subscription.DefaultSubscriptionUserAgent
+import features.subscription.subscriptionUserAgentSelectionFor
+import features.subscription.resolveUserAgent
 
 @Composable
 fun ResourceManagementPage(
@@ -102,6 +104,8 @@ fun ResourceManagementPage(
     val customResourceFileNameDuplicateMessage = stringResource(
         R.string.settings_resource_files_custom_name_duplicate,
     )
+    var showCustomUserAgentDialog by remember { mutableStateOf(false) }
+    val customUserAgentDraftState = rememberTextFieldState()
 
     fun runResourceFileAction(
         action: suspend () -> ResourceFilesStatus?,
@@ -412,22 +416,9 @@ fun ResourceManagementPage(
                             },
                         )
                     }
-                    val currentSelection = when (appState.resourceFileUserAgent.trim()) {
-                        DefaultSubscriptionUserAgent -> SubscriptionUserAgentSelection.V2rayNg
-                        "clash.meta" -> SubscriptionUserAgentSelection.ClashMeta
-                        "FlClash X/v0.4.0-pre.17 Platform/android" -> SubscriptionUserAgentSelection.FlClashX
-                        else -> SubscriptionUserAgentSelection.Custom
-                    }
+                    val currentSelection = subscriptionUserAgentSelectionFor(appState.resourceFileUserAgent)
                     val selectedIndex = SubscriptionUserAgentSelections.indexOf(currentSelection)
                         .takeIf { it >= 0 } ?: 0
-                    var showCustomUserAgentDialog by remember { mutableStateOf(false) }
-                    val customUserAgentDraftState = rememberTextFieldState(
-                        initialText = if (currentSelection == SubscriptionUserAgentSelection.Custom) {
-                            appState.resourceFileUserAgent
-                        } else {
-                            ""
-                        },
-                    )
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -447,12 +438,7 @@ fun ResourceManagementPage(
                                     )
                                     showCustomUserAgentDialog = true
                                 } else {
-                                    val resolved = when (selection) {
-                                        SubscriptionUserAgentSelection.V2rayNg -> DefaultSubscriptionUserAgent
-                                        SubscriptionUserAgentSelection.ClashMeta -> "clash.meta"
-                                        SubscriptionUserAgentSelection.FlClashX -> "FlClash X/v0.4.0-pre.17 Platform/android"
-                                        SubscriptionUserAgentSelection.Custom -> DefaultSubscriptionUserAgent
-                                    }
+                                    val resolved = selection.resolveUserAgent(customUserAgent = "")
                                     updateAppState { state ->
                                         state.copy(resourceFileUserAgent = resolved)
                                     }

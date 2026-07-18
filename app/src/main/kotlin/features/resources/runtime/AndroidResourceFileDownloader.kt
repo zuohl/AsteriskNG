@@ -76,7 +76,9 @@ internal class AndroidResourceFileDownloader {
                 val code = connection.responseCode
                 AndroidResourceFileDownloadCancellation.throwIfCancelled()
                 if (code in 300..399) {
-                    currentUrl = URI(currentUrl).resolve(connection.getHeaderField("Location")).toString()
+                    val location = connection.getHeaderField("Location")
+                        ?: error("Redirect location missing")
+                    currentUrl = URI(currentUrl).resolve(location).toString()
                     return@repeat
                 }
                 if (code !in 200..299) {
