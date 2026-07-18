@@ -25,6 +25,8 @@ import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -44,11 +46,16 @@ import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.preference.OverlaySpinnerPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.layout.AdaptiveTopAppBar
+import androidx.compose.ui.unit.dp
 import ui.text.formatTemplate
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
@@ -57,6 +64,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import engine.network.toPortOrNull
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import features.subscription.SubscriptionUserAgentSelection
+import features.subscription.SubscriptionUserAgentSelections
+import features.subscription.DefaultSubscriptionUserAgent
 
 @Composable
 fun ResourceManagementPage(
@@ -391,6 +401,79 @@ fun ResourceManagementPage(
                         },
                     )
                 }
+                item(key = "resource_files_user_agent") {
+                    val userAgentItems = SubscriptionUserAgentSelections.map { selection ->
+                        DropdownItem(
+                            text = when (selection) {
+                                SubscriptionUserAgentSelection.V2rayNg -> "v2rayNG"
+                                SubscriptionUserAgentSelection.ClashMeta -> "Clash Meta"
+                                SubscriptionUserAgentSelection.FlClashX -> "FlClash X"
+                                SubscriptionUserAgentSelection.Custom -> stringResource(R.string.subscription_user_agent_custom)
+                            },
+                        )
+                    }
+                    val currentSelection = when (appState.resourceFileUserAgent.trim()) {
+                        DefaultSubscriptionUserAgent -> SubscriptionUserAgentSelection.V2rayNg
+                        "clash.meta" -> SubscriptionUserAgentSelection.ClashMeta
+                        "FlClash X/v0.4.0-pre.17 Platform/android" -> SubscriptionUserAgentSelection.FlClashX
+                        else -> SubscriptionUserAgentSelection.Custom
+                    }
+                    val selectedIndex = SubscriptionUserAgentSelections.indexOf(currentSelection)
+                        .takeIf { it >= 0 } ?: 0
+                    var showCustomUserAgentDialog by remember { mutableStateOf(false) }
+                    val customUserAgentDraftState = rememberTextFieldState(
+                        initialText = if (currentSelection == SubscriptionUserAgentSelection.Custom) {
+                            appState.resourceFileUserAgent
+                        } else {
+                            ""
+                        },
+                    )
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp)
+                            .padding(bottom = 12.dp),
+                    ) {
+                        OverlaySpinnerPreference(
+                            title = stringResource(R.string.subscription_user_agent),
+                            summary = appState.resourceFileUserAgent,
+                            items = userAgentItems,
+                            selectedIndex = selectedIndex,
+                            onSelectedIndexChange = { index ->
+                                val selection = SubscriptionUserAgentSelections[index]
+                                if (selection == SubscriptionUserAgentSelection.Custom) {
+                                    customUserAgentDraftState.setTextAndPlaceCursorAtEnd(
+                                        appState.resourceFileUserAgent.ifBlank { DefaultSubscriptionUserAgent },
+                                    )
+                                    showCustomUserAgentDialog = true
+                                } else {
+                                    val resolved = when (selection) {
+                                        SubscriptionUserAgentSelection.V2rayNg -> DefaultSubscriptionUserAgent
+                                        SubscriptionUserAgentSelection.ClashMeta -> "clash.meta"
+                                        SubscriptionUserAgentSelection.FlClashX -> "FlClash X/v0.4.0-pre.17 Platform/android"
+                                        SubscriptionUserAgentSelection.Custom -> DefaultSubscriptionUserAgent
+                                    }
+                                    updateAppState { state ->
+                                        state.copy(resourceFileUserAgent = resolved)
+                                    }
+                                }
+                            },
+                        )
+                        CustomResourceFileUserAgentDialog(
+                            show = showCustomUserAgentDialog,
+                            state = customUserAgentDraftState,
+                            onDismissRequest = { showCustomUserAgentDialog = false },
+                            onSave = {
+                                val custom = customUserAgentDraftState.text.toString().trim()
+                                    .ifBlank { DefaultSubscriptionUserAgent }
+                                updateAppState { state ->
+                                    state.copy(resourceFileUserAgent = custom)
+                                }
+                                showCustomUserAgentDialog = false
+                            },
+                        )
+                    }
+                }
                 listOf(
                     ResourceFileKind.GeoIp,
                     ResourceFileKind.GeoSite,
@@ -488,6 +571,7 @@ private fun AppState.resourceFileUpdateOptions(): ResourceFileUpdateOptions {
         fallbackProxyPort = localProxyPort.toPortOrNull(),
         fallbackProxyUsername = localProxyUsername,
         fallbackProxyPassword = localProxyPassword,
+        userAgent = resourceFileUserAgent,
     )
 }
 
