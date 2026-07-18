@@ -7,6 +7,11 @@ import app.CustomResourceFileState
 import app.CustomResourceFileStatus
 import app.ResourceFileStatus
 import app.ResourceFileUpdateSource
+import features.subscription.DefaultSubscriptionUserAgent
+import features.subscription.SubscriptionUserAgentSelection
+import features.subscription.SubscriptionUserAgentSelections
+import features.subscription.resolveUserAgent
+import features.subscription.subscriptionUserAgentSelectionFor
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
@@ -79,6 +84,7 @@ internal fun ResourceFileSourceCard(
     customGeoIpOnlyCnPrivateUrl: String,
     customDirectCidrIpv4Url: String,
     customDirectCidrIpv6Url: String,
+    userAgent: String,
     updating: Boolean,
     onSourceChange: (Int) -> Unit,
     onCustomSourceChange: (
@@ -88,21 +94,37 @@ internal fun ResourceFileSourceCard(
         directCidrIpv4Url: String,
         directCidrIpv6Url: String,
     ) -> Unit,
+    onUserAgentChange: (String) -> Unit,
     onUpdate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showCustomSourceDialog by remember { mutableStateOf(false) }
+    var showCustomUserAgentDialog by remember { mutableStateOf(false) }
     val geoIpUrlDraftState = rememberTextFieldState(initialText = customGeoIpUrl)
     val geoSiteUrlDraftState = rememberTextFieldState(initialText = customGeoSiteUrl)
     val geoIpOnlyCnPrivateUrlDraftState = rememberTextFieldState(initialText = customGeoIpOnlyCnPrivateUrl)
     val directCidrIpv4UrlDraftState = rememberTextFieldState(initialText = customDirectCidrIpv4Url)
     val directCidrIpv6UrlDraftState = rememberTextFieldState(initialText = customDirectCidrIpv6Url)
+    val customUserAgentDraftState = rememberTextFieldState()
     val selectedIndex = selectedSource.takeIf { it in sourceOptions.indices } ?: 0
     val sourceItems = sourceOptions.map { option ->
         DropdownItem(
             text = option,
         )
     }
+    val userAgentItems = SubscriptionUserAgentSelections.map { selection ->
+        DropdownItem(
+            text = when (selection) {
+                SubscriptionUserAgentSelection.V2rayNg -> "v2rayNG"
+                SubscriptionUserAgentSelection.ClashMeta -> "Clash Meta"
+                SubscriptionUserAgentSelection.FlClashX -> "FlClash X"
+                SubscriptionUserAgentSelection.Custom -> stringResource(R.string.subscription_user_agent_custom)
+            },
+        )
+    }
+    val currentUserAgentSelection = subscriptionUserAgentSelectionFor(userAgent)
+    val selectedUserAgentIndex = SubscriptionUserAgentSelections.indexOf(currentUserAgentSelection)
+        .takeIf { it >= 0 } ?: 0
 
     Card(
         modifier = modifier
@@ -158,6 +180,34 @@ internal fun ResourceFileSourceCard(
                 )
                 onSourceChange(ResourceFileSourceCustom)
                 showCustomSourceDialog = false
+            },
+        )
+        OverlaySpinnerPreference(
+            title = stringResource(R.string.subscription_user_agent),
+            summary = userAgent,
+            items = userAgentItems,
+            selectedIndex = selectedUserAgentIndex,
+            onSelectedIndexChange = { index ->
+                val selection = SubscriptionUserAgentSelections[index]
+                if (selection == SubscriptionUserAgentSelection.Custom) {
+                    customUserAgentDraftState.setTextAndPlaceCursorAtEnd(
+                        userAgent.ifBlank { DefaultSubscriptionUserAgent },
+                    )
+                    showCustomUserAgentDialog = true
+                } else {
+                    onUserAgentChange(selection.resolveUserAgent(customUserAgent = ""))
+                }
+            },
+        )
+        CustomResourceFileUserAgentDialog(
+            show = showCustomUserAgentDialog,
+            state = customUserAgentDraftState,
+            onDismissRequest = { showCustomUserAgentDialog = false },
+            onSave = {
+                val custom = customUserAgentDraftState.text.toString().trim()
+                    .ifBlank { DefaultSubscriptionUserAgent }
+                onUserAgentChange(custom)
+                showCustomUserAgentDialog = false
             },
         )
         ArrowPreference(

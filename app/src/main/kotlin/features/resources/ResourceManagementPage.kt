@@ -5,70 +5,58 @@
 
 package features.resources
 
-import app.ResourceFileKind
-import app.ResourceFilesStatus
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import app.AppState
 import app.CustomResourceFileState
 import app.CustomResourceFileStatus
-import app.LocalAppStateStore
 import app.LocalAppServices
+import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
+import app.R
+import app.ResourceFileKind
+import app.ResourceFilesStatus
 import app.collectAppState
 import app.customResourceFileNameOrNull
 import app.resourceFileUpdateSource
 import app.statusOf
-import androidx.compose.foundation.text.input.clearText
-import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import app.R
-import ui.components.BackNavigationIcon
-import ui.components.DeleteConfirmationDialog
-import ui.components.NavigationIcon
+import engine.network.toPortOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.preference.OverlaySpinnerPreference
-import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import ui.components.BackNavigationIcon
+import ui.components.DeleteConfirmationDialog
+import ui.components.NavigationIcon
 import ui.layout.AdaptiveTopAppBar
-import androidx.compose.ui.unit.dp
-import ui.text.formatTemplate
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import engine.network.toPortOrNull
-import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
-import features.subscription.SubscriptionUserAgentSelection
-import features.subscription.SubscriptionUserAgentSelections
-import features.subscription.DefaultSubscriptionUserAgent
-import features.subscription.subscriptionUserAgentSelectionFor
-import features.subscription.resolveUserAgent
+import ui.text.formatTemplate
 
 @Composable
 fun ResourceManagementPage(
@@ -104,8 +92,6 @@ fun ResourceManagementPage(
     val customResourceFileNameDuplicateMessage = stringResource(
         R.string.settings_resource_files_custom_name_duplicate,
     )
-    var showCustomUserAgentDialog by remember { mutableStateOf(false) }
-    val customUserAgentDraftState = rememberTextFieldState()
 
     fun runResourceFileAction(
         action: suspend () -> ResourceFilesStatus?,
@@ -368,6 +354,7 @@ fun ResourceManagementPage(
                         customGeoIpOnlyCnPrivateUrl = appState.customResourceFileGeoIpOnlyCnPrivateUrl,
                         customDirectCidrIpv4Url = appState.customResourceFileDirectCidrIpv4Url,
                         customDirectCidrIpv6Url = appState.customResourceFileDirectCidrIpv6Url,
+                        userAgent = appState.resourceFileUserAgent,
                         updating = updating,
                         onSourceChange = { index ->
                             updateAppState { state -> state.copy(resourceFileSource = index.coerceIn(sourceOptions.indices)) }
@@ -389,6 +376,11 @@ fun ResourceManagementPage(
                                 )
                             }
                         },
+                        onUserAgentChange = { userAgent ->
+                            updateAppState { state ->
+                                state.copy(resourceFileUserAgent = userAgent)
+                            }
+                        },
                         onUpdate = {
                             runResourceFileAction(
                                 action = {
@@ -404,61 +396,6 @@ fun ResourceManagementPage(
                             )
                         },
                     )
-                }
-                item(key = "resource_files_user_agent") {
-                    val userAgentItems = SubscriptionUserAgentSelections.map { selection ->
-                        DropdownItem(
-                            text = when (selection) {
-                                SubscriptionUserAgentSelection.V2rayNg -> "v2rayNG"
-                                SubscriptionUserAgentSelection.ClashMeta -> "Clash Meta"
-                                SubscriptionUserAgentSelection.FlClashX -> "FlClash X"
-                                SubscriptionUserAgentSelection.Custom -> stringResource(R.string.subscription_user_agent_custom)
-                            },
-                        )
-                    }
-                    val currentSelection = subscriptionUserAgentSelectionFor(appState.resourceFileUserAgent)
-                    val selectedIndex = SubscriptionUserAgentSelections.indexOf(currentSelection)
-                        .takeIf { it >= 0 } ?: 0
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp)
-                            .padding(bottom = 12.dp),
-                    ) {
-                        OverlaySpinnerPreference(
-                            title = stringResource(R.string.subscription_user_agent),
-                            summary = appState.resourceFileUserAgent,
-                            items = userAgentItems,
-                            selectedIndex = selectedIndex,
-                            onSelectedIndexChange = { index ->
-                                val selection = SubscriptionUserAgentSelections[index]
-                                if (selection == SubscriptionUserAgentSelection.Custom) {
-                                    customUserAgentDraftState.setTextAndPlaceCursorAtEnd(
-                                        appState.resourceFileUserAgent.ifBlank { DefaultSubscriptionUserAgent },
-                                    )
-                                    showCustomUserAgentDialog = true
-                                } else {
-                                    val resolved = selection.resolveUserAgent(customUserAgent = "")
-                                    updateAppState { state ->
-                                        state.copy(resourceFileUserAgent = resolved)
-                                    }
-                                }
-                            },
-                        )
-                        CustomResourceFileUserAgentDialog(
-                            show = showCustomUserAgentDialog,
-                            state = customUserAgentDraftState,
-                            onDismissRequest = { showCustomUserAgentDialog = false },
-                            onSave = {
-                                val custom = customUserAgentDraftState.text.toString().trim()
-                                    .ifBlank { DefaultSubscriptionUserAgent }
-                                updateAppState { state ->
-                                    state.copy(resourceFileUserAgent = custom)
-                                }
-                                showCustomUserAgentDialog = false
-                            },
-                        )
-                    }
                 }
                 listOf(
                     ResourceFileKind.GeoIp,
