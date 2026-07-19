@@ -1,4 +1,4 @@
-// Copyright 2026, AsteriskMETA contributors
+// Copyright 2026, Asterisk4Magisk contributors
 // SPDX-License-Identifier: GPL-3.0
 
 #ifndef ASTERISKD_H
@@ -9,8 +9,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define ASTERISKD_CONFIG_VERSION 1U
+#define ASTERISKD_CONFIG_VERSION 2U
 #define ASTERISKD_MAX_PATH 4096U
+#define ASTERISKD_MAX_EMERGENCY_PROCESSES 8U
+#define ASTERISKD_MAX_COMMAND_MARKER 256U
 #define ASTERISKD_MAX_INTERFACES 64U
 #define ASTERISKD_MAX_INTERFACE_NAME 64U
 #define ASTERISKD_MAX_ADDRESSES 256U
@@ -22,6 +24,7 @@
 
 enum asteriskd_mode {
     ASTERISKD_MODE_TPROXY,
+    ASTERISKD_MODE_TUN,
     ASTERISKD_MODE_TUN2SOCKS,
     ASTERISKD_MODE_BPF2SOCKS,
 };
@@ -39,14 +42,21 @@ struct asteriskd_bpf_local_maps {
     char ipv6_path[ASTERISKD_MAX_PATH];
 };
 
+struct asteriskd_emergency_process {
+    char pid_path[ASTERISKD_MAX_PATH];
+    char command_marker[ASTERISKD_MAX_COMMAND_MARKER];
+};
+
 struct asteriskd_config {
     uint32_t version;
     enum asteriskd_mode mode;
     bool enable_ipv6;
     bool disable_system_ipv6;
-    char data_directory[ASTERISKD_MAX_PATH];
+    char ready_path[ASTERISKD_MAX_PATH];
     char stop_script_path[ASTERISKD_MAX_PATH];
     char state_path[ASTERISKD_MAX_PATH];
+    struct asteriskd_emergency_process emergency_processes[ASTERISKD_MAX_EMERGENCY_PROCESSES];
+    size_t emergency_process_count;
     char ignored_interfaces[ASTERISKD_MAX_INTERFACES][ASTERISKD_MAX_INTERFACE_NAME];
     size_t ignored_interface_count;
     char virtual_interfaces[ASTERISKD_MAX_INTERFACES][ASTERISKD_MAX_INTERFACE_NAME];
@@ -105,7 +115,7 @@ struct asteriskd_state {
 
 int asteriskd_load_config(const char *path, struct asteriskd_config *out, char *message, size_t message_size);
 
-void asteriskd_state_init(struct asteriskd_state *state, const char *pid_path, const char *log_path, const char *data_directory);
+void asteriskd_state_init(struct asteriskd_state *state, const char *pid_path, const char *log_path, const char *ready_path);
 void asteriskd_open_log(struct asteriskd_state *state);
 void asteriskd_close_log(struct asteriskd_state *state);
 void asteriskd_log(struct asteriskd_state *state, const char *format, ...);
@@ -156,6 +166,5 @@ bool asteriskd_interface_matches_prefix(const char *interface_name, const char *
 uint32_t asteriskd_netlink_groups(const struct asteriskd_config *config);
 
 #endif
-
 
 

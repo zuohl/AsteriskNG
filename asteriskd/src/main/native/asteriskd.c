@@ -1,4 +1,4 @@
-// Copyright 2026, AsteriskMETA contributors
+// Copyright 2026, Asterisk4Magisk contributors
 // SPDX-License-Identifier: GPL-3.0
 
 #include "asteriskd.h"
@@ -40,15 +40,13 @@ void asteriskd_state_init(
     struct asteriskd_state *state,
     const char *pid_path,
     const char *log_path,
-    const char *data_directory) {
+    const char *ready_path) {
     memset(state, 0, sizeof(*state));
     state->active_ipv4_slot = 0;
     state->active_ipv6_slot = 0;
     if (pid_path != NULL) (void)snprintf(state->pid_path, sizeof(state->pid_path), "%s", pid_path);
     if (log_path != NULL) (void)snprintf(state->log_path, sizeof(state->log_path), "%s", log_path);
-    if (data_directory != NULL) {
-        (void)snprintf(state->ready_path, sizeof(state->ready_path), "%s/asteriskd.ready", data_directory);
-    }
+    if (ready_path != NULL) (void)snprintf(state->ready_path, sizeof(state->ready_path), "%s", ready_path);
 }
 
 void asteriskd_open_log(struct asteriskd_state *state) {
@@ -105,7 +103,7 @@ int main(int argc, char **argv) {
     if (load_config_or_report(config_path, &config) != 0) return 1;
     if (prepare) {
         struct asteriskd_state state;
-        asteriskd_state_init(&state, NULL, NULL, config.data_directory);
+        asteriskd_state_init(&state, NULL, NULL, config.ready_path);
         if (asteriskd_prepare(&config, &state) != 0) {
             fputs("asteriskd prepare failed\n", stderr);
             return 1;
@@ -119,7 +117,7 @@ int main(int argc, char **argv) {
         return 64;
     }
     struct asteriskd_state state;
-    asteriskd_state_init(&state, pid_path, log_path, config.data_directory);
+    asteriskd_state_init(&state, pid_path, log_path, config.ready_path);
     return asteriskd_run(&config, &state);
 }
 

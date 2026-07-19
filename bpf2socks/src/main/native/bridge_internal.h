@@ -1,8 +1,8 @@
-// Copyright 2026, AsteriskNG contributors
+// Copyright 2026, Asterisk4Magisk contributors
 // SPDX-License-Identifier: GPL-3.0
 
-#ifndef ASTERISK_BPF2SOCKS_BRIDGE_INTERNAL_H
-#define ASTERISK_BPF2SOCKS_BRIDGE_INTERNAL_H
+#ifndef BPF2SOCKS_BRIDGE_INTERNAL_H
+#define BPF2SOCKS_BRIDGE_INTERNAL_H
 
 #include "bpf2socks.h"
 

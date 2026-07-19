@@ -1,4 +1,4 @@
-// Copyright 2026, AsteriskMETA contributors
+// Copyright 2026, Asterisk4Magisk contributors
 // SPDX-License-Identifier: GPL-3.0
 
 #include "asteriskd.h"
@@ -131,6 +131,58 @@ static bool json_string_array(
     return true;
 }
 
+static char *find_object_end(char *value) {
+    if (value == NULL || *value != '{') return NULL;
+    size_t depth = 0U;
+    bool in_string = false;
+    for (char *cursor = value; *cursor != '\0'; ++cursor) {
+        if (in_string) {
+            if (*cursor == '\\') return NULL;
+            if (*cursor == '"') in_string = false;
+            continue;
+        }
+        if (*cursor == '"') {
+            in_string = true;
+        } else if (*cursor == '{') {
+            ++depth;
+        } else if (*cursor == '}') {
+            if (depth == 0U) return NULL;
+            --depth;
+            if (depth == 0U) return cursor;
+        }
+    }
+    return NULL;
+}
+
+static bool parse_emergency_processes(
+    char *json,
+    struct asteriskd_emergency_process *processes,
+    size_t *count) {
+    char *value = (char *)json_value(json, "emergencyProcesses");
+    if (value == NULL || *value != '[') return false;
+    *count = 0U;
+    value = (char *)skip_space(value + 1);
+    if (*value == ']') return true;
+    while (*value != '\0') {
+        if (*count >= ASTERISKD_MAX_EMERGENCY_PROCESSES || *value != '{') return false;
+        char *end = find_object_end(value);
+        if (end == NULL) return false;
+        char saved = end[1];
+        end[1] = '\0';
+        struct asteriskd_emergency_process *process = &processes[*count];
+        bool ok = json_string(value, "pidPath", process->pid_path, sizeof(process->pid_path)) &&
+            json_string(value, "commandMarker", process->command_marker, sizeof(process->command_marker));
+        end[1] = saved;
+        if (!ok || process->command_marker[0] == '\0') return false;
+        ++*count;
+        value = (char *)skip_space(end + 1);
+        if (*value == ']') return true;
+        if (*value != ',') return false;
+        value = (char *)skip_space(value + 1);
+    }
+    return false;
+}
+
 static bool is_absolute_path(const char *path) {
     return path[0] == '/' && strlen(path) < ASTERISKD_MAX_PATH;
 }
@@ -196,10 +248,16 @@ static bool parse_bpf_maps(const char *json, struct asteriskd_bpf_local_maps *ma
 
 static bool validate_config(const struct asteriskd_config *config) {
     if (config->version != ASTERISKD_CONFIG_VERSION ||
-        !is_absolute_path(config->data_directory) ||
+        !is_absolute_path(config->ready_path) ||
         !is_absolute_path(config->stop_script_path) ||
         !is_absolute_path(config->state_path)) {
         return false;
+    }
+    for (size_t index = 0U; index < config->emergency_process_count; ++index) {
+        if (!is_absolute_path(config->emergency_processes[index].pid_path) ||
+            config->emergency_processes[index].command_marker[0] == '\0') {
+            return false;
+        }
     }
     if (config->mode == ASTERISKD_MODE_BPF2SOCKS) {
         if (!config->bpf_local_maps.enabled) return false;
@@ -229,7 +287,7 @@ int asteriskd_load_config(const char *path, struct asteriskd_config *out, char *
     bool ok = json_uint(json, "version", &out->version) &&
         json_bool(json, "enableIpv6", &out->enable_ipv6) &&
         json_bool(json, "disableSystemIpv6", &out->disable_system_ipv6) &&
-        json_string(json, "dataDirectory", out->data_directory, sizeof(out->data_directory)) &&
+        json_string(json, "readyPath", out->ready_path, sizeof(out->ready_path)) &&
         json_string(json, "stopScriptPath", out->stop_script_path, sizeof(out->stop_script_path)) &&
         json_string(json, "statePath", out->state_path, sizeof(out->state_path)) &&
         json_string_array(json, "ignoredInterfaces", out->ignored_interfaces, &out->ignored_interface_count) &&
@@ -237,11 +295,14 @@ int asteriskd_load_config(const char *path, struct asteriskd_config *out, char *
         json_string_array(json, "hotspotInterfacePrefixes", out->hotspot_interface_prefixes, &out->hotspot_interface_prefix_count) &&
         parse_bypass(json, "ipv4Bypass", &out->ipv4_bypass) &&
         parse_bypass(json, "ipv6Bypass", &out->ipv6_bypass) &&
-        parse_bpf_maps(json, &out->bpf_local_maps);
+        parse_bpf_maps(json, &out->bpf_local_maps) &&
+        parse_emergency_processes(json, out->emergency_processes, &out->emergency_process_count);
     char mode[24] = {0};
     ok = json_string(json, "mode", mode, sizeof(mode)) && ok;
     if (strcmp(mode, "tproxy") == 0) {
         out->mode = ASTERISKD_MODE_TPROXY;
+    } else if (strcmp(mode, "tun") == 0) {
+        out->mode = ASTERISKD_MODE_TUN;
     } else if (strcmp(mode, "tun2socks") == 0) {
         out->mode = ASTERISKD_MODE_TUN2SOCKS;
     } else if (strcmp(mode, "bpf2socks") == 0) {

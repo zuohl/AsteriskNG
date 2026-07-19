@@ -1,4 +1,4 @@
-// Copyright 2026, AsteriskNG contributors
+// Copyright 2026, Asterisk4Magisk contributors
 // SPDX-License-Identifier: GPL-3.0
 
 #include "connected_udp_redirect.h"

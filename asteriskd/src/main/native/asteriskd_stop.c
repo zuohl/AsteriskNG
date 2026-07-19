@@ -1,4 +1,4 @@
-// Copyright 2026, AsteriskMETA contributors
+// Copyright 2026, Asterisk4Magisk contributors
 // SPDX-License-Identifier: GPL-3.0
 
 #include "asteriskd.h"
@@ -47,15 +47,9 @@ static void terminate_validated_process(const char *pid_path, const char *marker
 }
 
 static void emergency_stop_proxy_processes(const struct asteriskd_config *config) {
-    char path[ASTERISKD_MAX_PATH];
-    if (snprintf(path, sizeof(path), "%s/xray-root.pid", config->data_directory) > 0) {
-        terminate_validated_process(path, "config-root.json");
-    }
-    if (snprintf(path, sizeof(path), "%s/bpf2socks.pid", config->data_directory) > 0) {
-        terminate_validated_process(path, "bpf2socks.json");
-    }
-    if (snprintf(path, sizeof(path), "%s/tun2socks.pid", config->data_directory) > 0) {
-        terminate_validated_process(path, "tun2socks.yml");
+    for (size_t index = 0U; index < config->emergency_process_count; ++index) {
+        const struct asteriskd_emergency_process *process = &config->emergency_processes[index];
+        terminate_validated_process(process->pid_path, process->command_marker);
     }
 }
 
@@ -72,6 +66,5 @@ _Noreturn void asteriskd_fail_stop(
     emergency_stop_proxy_processes(config);
     _exit(1);
 }
-
 
 

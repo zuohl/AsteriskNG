@@ -1,8 +1,8 @@
-// Copyright 2026, AsteriskNG contributors
+// Copyright 2026, Asterisk4Magisk contributors
 // SPDX-License-Identifier: GPL-3.0
 
-#ifndef ASTERISK_BPF2SOCKS_UDP_DOWNLINK_QUEUE_H
-#define ASTERISK_BPF2SOCKS_UDP_DOWNLINK_QUEUE_H
+#ifndef BPF2SOCKS_UDP_DOWNLINK_QUEUE_H
+#define BPF2SOCKS_UDP_DOWNLINK_QUEUE_H
 
 #include <stdbool.h>
 #include <stddef.h>

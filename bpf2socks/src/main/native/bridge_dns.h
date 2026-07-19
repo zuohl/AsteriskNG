@@ -1,4 +1,4 @@
-// Copyright 2026, AsteriskNG contributors
+// Copyright 2026, Asterisk4Magisk contributors
 // SPDX-License-Identifier: GPL-3.0
 
 #ifndef ASTERISK_BPF2SOCKS_BRIDGE_DNS_H
