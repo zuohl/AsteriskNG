@@ -81,7 +81,7 @@ git submodule update --init --recursive
 - загружает или подготавливает встроенные ресурсы Xray-core;
 - проверяет ветку/тег `hev-socks5-tunnel` на соответствие значению `ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION` перед компиляцией;
 - собирает нативную JNI-библиотеку `hev-socks5-tunnel` и консольную утилиту (CLI) из подключенного субмодуля;
-- собирает нативные вспомогательные компоненты `setuidgid` и `ipv6disabler`;
+- переключает `asteriskd`, `bpf2socks`, `bpfmatcher` и `setuidgid` на версии из `ProjectConfig`, после чего собирает их с помощью NDK;
 - упаковывает нативные компоненты для архитектур `arm64-v8a`, `armeabi-v7a`, `x86` и `x86_64`.
 
 Если Gradle не может найти Android NDK, укажите путь к нему в параметре `ndk.dir` внутри файла `local.properties`, задайте переменную окружения `ANDROID_NDK_HOME` или установите NDK через менеджер компонентов внутри Android SDK.
@@ -111,3 +111,4 @@ appops set org.asterisk.zcc.ang ACTIVATE_VPN allow
 - [@v2fly/domain-list-community](https://github.com/v2fly/domain-list-community)
 - [@Chocolate4U/Iran-v2ray-rules](https://github.com/Chocolate4U/Iran-v2ray-rules)
 - [@runetfreedom/russia-v2ray-rules-dat](https://github.com/runetfreedom/russia-v2ray-rules-dat)
+- [@mayaxcn/china-ip-list](https://github.com/mayaxcn/china-ip-list)
