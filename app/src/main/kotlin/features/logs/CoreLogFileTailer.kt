@@ -141,20 +141,22 @@ internal fun parseCoreLogLine(line: String, defaultLevel: String): ParsedCoreLog
     }
 
     XrayLogLineRegex.matchEntire(trimmedLine)?.let { match ->
-        val (time, level, message) = match.destructured
+        val (rawTime, level, message) = match.destructured
+        val localTime = toLocalXrayLogTime(rawTime) ?: rawTime.replace('/', '-')
         return ParsedCoreLogLine(
-            time = toLocalXrayLogTime(time) ?: time.replace('/', '-'),
+            time = localTime,
             level = level,
-            message = message,
+            message = "$localTime [$level] $message",
         )
     }
 
     XrayLogLineWithoutLevelRegex.matchEntire(trimmedLine)?.let { match ->
-        val (time, message) = match.destructured
+        val (rawTime, message) = match.destructured
+        val localTime = toLocalXrayLogTime(rawTime) ?: rawTime.replace('/', '-')
         return ParsedCoreLogLine(
-            time = toLocalXrayLogTime(time) ?: time.replace('/', '-'),
+            time = localTime,
             level = defaultLevel,
-            message = message,
+            message = "$localTime $message",
         )
     }
 
